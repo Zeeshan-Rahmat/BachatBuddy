@@ -1,0 +1,106 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@import "nativewind/theme";
+
+@theme {
+    /* --- Colors --- */
+    /* Primary Brand - Main Color is 400 */
+    --color-primary-50: #E8F8EF;
+    --color-primary-100: #C6EDDA;
+    --color-primary-200: #92DDB8;
+    --color-primary-300: #5ECE96;
+    --color-primary-400: #2ECC71;
+    --color-primary-500: #1A9E56;
+    --color-primary-600: #147A42;
+    --color-primary-700: #0F5A31;
+    --color-primary-800: #0A3D21;
+    --color-primary-900: #052010;
+
+    /* Navy - Main Color is 400 */
+    --color-navy-50: #E8ECF5;
+    --color-navy-100: #C5CFEA;
+    --color-navy-200: #8DA0D5;
+    --color-navy-300: #5470BF;
+    --color-navy-400: #1B3A6B;
+    --color-navy-500: #162E55;
+    --color-navy-600: #112240;
+    --color-navy-700: #0C182C;
+    --color-navy-800: #070E1A;
+    --color-navy-900: #03060D;
+
+    /* Teal */
+    --color-teal-400: #1A7A6E;
+    --color-teal-500: #1E8C5A;
+
+    /* Light */
+    --color-light-50: #97A0A9;
+    --color-light-100: #D9D9D9;
+    --color-light-200: #E2E2E3;
+    --color-light-300: #F5F5F5;
+
+    /* Dark */
+    --color-dark-50: #84878B;
+    --color-dark-100: #606060;
+    --color-dark-200: #505050;
+    --color-dark-300: #252525;
+
+    /* Status & Neutrals */
+    --color-success: #2ECC71;
+    --color-warning: #F39C12;
+    --color-danger: #E74C3C;
+    --color-info: #3498DB;
+    --color-surface: #F5F6FA;
+    --color-card: #FFFFFF;
+    --color-border: #E9ECEF;
+    --color-muted: #ADB5BD;
+
+    /* Font Sizes (Format: size / line-height)
+    --text-xs: 11px;
+    --text-xs--line-height: 16px;
+
+    --text-sm: 13px;
+    --text-sm--line-height: 18px;
+
+    --text-base: 15px;
+    --text-base--line-height: 22px;
+
+    --text-md: 16px;
+    --text-md--line-height: 24px;
+
+    --text-lg: 18px;
+    --text-lg--line-height: 26px;
+
+    --text-xl: 22px;
+    --text-xl--line-height: 30px;
+
+    --text-2xl: 28px;
+    --text-2xl--line-height: 36px;
+
+    --text-3xl: 36px;
+    --text-3xl--line-height: 44px; */
+
+    /* --- Spacing --- */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-base: 16px;
+    --spacing-lg: 20px;
+    --spacing-xl: 24px;
+    --spacing-2xl: 32px;
+    --spacing-3xl: 40px;
+    --spacing-4xl: 48px;
+
+    /* --- Border Radius --- */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+
+    /* --- Box Shadows --- */
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-header: 0 2px 6px rgba(0, 0, 0, 0.15);
+    --shadow-fab: 0 4px 10px rgba(46, 204, 113, 0.4);
+}
