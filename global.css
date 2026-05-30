@@ -6,24 +6,24 @@
 
 @theme {
     /* --- Colors --- */
-    /* Primary Brand - Main Color is 400 */
+    /* Primary Brand - Main Color is 400 : 22C55E */
     --color-primary-50: #E8F8EF;
     --color-primary-100: #C6EDDA;
     --color-primary-200: #92DDB8;
     --color-primary-300: #5ECE96;
-    --color-primary-400: #2ECC71;
+    --color-primary-400: #22C55E;
     --color-primary-500: #1A9E56;
     --color-primary-600: #147A42;
     --color-primary-700: #0F5A31;
     --color-primary-800: #0A3D21;
     --color-primary-900: #052010;
 
-    /* Navy - Main Color is 400 */
+    /* Navy - Main Color is 400 : 1E3A8A */
     --color-navy-50: #E8ECF5;
     --color-navy-100: #C5CFEA;
     --color-navy-200: #8DA0D5;
     --color-navy-300: #5470BF;
-    --color-navy-400: #1B3A6B;
+    --color-navy-400: #1E3A8A;
     --color-navy-500: #162E55;
     --color-navy-600: #112240;
     --color-navy-700: #0C182C;
