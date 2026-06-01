@@ -93,6 +93,15 @@
     --spacing-4xl: 48px;
 
     /* --- Border Radius --- */
+    --text-button: 22px;
+    --text-heading: 28px;
+    --text-inputText: 16px;
+    --text-error: 12px;
+
+    /* --- Border Radius --- */
+    --radius-inputBox: 5px;
+    --radius-button: 5px;
+    --radius-card: 10px;
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;

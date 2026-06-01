@@ -15,14 +15,14 @@ export default function Button({ label, onPress, loading, leftIcon }: ButtonProp
             onPress={onPress}
             activeOpacity={0.85}
             disabled={loading}
-            className="bg-primary-400 rounded-[5px] h-14 flex-row items-center justify-center mt-2"
+            className="bg-primary-400 rounded-button h-14 flex-row items-center justify-center mt-2"
         >
             {loading ? (
                 <ActivityIndicator color={COLORS.white} />
             ) : (
                 <>
                     {leftIcon && <View className="mr-2">{leftIcon}</View>}
-                    <Text className="text-white text-base font-bold">{label}</Text>
+                    <Text className="text-white text-xl font-semibold">{label}</Text>
                 </>
             )}
         </TouchableOpacity>

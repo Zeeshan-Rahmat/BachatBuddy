@@ -17,19 +17,19 @@ export default function ValueSelect({ icon, rightIcon, values, value, onChange, 
         <View className="mb-3">
             <TouchableOpacity
                 onPress={() => setOpen(true)}
-                className={`flex-row items-center rounded-[5px] border border-light-100 px-3 h-14 ${error ? 'border-red-400' : 'border-gray-200'
+                className={`flex-row items-center rounded-inputBox border border-light-100 px-3 h-14 ${error ? 'border-red-400' : 'border-gray-200'
                     }`}
             >
                 {/* Role icon */}
                 <View className="mr-3">
                     {icon}
                 </View>
-                <Text className={`flex-1 text-base ${value ? 'text-gray-800' : 'text-gray-400'}`}>
+                <Text className={`flex-1 text-inputText ${value ? 'text-gray-800' : 'text-gray-400'}`}>
                     {value || 'Select your role'}
                 </Text>
                 {rightIcon}
             </TouchableOpacity>
-            {error && <Text className="text-red-500 text-xs mt-1 ml-1">{error}</Text>}
+            {error && <Text className="text-red-500 text-error mt-1 ml-1">{error}</Text>}
 
             <Modal visible={open} transparent animationType="fade">
                 <TouchableOpacity
@@ -37,7 +37,7 @@ export default function ValueSelect({ icon, rightIcon, values, value, onChange, 
                     activeOpacity={1}
                     onPress={() => setOpen(false)}
                 >
-                    <View className="bg-white rounded-2xl overflow-hidden">
+                    <View className="bg-white rounded-card overflow-hidden">
                         <FlatList
                             data={values}
                             keyExtractor={(item) => item}

@@ -1,3 +1,5 @@
+import { COLORS } from '@/src/constants/theme';
+import { useState } from 'react';
 import {
     Text,
     TextInput,
@@ -9,6 +11,8 @@ import {
 interface InputTextProps extends TextInputProps {
     icon: React.ReactNode;
     rightIcon?: React.ReactNode;
+    activeIcon?: React.ReactNode;
+    activeRightIcon?: React.ReactNode;
     onRightIconPress?: () => void;
     error?: string;
 }
@@ -16,26 +20,35 @@ interface InputTextProps extends TextInputProps {
 export default function InputText({
     icon,
     rightIcon,
+    activeIcon,
+    activeRightIcon,
     onRightIconPress,
     error,
     ...props
 }: InputTextProps) {
+
+    const [isFocused, setIsFocused] = useState(false)
+
     return (
         <View className="mb-3">
             <View
-                className={`flex-row items-center rounded-[5px] border border-light-100 px-3 h-14 ${error ? 'border-red-400' : 'border-gray-200'
-                    }`}
+                className={
+                    `flex-row items-center rounded-[5px] border border-light-100 px-3 h-14 ${error ? 'border-red-400' : ''
+                    }
+                    ${isFocused ? 'border-primary-400' : ''}`}
             >
-                <View className="mr-3">{icon}</View>
+                <View className="mr-3">{isFocused ? activeIcon : icon}</View>
                 <TextInput
-                    className="flex-1 text-gray-800 text-base"
-                    placeholderTextColor="#9CA3AF"
+                    className="flex-1 text-black text-[17px] text-base outline-none"
+                    placeholderTextColor={COLORS.placeholder}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     autoCapitalize="none"
                     {...props}
                 />
                 {rightIcon && (
                     <TouchableOpacity onPress={onRightIconPress} className="ml-2 p-1">
-                        {rightIcon}
+                        {isFocused ? activeRightIcon : rightIcon}
                     </TouchableOpacity>
                 )}
             </View>

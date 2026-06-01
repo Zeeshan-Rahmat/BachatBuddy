@@ -48,6 +48,7 @@ export default function SignInScreen() {
                     {/* Username */}
                     <InputText
                         icon={<IconWrapper name={ICONS.user} />}
+                        activeIcon={<IconWrapper name={ICONS.activeUser} />}
                         placeholder="Enter your username"
                         value={username}
                         onChangeText={setUsername}
@@ -59,11 +60,13 @@ export default function SignInScreen() {
                     {/* Password */}
                     <InputText
                         icon={<IconWrapper name={ICONS.password} />}
+                        activeIcon={<IconWrapper name={ICONS.activePassword} />}
                         placeholder="Enter your password"
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry={!showPassword}
                         rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
+                        activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
                         onRightIconPress={() => setShowPassword(!showPassword)}
                     />
 
