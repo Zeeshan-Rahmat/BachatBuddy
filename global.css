@@ -92,10 +92,13 @@
     --spacing-3xl: 40px;
     --spacing-4xl: 48px;
 
-    /* --- Border Radius --- */
+    /* --- Text Sizes --- */
+
     --text-button: 22px;
     --text-heading: 28px;
+    --text-title: 30px;
     --text-inputText: 16px;
+    --text-textButton: 16px;
     --text-error: 12px;
 
     /* --- Border Radius --- */

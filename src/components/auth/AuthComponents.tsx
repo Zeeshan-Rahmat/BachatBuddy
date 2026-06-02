@@ -34,10 +34,6 @@ interface RoleSelectProps {
     error?: string;
 }
 
-interface DividerProps {
-    label: string;
-}
-
 // ─── GradientBackground ───────────────────────────────────────────────────────
 // The full-screen green-to-navy gradient used on every auth screen
 

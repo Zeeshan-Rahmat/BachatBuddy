@@ -1,20 +1,28 @@
 // import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+// import { useEffect } from "react";
 
 import "@/global.css";
 
 export default function RootLayout() {
 
   // const [fontsLoaded] = useFonts({
-  //   "Inter-Light": require("./assets/fonts/Inter-Light.ttf"),
-  //   "Inter-Regular": require("./assets/fonts/Inter-Regular.ttf"),
-  //   "Inter-Medium": require("./assets/fonts/Inter-Medium.ttf"),
-  //   "Inter-SemiBold": require("./assets/fonts/Inter-SemiBold.ttf"),
-  //   "Inter-Bold": require("./assets/fonts/Inter-Bold.ttf"),
-  //   "Inter-ExtraBold": require("./assets/fonts/Inter-ExtraBold.ttf"),
+  //   "sans-light": require("../assets/fonts/Inter-Light.ttf"),
+  //   "sans-regular": require("../assets/fonts/Inter-Regular.ttf"),
+  //   "sans-medium": require("../assets/fonts/Inter-Medium.ttf"),
+  //   "sans-semiBold": require("../assets/fonts/Inter-SemiBold.ttf"),
+  //   "sans-bold": require("../assets/fonts/Inter-Bold.ttf"),
+  //   "sans-extraBold": require("../assets/fonts/Inter-ExtraBold.ttf"),
   // });
 
+  // useEffect(() => {
+  //   if (fontsLoaded) {
+  //     SplashScreen.hideAsync()
+  //   }
 
+  // }, [fontsLoaded])
+
+  // if (!fontsLoaded) return null;
 
   return <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />;
 }

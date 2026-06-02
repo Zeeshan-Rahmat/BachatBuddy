@@ -1,15 +1,12 @@
-import {
-    FingerprintIcon,
-    GradientBackground,
-    OrDivider
-} from '@components/auth/AuthComponents';
-
+import GradientBackground from '@/src/components/auth/GradientBackground';
+import OrDivider from '@/src/components/auth/OrDivider';
 import InputText from '@/src/components/common/InputText';
 import ValueSelect from '@/src/components/common/ValueSelect';
 import Button from '@components/common/Button';
 import IconWrapper from '@components/common/IconWrapper';
 import Wrapper from '@components/common/Wrapper';
 
+import TextButton from '@/src/components/common/TextButton';
 import { ICONS } from '@/src/constants/icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -40,12 +37,12 @@ export default function SignInScreen() {
             <View className="flex-1 justify-center px-0">
                 <Wrapper>
 
-                    {/* Title */}
-                    <Text className="text-3xl font-bold text-gray-900 text-center mb-7">
+
+                    <Text className="text-3xl font-semibold text-black text-center mb-8">
                         Sign In
                     </Text>
 
-                    {/* Username */}
+
                     <InputText
                         icon={<IconWrapper name={ICONS.user} />}
                         activeIcon={<IconWrapper name={ICONS.activeUser} />}
@@ -54,10 +51,8 @@ export default function SignInScreen() {
                         onChangeText={setUsername}
                     />
 
-                    {/* Role Dropdown */}
                     <ValueSelect icon={<IconWrapper name={ICONS.role} />} rightIcon={<IconWrapper name={ICONS.dropdown} />} values={ROLES} value={role} onChange={setRole} />
 
-                    {/* Password */}
                     <InputText
                         icon={<IconWrapper name={ICONS.password} />}
                         activeIcon={<IconWrapper name={ICONS.activePassword} />}
@@ -70,15 +65,11 @@ export default function SignInScreen() {
                         onRightIconPress={() => setShowPassword(!showPassword)}
                     />
 
-                    {/* Forgot Password */}
-                    <TouchableOpacity
-                        className="self-end mb-5 mt-1"
+                    <TextButton
+                        text='Forgot Password ?'
+                        align='self-end'
                         onPress={() => router.push('/(auth)/forgot-password')}
-                    >
-                        <Text className="text-blue-700 text-sm font-medium">
-                            Forgot Password ?
-                        </Text>
-                    </TouchableOpacity>
+                    />
 
                     <Button
                         label="Sign In"
@@ -86,28 +77,21 @@ export default function SignInScreen() {
                         loading={loading}
                     />
 
-                    {/* Create Account */}
-                    <View className="flex-row justify-center mt-4">
-                        <Text className="text-gray-700 text-sm">
+                    <View className="flex-row justify-center mt-5">
+                        <Text className="text-gray-700 text-base">
                             Don't have an account?{' '}
                         </Text>
-                        <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
-                            <Text className="text-blue-700 text-sm font-semibold underline">
-                                Create account
-                            </Text>
-                        </TouchableOpacity>
+                        <TextButton text="Create account" textstyle='underline' onPress={() => router.push('/(auth)/sign-up')} />
                     </View>
 
-                    {/* OR Divider */}
                     <OrDivider />
 
-                    {/* Touch ID */}
                     <TouchableOpacity
                         className="flex-row items-center justify-center gap-2"
                         onPress={() => router.push('/(auth)/fingerprint')}
                     >
-                        <FingerprintIcon size={28} />
-                        <Text className="text-gray-700 text-sm font-medium">
+                        <IconWrapper name={ICONS.fingerprint} size={35} />
+                        <Text className="ml-2 text-black text-inputText font-semibold">
                             use Touch ID
                         </Text>
                     </TouchableOpacity>
