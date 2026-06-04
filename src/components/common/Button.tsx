@@ -7,21 +7,22 @@ interface ButtonProps {
     onPress: () => void;
     loading?: boolean;
     leftIcon?: React.ReactNode;
+    width?: "w-fit" | "w-full";
 }
 
-export default function Button({ label, onPress, loading, leftIcon }: ButtonProps) {
+export default function Button({ label, onPress, loading, leftIcon, width = "w-full" }: ButtonProps) {
     return (
         <TouchableOpacity
             onPress={onPress}
             activeOpacity={0.85}
             disabled={loading}
-            className="bg-primary-400 rounded-button h-14 flex-row items-center justify-center mt-2"
+            className={`${width == "w-fit" ? `${width} self-center` : width} bg-primary-400 rounded-button h-14 flex-row items-center justify-center mt-2 px-6`}
         >
             {loading ? (
                 <ActivityIndicator color={COLORS.white} />
             ) : (
                 <>
-                    {leftIcon && <View className="mr-2">{leftIcon}</View>}
+                    {leftIcon && <View className="mr-4">{leftIcon}</View>}
                     <Text className="text-white text-xl font-semibold">{label}</Text>
                 </>
             )}

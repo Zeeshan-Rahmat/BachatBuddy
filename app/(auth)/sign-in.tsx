@@ -1,13 +1,16 @@
+import AuthWrapper from '@/src/components/auth/AuthWrapper';
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import OrDivider from '@/src/components/auth/OrDivider';
 import InputText from '@/src/components/common/InputText';
+import TextButton from '@/src/components/common/TextButton';
 import ValueSelect from '@/src/components/common/ValueSelect';
 import Button from '@components/common/Button';
 import IconWrapper from '@components/common/IconWrapper';
 import Wrapper from '@components/common/Wrapper';
 
-import TextButton from '@/src/components/common/TextButton';
+import Title from '@/src/components/common/Title';
 import { ICONS } from '@/src/constants/icons';
+import { ROUTES } from '@/src/constants/routes';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -34,14 +37,10 @@ export default function SignInScreen() {
 
     return (
         <GradientBackground>
-            <View className="flex-1 justify-center px-0">
+            <AuthWrapper>
                 <Wrapper>
 
-
-                    <Text className="text-3xl font-semibold text-black text-center mb-8">
-                        Sign In
-                    </Text>
-
+                    <Title text='Sign In' />
 
                     <InputText
                         icon={<IconWrapper name={ICONS.user} />}
@@ -68,7 +67,7 @@ export default function SignInScreen() {
                     <TextButton
                         text='Forgot Password ?'
                         align='self-end'
-                        onPress={() => router.push('/(auth)/forgot-password')}
+                        onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}
                     />
 
                     <Button
@@ -81,14 +80,14 @@ export default function SignInScreen() {
                         <Text className="text-gray-700 text-base">
                             Don't have an account?{' '}
                         </Text>
-                        <TextButton text="Create account" textstyle='underline' onPress={() => router.push('/(auth)/sign-up')} />
+                        <TextButton text="Create account" textstyle='underline' onPress={() => router.push(ROUTES.AUTH.SIGN_UP)} />
                     </View>
 
                     <OrDivider />
 
                     <TouchableOpacity
                         className="flex-row items-center justify-center gap-2"
-                        onPress={() => router.push('/(auth)/fingerprint')}
+                        onPress={() => router.push(ROUTES.AUTH.FINGERPRINT)}
                     >
                         <IconWrapper name={ICONS.fingerprint} size={35} />
                         <Text className="ml-2 text-black text-inputText font-semibold">
@@ -97,7 +96,7 @@ export default function SignInScreen() {
                     </TouchableOpacity>
 
                 </Wrapper>
-            </View>
+            </AuthWrapper>
         </GradientBackground>
     );
 }
