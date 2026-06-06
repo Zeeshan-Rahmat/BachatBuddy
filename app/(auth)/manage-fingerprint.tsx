@@ -9,6 +9,7 @@ import Wrapper from '@components/common/Wrapper';
 import Subtitle from '@/src/components/common/Subtitle';
 import Title from '@/src/components/common/Title';
 import { ICONS } from '@/src/constants/icons';
+import { ROUTES } from '@/src/constants/routes';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
@@ -28,7 +29,7 @@ export default function ManageFingerprintScreen() {
         // await LocalAuthentication.authenticateAsync(...)
         setTimeout(() => {
             setLoading(false);
-            router.replace('/(auth)/fingerprint');
+            router.replace(ROUTES.AUTH.FINGERPRINT);
         }, 1000);
     };
 
@@ -68,7 +69,7 @@ export default function ManageFingerprintScreen() {
                 <TextButton
                     text='Forgot Password ?'
                     align='self-end'
-                    onPress={() => router.push('/(auth)/forgot-password')}
+                    onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}
                 />
 
                 <Button

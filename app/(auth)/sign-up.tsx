@@ -44,7 +44,7 @@ export default function SignUpScreen() {
         setTimeout(() => {
             setLoading(false);
             router.push({
-                pathname: '/(auth)/sign-up-otp',
+                pathname: ROUTES.AUTH.SIGN_UP_OTP,
                 params: { email },
             });
         }, 1000);

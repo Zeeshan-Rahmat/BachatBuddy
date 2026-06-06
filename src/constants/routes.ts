@@ -16,6 +16,8 @@ export const ROUTES = {
     },
 
     // Main App Tabs / Screens
+    DASHBOARD: '/dashboard',
+
     HOME: '/',
     PROFILE: '/profile',
     SETTINGS: '/settings',

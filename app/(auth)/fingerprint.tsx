@@ -2,10 +2,11 @@ import OrDivider from '@/src/components/auth/OrDivider';
 import IconWrapper from '@/src/components/common/IconWrapper';
 import { ICONS } from '@/src/constants/icons';
 
-import { GradientBackground } from '@/src/components/auth/AuthComponents';
+import GradientBackground from '@/src/components/auth/GradientBackground';
 import TextButton from '@/src/components/common/TextButton';
 import Title from '@/src/components/common/Title';
 import Wrapper from '@/src/components/common/Wrapper';
+import { ROUTES } from '@/src/constants/routes';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -38,7 +39,7 @@ export default function FingerprintScreen() {
 
             if (result.success) {
                 // TODO: retrieve stored credentials from expo-secure-store and call API
-                router.replace('/(app)/dashboard');
+                router.replace(ROUTES.DASHBOARD);
             } else {
                 Alert.alert('Failed', 'Biometric authentication failed. Please try again.');
             }
@@ -55,7 +56,6 @@ export default function FingerprintScreen() {
 
                 <Title text="Sign In Using Touch ID" fontSize='text-2xl' className='mb-10' />
 
-                {/* Large Fingerprint — tap to authenticate */}
                 <TouchableOpacity
                     onPress={handleBiometricAuth}
                     disabled={authenticating}
@@ -67,7 +67,7 @@ export default function FingerprintScreen() {
 
                 <OrDivider />
 
-                <TextButton text="Sign In with Username" align='self-center' textstyle='underline' onPress={() => router.push('/(auth)/sign-in')} />
+                <TextButton text="Sign In with Username" align='self-center' textstyle='underline' onPress={() => router.push(ROUTES.AUTH.SIGN_IN)} />
 
             </Wrapper>
         </GradientBackground>

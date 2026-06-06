@@ -44,7 +44,7 @@ export default function SignInScreen() {
         // const response = await authService.signIn({ username, role, password });
         setTimeout(() => {
             setLoading(false);
-            router.replace('/(app)/dashboard');
+            router.replace(ROUTES.DASHBOARD);
         }, 1000);
     };
 

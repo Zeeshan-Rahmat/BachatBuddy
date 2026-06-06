@@ -5,6 +5,7 @@ import Subtitle from '@/src/components/common/Subtitle';
 import Title from '@/src/components/common/Title';
 import Wrapper from '@/src/components/common/Wrapper';
 import { ICONS } from '@/src/constants/icons';
+import { ROUTES } from '@/src/constants/routes';
 import { router } from 'expo-router';
 
 export default function PasswordUpdatedScreen() {
@@ -20,7 +21,7 @@ export default function PasswordUpdatedScreen() {
 
                 <Button
                     label="Visit Dashboard"
-                    onPress={() => router.replace('/(app)/dashboard')}
+                    onPress={() => router.replace(ROUTES.DASHBOARD)}
                     leftIcon={<IconWrapper name={ICONS.dashboard} size={28} />}
                     width='w-fit'
                 />

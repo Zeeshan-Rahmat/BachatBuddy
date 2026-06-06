@@ -4,6 +4,7 @@ import IconWrapper from '@/src/components/common/IconWrapper';
 import Title from '@/src/components/common/Title';
 import Wrapper from '@/src/components/common/Wrapper';
 import { ICONS } from '@/src/constants/icons';
+import { ROUTES } from '@/src/constants/routes';
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { Text } from 'react-native';
@@ -27,7 +28,7 @@ export default function EmailVerifiedScreen() {
           label="Continue to Reset Password"
           onPress={() =>
             router.push({
-              pathname: '/(auth)/new-password',
+              pathname: ROUTES.AUTH.NEW_PASSWORD,
               params: { email },
             })
           }
