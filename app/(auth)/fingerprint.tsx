@@ -3,7 +3,6 @@ import IconWrapper from '@/src/components/common/IconWrapper';
 import { ICONS } from '@/src/constants/icons';
 
 import { GradientBackground } from '@/src/components/auth/AuthComponents';
-import AuthWrapper from '@/src/components/auth/AuthWrapper';
 import TextButton from '@/src/components/common/TextButton';
 import Title from '@/src/components/common/Title';
 import Wrapper from '@/src/components/common/Wrapper';
@@ -52,27 +51,25 @@ export default function FingerprintScreen() {
 
     return (
         <GradientBackground>
-            <AuthWrapper>
-                <Wrapper>
+            <Wrapper>
 
-                    <Title text="Sign In Using Touch ID" fontSize='text-2xl' className='mb-10' />
+                <Title text="Sign In Using Touch ID" fontSize='text-2xl' className='mb-10' />
 
-                    {/* Large Fingerprint — tap to authenticate */}
-                    <TouchableOpacity
-                        onPress={handleBiometricAuth}
-                        disabled={authenticating}
-                        className="items-center mb-8"
-                        activeOpacity={0.7}
-                    >
-                        <IconWrapper name={ICONS.largeFingerprint} size={100} />
-                    </TouchableOpacity>
+                {/* Large Fingerprint — tap to authenticate */}
+                <TouchableOpacity
+                    onPress={handleBiometricAuth}
+                    disabled={authenticating}
+                    className="items-center mb-8"
+                    activeOpacity={0.7}
+                >
+                    <IconWrapper name={ICONS.largeFingerprint} size={100} />
+                </TouchableOpacity>
 
-                    <OrDivider />
+                <OrDivider />
 
-                    <TextButton text="Sign In with Username" align='self-center' textstyle='underline' onPress={() => router.push('/(auth)/sign-in')} />
+                <TextButton text="Sign In with Username" align='self-center' textstyle='underline' onPress={() => router.push('/(auth)/sign-in')} />
 
-                </Wrapper>
-            </AuthWrapper>
+            </Wrapper>
         </GradientBackground>
     );
 }

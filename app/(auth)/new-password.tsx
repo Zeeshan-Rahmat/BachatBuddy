@@ -1,4 +1,3 @@
-import AuthWrapper from '@/src/components/auth/AuthWrapper';
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import Button from '@/src/components/common/Button';
 import IconWrapper from '@/src/components/common/IconWrapper';
@@ -44,45 +43,43 @@ export default function NewPasswordScreen() {
 
     return (
         <GradientBackground>
-            <AuthWrapper>
-                <Wrapper>
+            <Wrapper>
 
-                    <Title text='Create New Password' />
+                <Title text='Create New Password' />
 
-                    <InputText
-                        icon={<IconWrapper name={ICONS.password} />}
-                        activeIcon={<IconWrapper name={ICONS.activePassword} />}
-                        placeholder="New Password"
-                        value={password}
-                        onChangeText={(text) => { setPassword(text); setErrors(e => ({ ...e, password: '' })); }}
-                        secureTextEntry={!showPassword}
-                        rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                        activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
-                        onRightIconPress={() => setShowPassword(!showPassword)}
-                        error={errors.password}
-                    />
+                <InputText
+                    icon={<IconWrapper name={ICONS.password} />}
+                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    placeholder="New Password"
+                    value={password}
+                    onChangeText={(text) => { setPassword(text); setErrors(e => ({ ...e, password: '' })); }}
+                    secureTextEntry={!showPassword}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    onRightIconPress={() => setShowPassword(!showPassword)}
+                    error={errors.password}
+                />
 
-                    <InputText
-                        icon={<IconWrapper name={ICONS.password} />}
-                        activeIcon={<IconWrapper name={ICONS.activePassword} />}
-                        placeholder="Confirm New Password"
-                        value={confirmPassword}
-                        onChangeText={(text) => { setConfirmPassword(text); setErrors(e => ({ ...e, confirm: '' })); }}
-                        secureTextEntry={!showConfirm}
-                        rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                        activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
-                        onRightIconPress={() => setShowConfirm(!showConfirm)}
-                        error={errors.confirm}
-                    />
+                <InputText
+                    icon={<IconWrapper name={ICONS.password} />}
+                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    placeholder="Confirm New Password"
+                    value={confirmPassword}
+                    onChangeText={(text) => { setConfirmPassword(text); setErrors(e => ({ ...e, confirm: '' })); }}
+                    secureTextEntry={!showConfirm}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    onRightIconPress={() => setShowConfirm(!showConfirm)}
+                    error={errors.confirm}
+                />
 
-                    <Button
-                        label="Update Password"
-                        onPress={handleSubmit}
-                        loading={loading}
-                    />
+                <Button
+                    label="Update Password"
+                    onPress={handleSubmit}
+                    loading={loading}
+                />
 
-                </Wrapper>
-            </AuthWrapper>
+            </Wrapper>
         </GradientBackground>
     );
 }

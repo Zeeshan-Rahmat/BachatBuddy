@@ -31,9 +31,10 @@ export default function ValueSelect({ icon, rightIcon, values, value, onChange, 
             </TouchableOpacity>
             {error && <Text className="text-red-500 text-error mt-1 ml-1">{error}</Text>}
 
-            <Modal visible={open} transparent animationType="fade">
+            <Modal visible={open} animationType="fade" transparent>
                 <TouchableOpacity
-                    className="flex-1 bg-black/40 justify-center px-10"
+                    className="flex-1 justify-center px-10"
+                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
                     activeOpacity={1}
                     onPress={() => setOpen(false)}
                 >

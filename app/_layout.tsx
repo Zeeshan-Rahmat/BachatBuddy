@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 // import { useEffect } from "react";
 
 import "@/global.css";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
 
@@ -24,5 +25,5 @@ export default function RootLayout() {
 
   // if (!fontsLoaded) return null;
 
-  return <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />;
+  return <SafeAreaProvider><Stack screenOptions={{ headerShown: false, animation: 'fade' }} /></SafeAreaProvider>;
 }

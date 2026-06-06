@@ -1,4 +1,3 @@
-import AuthWrapper from '@/src/components/auth/AuthWrapper';
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import OrDivider from '@/src/components/auth/OrDivider';
 import InputText from '@/src/components/common/InputText';
@@ -21,11 +20,25 @@ export default function SignInScreen() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({
+        username: '', role: '', password: '',
+    });
 
 
     const ROLES = ['Owner', 'Employee'];
 
+    const validate = () => {
+        const e = { username: '', role: '', password: '' };
+        let valid = true;
+        if (!username.trim()) { e.username = 'Username is required'; valid = false; }
+        if (!role.trim()) { e.role = 'Role is required'; valid = false; }
+        if (!password) { e.password = 'Password is required'; valid = false; }
+        setErrors(e);
+        return valid;
+    };
+
     const handleSignIn = async () => {
+        if (!validate()) return;
         setLoading(true);
         // TODO: connect to your Node.js/Express API
         // const response = await authService.signIn({ username, role, password });
@@ -37,66 +50,73 @@ export default function SignInScreen() {
 
     return (
         <GradientBackground>
-            <AuthWrapper>
-                <Wrapper>
+            <Wrapper>
 
-                    <Title text='Sign In' />
+                <Title text='Sign In' />
 
-                    <InputText
-                        icon={<IconWrapper name={ICONS.user} />}
-                        activeIcon={<IconWrapper name={ICONS.activeUser} />}
-                        placeholder="Enter your username"
-                        value={username}
-                        onChangeText={setUsername}
-                    />
+                <InputText
+                    icon={<IconWrapper name={ICONS.user} />}
+                    activeIcon={<IconWrapper name={ICONS.activeUser} />}
+                    placeholder="Enter your username"
+                    value={username}
+                    onChangeText={(t) => { setUsername(t); setErrors(e => ({ ...e, username: '' })); }}
+                    error={errors.username}
+                />
 
-                    <ValueSelect icon={<IconWrapper name={ICONS.role} />} rightIcon={<IconWrapper name={ICONS.dropdown} />} values={ROLES} value={role} onChange={setRole} />
+                <ValueSelect
+                    icon={<IconWrapper name={ICONS.role} />}
+                    rightIcon={<IconWrapper name={ICONS.dropdown} />}
+                    values={ROLES}
+                    value={role}
+                    onChange={(t) => { setRole(t); setErrors(e => ({ ...e, role: '' })); }}
+                    error={errors.role}
+                />
 
-                    <InputText
-                        icon={<IconWrapper name={ICONS.password} />}
-                        activeIcon={<IconWrapper name={ICONS.activePassword} />}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                        activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
-                        onRightIconPress={() => setShowPassword(!showPassword)}
-                    />
+                <InputText
+                    icon={<IconWrapper name={ICONS.password} />}
+                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChangeText={(t) => { setPassword(t); setErrors(e => ({ ...e, password: '' })); }}
+                    secureTextEntry={!showPassword}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    onRightIconPress={() => setShowPassword(!showPassword)}
+                    error={errors.password}
+                />
 
-                    <TextButton
-                        text='Forgot Password ?'
-                        align='self-end'
-                        onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}
-                    />
+                <TextButton
+                    text='Forgot Password ?'
+                    align='self-end'
+                    onPress={() => router.push(ROUTES.AUTH.FORGOT_PASSWORD)}
+                />
 
-                    <Button
-                        label="Sign In"
-                        onPress={handleSignIn}
-                        loading={loading}
-                    />
+                <Button
+                    label="Sign In"
+                    onPress={handleSignIn}
+                    loading={loading}
+                />
 
-                    <View className="flex-row justify-center mt-5">
-                        <Text className="text-gray-700 text-base">
-                            Don't have an account?{' '}
-                        </Text>
-                        <TextButton text="Create account" textstyle='underline' onPress={() => router.push(ROUTES.AUTH.SIGN_UP)} />
-                    </View>
+                <View className="flex-row justify-center mt-5">
+                    <Text className="text-gray-700 text-base">
+                        Don't have an account?{' '}
+                    </Text>
+                    <TextButton text="Create account" textstyle='underline' onPress={() => router.push(ROUTES.AUTH.SIGN_UP)} />
+                </View>
 
-                    <OrDivider />
+                <OrDivider />
 
-                    <TouchableOpacity
-                        className="flex-row items-center justify-center gap-2"
-                        onPress={() => router.push(ROUTES.AUTH.FINGERPRINT)}
-                    >
-                        <IconWrapper name={ICONS.fingerprint} size={35} />
-                        <Text className="ml-2 text-black text-inputText font-semibold">
-                            use Touch ID
-                        </Text>
-                    </TouchableOpacity>
+                <TouchableOpacity
+                    className="flex-row items-center justify-center gap-2"
+                    onPress={() => router.push(ROUTES.AUTH.FINGERPRINT)}
+                >
+                    <IconWrapper name={ICONS.fingerprint} size={35} />
+                    <Text className="ml-2 text-black text-inputText font-semibold">
+                        use Touch ID
+                    </Text>
+                </TouchableOpacity>
 
-                </Wrapper>
-            </AuthWrapper>
+            </Wrapper>
         </GradientBackground>
     );
 }

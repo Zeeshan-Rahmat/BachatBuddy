@@ -1,4 +1,3 @@
-import AuthWrapper from '@/src/components/auth/AuthWrapper';
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import InputText from '@/src/components/common/InputText';
 import TextButton from '@/src/components/common/TextButton';
@@ -35,59 +34,57 @@ export default function ManageFingerprintScreen() {
 
     return (
         <GradientBackground>
-            <AuthWrapper>
-                <Wrapper>
+            <Wrapper>
 
-                    <IconWrapper name={ICONS.largeFingerprint} size={56} className='self-center mb-4' />
+                <IconWrapper name={ICONS.largeFingerprint} size={56} className='self-center mb-4' />
 
-                    <Title text="Touch ID" fontSize='text-2xl' className='mb-2' />
+                <Title text="Touch ID" fontSize='text-2xl' className='mb-2' />
 
-                    <Subtitle text={`To enable Touch ID please login to${'\n'}your account`} className='mb-7' />
+                <Subtitle text={`To enable Touch ID please login to${'\n'}your account`} className='mb-7' />
 
 
-                    <InputText
-                        icon={<IconWrapper name={ICONS.user} />}
-                        activeIcon={<IconWrapper name={ICONS.activeUser} />}
-                        placeholder="Enter your username"
-                        value={username}
-                        onChangeText={setUsername}
-                    />
+                <InputText
+                    icon={<IconWrapper name={ICONS.user} />}
+                    activeIcon={<IconWrapper name={ICONS.activeUser} />}
+                    placeholder="Enter your username"
+                    value={username}
+                    onChangeText={setUsername}
+                />
 
-                    <ValueSelect icon={<IconWrapper name={ICONS.role} />} rightIcon={<IconWrapper name={ICONS.dropdown} />} values={ROLES} value={role} onChange={setRole} />
+                <ValueSelect icon={<IconWrapper name={ICONS.role} />} rightIcon={<IconWrapper name={ICONS.dropdown} />} values={ROLES} value={role} onChange={setRole} />
 
-                    <InputText
-                        icon={<IconWrapper name={ICONS.password} />}
-                        activeIcon={<IconWrapper name={ICONS.activePassword} />}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                        activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
-                        onRightIconPress={() => setShowPassword(!showPassword)}
-                    />
+                <InputText
+                    icon={<IconWrapper name={ICONS.password} />}
+                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    onRightIconPress={() => setShowPassword(!showPassword)}
+                />
 
-                    <TextButton
-                        text='Forgot Password ?'
-                        align='self-end'
-                        onPress={() => router.push('/(auth)/forgot-password')}
-                    />
+                <TextButton
+                    text='Forgot Password ?'
+                    align='self-end'
+                    onPress={() => router.push('/(auth)/forgot-password')}
+                />
 
-                    <Button
-                        label="Sign In"
-                        onPress={handleSignIn}
-                        loading={loading}
-                    />
+                <Button
+                    label="Sign In"
+                    onPress={handleSignIn}
+                    loading={loading}
+                />
 
-                    <View className="flex-row justify-center mt-5">
-                        <Text className="text-gray-700 text-base">
-                            Don't have an account?{' '}
-                        </Text>
-                        <TextButton text="Create account" textstyle='underline' onPress={() => router.push('/(auth)/sign-up')} />
-                    </View>
+                <View className="flex-row justify-center mt-5">
+                    <Text className="text-gray-700 text-base">
+                        Don't have an account?{' '}
+                    </Text>
+                    <TextButton text="Create account" textstyle='underline' onPress={() => router.push('/(auth)/sign-up')} />
+                </View>
 
-                </Wrapper>
-            </AuthWrapper>
+            </Wrapper>
         </GradientBackground>
     );
 }

@@ -1,4 +1,3 @@
-import AuthWrapper from '@/src/components/auth/AuthWrapper';
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import Button from '@/src/components/common/Button';
 import IconWrapper from '@/src/components/common/IconWrapper';
@@ -41,37 +40,35 @@ export default function SignUpOtpScreen() {
 
     return (
         <GradientBackground>
-            <AuthWrapper>
-                <Wrapper>
+            <Wrapper>
 
-                    <Title text='Verify your email' className='mb-4' />
+                <Title text='Verify your email' className='mb-4' />
 
-                    <Text className="text-dark-50 text-base text-center mb-8 leading-5 px-2">
-                        Please enter the 4 digits code sent to{'\n'}
-                        <Text className="font-medium text-dark-100">{maskedEmail}</Text>
-                    </Text>
+                <Text className="text-dark-50 text-base text-center mb-8 leading-5 px-2">
+                    Please enter the 4 digits code sent to{'\n'}
+                    <Text className="font-medium text-dark-100">{maskedEmail}</Text>
+                </Text>
 
-                    {/* OTP Input */}
-                    <InputText
-                        icon={<IconWrapper name={ICONS.otp} />}
-                        activeIcon={<IconWrapper name={ICONS.activeOTP} />}
-                        placeholder="Enter 4 digits OTP"
-                        value={otp}
-                        onChangeText={(text) => { setOtp(text); setError(''); }}
-                        keyboardType="number-pad"
-                        maxLength={4}
-                        error={error}
-                    />
+                {/* OTP Input */}
+                <InputText
+                    icon={<IconWrapper name={ICONS.otp} />}
+                    activeIcon={<IconWrapper name={ICONS.activeOTP} />}
+                    placeholder="Enter 4 digits OTP"
+                    value={otp}
+                    onChangeText={(text) => { setOtp(text); setError(''); }}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    error={error}
+                />
 
-                    {/* Confirm Button */}
-                    <Button
-                        label="Confirm"
-                        onPress={handleConfirm}
-                        loading={loading}
-                    />
+                {/* Confirm Button */}
+                <Button
+                    label="Confirm"
+                    onPress={handleConfirm}
+                    loading={loading}
+                />
 
-                </Wrapper>
-            </AuthWrapper>
+            </Wrapper>
         </GradientBackground>
     );
 }

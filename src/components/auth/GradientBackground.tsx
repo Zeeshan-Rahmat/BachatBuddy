@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function GradientBackground({ children }: { children: React.ReactNode }) {
@@ -11,7 +12,9 @@ export default function GradientBackground({ children }: { children: React.React
             className="flex-1"
         >
             <SafeAreaView className="flex-1">
-                {children}
+                <View className='w-full h-full justify-center p-5'>
+                    {children}
+                </View>
             </SafeAreaView>
         </LinearGradient>
     );

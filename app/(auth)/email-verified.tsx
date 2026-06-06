@@ -1,4 +1,3 @@
-import AuthWrapper from '@/src/components/auth/AuthWrapper';
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import Button from '@/src/components/common/Button';
 import IconWrapper from '@/src/components/common/IconWrapper';
@@ -14,30 +13,28 @@ export default function EmailVerifiedScreen() {
 
   return (
     <GradientBackground>
-      <AuthWrapper>
-        <Wrapper>
+      <Wrapper>
 
-          <IconWrapper name={ICONS.largeVerified} size={85} className='self-center mb-5' />
+        <IconWrapper name={ICONS.largeVerified} size={85} className='self-center mb-5' />
 
-          <Title text='Email Verified' className='mb-3' />
+        <Title text='Email Verified' className='mb-3' />
 
-          <Text className="text-dark-50 text-lg text-center mb-7">
-            Your email has been verified!
-          </Text>
+        <Text className="text-dark-50 text-lg text-center mb-7">
+          Your email has been verified!
+        </Text>
 
-          <Button
-            label="Continue to Reset Password"
-            onPress={() =>
-              router.push({
-                pathname: '/(auth)/new-password',
-                params: { email },
-              })
-            }
-            width='w-fit'
-          />
+        <Button
+          label="Continue to Reset Password"
+          onPress={() =>
+            router.push({
+              pathname: '/(auth)/new-password',
+              params: { email },
+            })
+          }
+          width='w-fit'
+        />
 
-        </Wrapper>
-      </AuthWrapper>
+      </Wrapper>
     </GradientBackground>
   );
 }
