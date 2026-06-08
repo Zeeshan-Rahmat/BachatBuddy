@@ -48,27 +48,27 @@ export default function NewPasswordScreen() {
                 <Title text='Create New Password' />
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.password} />}
-                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    icon={<IconWrapper name={ICONS.AUTH.password} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
                     placeholder="New Password"
                     value={password}
                     onChangeText={(text) => { setPassword(text); setErrors(e => ({ ...e, password: '' })); }}
                     secureTextEntry={!showPassword}
-                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowPassword(!showPassword)}
                     error={errors.password}
                 />
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.password} />}
-                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    icon={<IconWrapper name={ICONS.AUTH.password} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
                     placeholder="Confirm New Password"
                     value={confirmPassword}
                     onChangeText={(text) => { setConfirmPassword(text); setErrors(e => ({ ...e, confirm: '' })); }}
                     secureTextEntry={!showConfirm}
-                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowConfirm(!showConfirm)}
                     error={errors.confirm}
                 />

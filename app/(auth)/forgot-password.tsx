@@ -52,8 +52,8 @@ export default function ForgotPasswordScreen() {
                 </Text>
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.email} />}
-                    activeIcon={<IconWrapper name={ICONS.activeEmail} />}
+                    icon={<IconWrapper name={ICONS.AUTH.email} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activeEmail} />}
                     placeholder="Email Address"
                     value={email}
                     onChangeText={(text) => { setEmail(text); setError(''); }}

@@ -17,6 +17,10 @@ export const ROUTES = {
 
     // Main App Tabs / Screens
     DASHBOARD: '/dashboard',
+    STOCK: "/stock",
+    SALE: "/sale",
+    REPORTS: "/reports",
+    PARTIES: "/parties",
 
     HOME: '/',
     PROFILE: '/profile',

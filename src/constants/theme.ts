@@ -1,9 +1,17 @@
 export const COLORS = {
+
     primaryGreen: '#22C55E',
+    darkGreen: '#1E8C5A',
+
     primaryNavy: '#1E3A8A',
+    darkNavy: '#1B3A6B',
+
     primaryTeal: '#1A7A6E',
+
     background: '#97A0A9',
+
     placeholder: '#84878B',
+
     card: '#FFFFFF',
     border: '#D9D9D9',
     white: '#FFFFFF',

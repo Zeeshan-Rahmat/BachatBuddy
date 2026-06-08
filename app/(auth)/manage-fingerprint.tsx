@@ -37,7 +37,7 @@ export default function ManageFingerprintScreen() {
         <GradientBackground>
             <Wrapper>
 
-                <IconWrapper name={ICONS.largeFingerprint} size={56} className='self-center mb-4' />
+                <IconWrapper name={ICONS.AUTH.largeFingerprint} size={56} className='self-center mb-4' />
 
                 <Title text="Touch ID" fontSize='text-2xl' className='mb-2' />
 
@@ -45,24 +45,24 @@ export default function ManageFingerprintScreen() {
 
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.user} />}
-                    activeIcon={<IconWrapper name={ICONS.activeUser} />}
+                    icon={<IconWrapper name={ICONS.AUTH.user} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
                     placeholder="Enter your username"
                     value={username}
                     onChangeText={setUsername}
                 />
 
-                <ValueSelect icon={<IconWrapper name={ICONS.role} />} rightIcon={<IconWrapper name={ICONS.dropdown} />} values={ROLES} value={role} onChange={setRole} />
+                <ValueSelect icon={<IconWrapper name={ICONS.AUTH.role} />} rightIcon={<IconWrapper name={ICONS.AUTH.dropdown} />} values={ROLES} value={role} onChange={setRole} />
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.password} />}
-                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    icon={<IconWrapper name={ICONS.AUTH.password} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
                     placeholder="Enter your password"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
-                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowPassword(!showPassword)}
                 />
 

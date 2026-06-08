@@ -55,8 +55,8 @@ export default function SignInScreen() {
                 <Title text='Sign In' />
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.user} />}
-                    activeIcon={<IconWrapper name={ICONS.activeUser} />}
+                    icon={<IconWrapper name={ICONS.AUTH.user} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
                     placeholder="Enter your username"
                     value={username}
                     onChangeText={(t) => { setUsername(t); setErrors(e => ({ ...e, username: '' })); }}
@@ -64,8 +64,8 @@ export default function SignInScreen() {
                 />
 
                 <ValueSelect
-                    icon={<IconWrapper name={ICONS.role} />}
-                    rightIcon={<IconWrapper name={ICONS.dropdown} />}
+                    icon={<IconWrapper name={ICONS.AUTH.role} />}
+                    rightIcon={<IconWrapper name={ICONS.AUTH.dropdown} />}
                     values={ROLES}
                     value={role}
                     onChange={(t) => { setRole(t); setErrors(e => ({ ...e, role: '' })); }}
@@ -73,14 +73,14 @@ export default function SignInScreen() {
                 />
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.password} />}
-                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    icon={<IconWrapper name={ICONS.AUTH.password} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
                     placeholder="Enter your password"
                     value={password}
                     onChangeText={(t) => { setPassword(t); setErrors(e => ({ ...e, password: '' })); }}
                     secureTextEntry={!showPassword}
-                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowPassword(!showPassword)}
                     error={errors.password}
                 />
@@ -110,7 +110,7 @@ export default function SignInScreen() {
                     className="flex-row items-center justify-center gap-2"
                     onPress={() => router.push(ROUTES.AUTH.FINGERPRINT)}
                 >
-                    <IconWrapper name={ICONS.fingerprint} size={35} />
+                    <IconWrapper name={ICONS.AUTH.fingerprint} size={35} />
                     <Text className="ml-2 text-black text-inputText font-semibold">
                         use Touch ID
                     </Text>

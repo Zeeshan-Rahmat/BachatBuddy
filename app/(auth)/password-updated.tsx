@@ -13,7 +13,7 @@ export default function PasswordUpdatedScreen() {
         <GradientBackground>
             <Wrapper>
 
-                <IconWrapper name={ICONS.largeVerified} size={85} className='self-center mb-5' />
+                <IconWrapper name={ICONS.AUTH.largeVerified} size={85} className='self-center mb-5' />
 
                 <Title text='Password Reset' className='mb-2' />
 
@@ -22,7 +22,7 @@ export default function PasswordUpdatedScreen() {
                 <Button
                     label="Visit Dashboard"
                     onPress={() => router.replace(ROUTES.DASHBOARD)}
-                    leftIcon={<IconWrapper name={ICONS.dashboard} size={28} />}
+                    leftIcon={<IconWrapper name={ICONS.AUTH.dashboard} size={28} />}
                     width='w-fit'
                 />
 

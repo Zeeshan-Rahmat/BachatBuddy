@@ -16,7 +16,7 @@ export default function EmailVerifiedScreen() {
     <GradientBackground>
       <Wrapper>
 
-        <IconWrapper name={ICONS.largeVerified} size={85} className='self-center mb-5' />
+        <IconWrapper name={ICONS.AUTH.largeVerified} size={85} className='self-center mb-5' />
 
         <Title text='Email Verified' className='mb-3' />
 

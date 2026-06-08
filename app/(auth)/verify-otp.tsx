@@ -62,8 +62,8 @@ export default function VerifyOtpScreen() {
                 </Text>
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.otp} />}
-                    activeIcon={<IconWrapper name={ICONS.activeOTP} />}
+                    icon={<IconWrapper name={ICONS.AUTH.otp} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activeOTP} />}
                     placeholder="Enter 4 digits OTP"
                     value={otp}
                     onChangeText={(text) => { setOtp(text); setError(''); }}

@@ -59,8 +59,8 @@ export default function SignUpScreen() {
                 </Text>
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.user} />}
-                    activeIcon={<IconWrapper name={ICONS.activeUser} />}
+                    icon={<IconWrapper name={ICONS.AUTH.user} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
                     placeholder="Username"
                     value={username}
                     onChangeText={(t) => { setUsername(t); setErrors(e => ({ ...e, username: '' })); }}
@@ -68,8 +68,8 @@ export default function SignUpScreen() {
                 />
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.email} />}
-                    activeIcon={<IconWrapper name={ICONS.activeEmail} />}
+                    icon={<IconWrapper name={ICONS.AUTH.email} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activeEmail} />}
                     placeholder="Email Address"
                     value={email}
                     onChangeText={(t) => { setEmail(t); setErrors(e => ({ ...e, email: '' })); }}
@@ -77,27 +77,27 @@ export default function SignUpScreen() {
                 />
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.password} />}
-                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    icon={<IconWrapper name={ICONS.AUTH.password} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
                     placeholder="Password"
                     value={password}
                     onChangeText={(t) => { setPassword(t); setErrors(e => ({ ...e, password: '' })); }}
                     secureTextEntry={!showPassword}
-                    rightIcon={<IconWrapper name={showPassword ? ICONS.show : ICONS.hide} />}
-                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.activeShow : ICONS.activeHide} />}
+                    rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowPassword(!showPassword)}
                     error={errors.password}
                 />
 
                 <InputText
-                    icon={<IconWrapper name={ICONS.password} />}
-                    activeIcon={<IconWrapper name={ICONS.activePassword} />}
+                    icon={<IconWrapper name={ICONS.AUTH.password} />}
+                    activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
                     placeholder="Confirm Password"
                     value={confirmPassword}
                     onChangeText={(t) => { setConfirmPassword(t); setErrors(e => ({ ...e, confirm: '' })); }}
                     secureTextEntry={!showConfirm}
-                    rightIcon={<IconWrapper name={showConfirm ? ICONS.show : ICONS.hide} />}
-                    activeRightIcon={<IconWrapper name={showConfirm ? ICONS.activeShow : ICONS.activeHide} />}
+                    rightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                    activeRightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowConfirm(!showConfirm)}
                     error={errors.confirm}
                 />

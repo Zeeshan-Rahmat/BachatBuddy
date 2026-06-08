@@ -62,7 +62,7 @@ export default function FingerprintScreen() {
                     className="items-center mb-8"
                     activeOpacity={0.7}
                 >
-                    <IconWrapper name={ICONS.largeFingerprint} size={100} />
+                    <IconWrapper name={ICONS.AUTH.largeFingerprint} size={100} />
                 </TouchableOpacity>
 
                 <OrDivider />
