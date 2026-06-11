@@ -1,5 +1,5 @@
 // app/(app)/parties/index.tsx
-import { ScreenWrapper } from '@components/layout/ScreenWrapper';
+import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
 import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
 

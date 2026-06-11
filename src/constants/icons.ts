@@ -43,7 +43,37 @@ import stockOutline from "@assets/icons/bottom-nav/stockOutline.png";
 
 
 // Dashboard Icons
+// Summary Cards
+import loans from "@assets/icons/dashboard/summary-card/loans.png";
+import topRightArrow from "@assets/icons/dashboard/summary-card/topRightArrow.png";
+import totalCardSales from "@assets/icons/dashboard/summary-card/totalCardSales.png";
+import totalProducts from "@assets/icons/dashboard/summary-card/totalProducts.png";
+import usersActive from "@assets/icons/dashboard/summary-card/usersActive.png";
 
+// Quick Action
+import addProduct from "@assets/icons/dashboard/quick-actions/addProduct.png";
+import invoice from "@assets/icons/dashboard/quick-actions/invoice.png";
+import ledger from "@assets/icons/dashboard/quick-actions/ledger.png";
+import newSale from "@assets/icons/dashboard/quick-actions/newSale.png";
+
+// Quick Reports
+import invoiceSum from "@assets/icons/dashboard/quick-reports/invoicesSum.png";
+import ledgerSum from "@assets/icons/dashboard/quick-reports/ledgerSum.png";
+import lowStock from "@assets/icons/dashboard/quick-reports/lowStock.png";
+import pendingDues from "@assets/icons/dashboard/quick-reports/pendingDues.png";
+import profitLoss from "@assets/icons/dashboard/quick-reports/profitLoss.png";
+import topProducts from "@assets/icons/dashboard/quick-reports/topProducts.png";
+import totalSales from "@assets/icons/dashboard/quick-reports/totalSales.png";
+import totalStock from "@assets/icons/dashboard/quick-reports/totalStock.png";
+
+// Common
+import activeSearch from "@assets/icons/common/activeSearch.png";
+import customer from "@assets/icons/common/customer.png";
+import filter from "@assets/icons/common/filter.png";
+import plus from "@assets/icons/common/plus.png";
+import product from "@assets/icons/common/product.png";
+import sale from "@assets/icons/common/sale.png";
+import search from "@assets/icons/common/search.png";
 
 export const ICONS = {
     AUTH: {
@@ -90,7 +120,39 @@ export const ICONS = {
         reportsOutline,
         partiesOutline,
     },
-    DASHBOARD: {},
+    DASHBOARD: {
+        // Summary 
+        totalCardSales,
+        totalProducts,
+        usersActive,
+        loans,
+        topRightArrow,
+
+        // Action
+        newSale,
+        addProduct,
+        ledger,
+        invoice,
+
+        // Reports
+        invoiceSum,
+        ledgerSum,
+        lowStock,
+        pendingDues,
+        profitLoss,
+        topProducts,
+        totalSales,
+        totalStock,
+    },
+    COMMON: {
+        search,
+        activeSearch,
+        filter,
+        plus,
+        sale,
+        product,
+        customer,
+    }
 } as const;
 
 export type IconKey = keyof typeof ICONS;

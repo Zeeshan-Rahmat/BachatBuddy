@@ -104,11 +104,6 @@
     --radius-inputBox: 5px;
     --radius-button: 5px;
     --radius-card: 10px;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
-    --radius-full: 9999px;
 
     /* --- Box Shadows --- */
     --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);

@@ -5,7 +5,8 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    type TextInputProps
+    type ColorValue,
+    type TextInputProps,
 } from 'react-native';
 
 interface InputTextProps extends TextInputProps {
@@ -15,6 +16,8 @@ interface InputTextProps extends TextInputProps {
     activeRightIcon?: React.ReactNode;
     onRightIconPress?: () => void;
     error?: string;
+    flex?: number | undefined;
+    bgColor?: ColorValue | undefined;
 }
 
 export default function InputText({
@@ -24,13 +27,15 @@ export default function InputText({
     activeRightIcon,
     onRightIconPress,
     error,
+    flex,
+    bgColor,
     ...props
 }: InputTextProps) {
 
     const [isFocused, setIsFocused] = useState(false)
 
     return (
-        <View className="mb-4">
+        <View className="mb-4" style={{ flex: flex, backgroundColor: bgColor, }}>
             <View
                 className={
                     `flex-row items-center rounded-inputBox border border-light-100 px-3 h-14 ${error ? 'border-red-400' : ''

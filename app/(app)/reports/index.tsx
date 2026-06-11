@@ -1,5 +1,5 @@
 // app/(app)/reports/index.tsx
-import { ScreenWrapper } from '@components/layout/ScreenWrapper';
+import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
