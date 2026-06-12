@@ -30,7 +30,7 @@ export default function SaleScreen() {
     return (
         <View className="flex-1">
             <ScreenWrapper scrollable={false}>
-                <PaddingWrapper>
+                <PaddingWrapper addPaddingBottom={false}>
 
                     <SearchFilter
                         value={search}

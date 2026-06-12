@@ -15,7 +15,13 @@
       ],
       "@constants/*": [
         "./src/constants/*"
-      ]
+      ],
+      "@hooks/*": [
+        "./src/hooks/*"
+      ],
+      "@types/*": [
+        "./src/types/*"
+      ],
     }
   },
   "include": [

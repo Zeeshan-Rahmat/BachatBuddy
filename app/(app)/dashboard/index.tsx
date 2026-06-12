@@ -12,7 +12,7 @@ export default function DashboardScreen() {
         <ScreenWrapper>
             <PaddingWrapper>
 
-                {/* Stat Cards 2x2 */}
+                {/* Stat Cards */}
                 <View className="flex-row flex-wrap gap-3">
                     <StatCard icon={ICONS.DASHBOARD.totalProducts} trend="+10%" trendUp value="120" label="Total Stock" />
                     <StatCard icon={ICONS.DASHBOARD.totalCardSales} trend="+5%" trendUp value="40" label="Total Sales" />

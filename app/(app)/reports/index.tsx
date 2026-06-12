@@ -1,7 +1,9 @@
 // app/(app)/reports/index.tsx
+import InternalTabBar from '@/src/components/common/InternalTabBar';
+import PaddingWrapper from '@/src/components/common/PaddingWrapper';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const TABS = ['Sales', 'Stock', 'Parties'];
 
@@ -9,32 +11,30 @@ export default function ReportsScreen() {
     const [activeTab, setActiveTab] = useState('Sales');
 
     return (
-        <ScreenWrapper>
-            {/* Internal tab bar */}
-            <View className="flex-row border-b border-slate-200 bg-white">
-                {TABS.map(tab => (
-                    <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}
-                        className="flex-1 items-center py-4">
-                        <Text className={`text-sm font-semibold ${activeTab === tab ? 'text-emerald-500' : 'text-slate-400'}`}>
-                            {tab}
-                        </Text>
-                        {activeTab === tab && (
-                            <View className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
-                        )}
-                    </TouchableOpacity>
-                ))}
-            </View>
+        <ScreenWrapper scrollable={false}>
 
-            {activeTab === 'Sales' && <SalesReport />}
-            {activeTab === 'Stock' && <PlaceholderReport title="Stock Reports" />}
-            {activeTab === 'Parties' && <PlaceholderReport title="Parties Reports" />}
+            <InternalTabBar tabs={TABS} activeTab={activeTab} setActiveTab={setActiveTab} />
+
+            <PaddingWrapper>
+                <ScrollView
+                    className="flex-1"
+                    showsVerticalScrollIndicator={false}
+                >
+
+                    {activeTab === 'Sales' && <SalesReport />}
+                    {activeTab === 'Stock' && <PlaceholderReport title="Stock Reports" />}
+                    {activeTab === 'Parties' && <PlaceholderReport title="Parties Reports" />}
+
+                </ScrollView>
+            </PaddingWrapper>
+
         </ScreenWrapper>
     );
 }
 
 function SalesReport() {
     return (
-        <View className="px-4 pt-4">
+        <View>
             {/* Sales Overview */}
             <ReportCard title="SALES OVERVIEW" filter="Monthly">
                 <View className="h-44 bg-slate-50 rounded-xl items-center justify-center border border-slate-100">

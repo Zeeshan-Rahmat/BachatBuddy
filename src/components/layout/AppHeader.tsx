@@ -38,7 +38,7 @@ export function AppHeader({ onMenuPress }: AppHeaderProps) {
 
                 {/* Hamburger menu */}
                 <TouchableOpacity
-                    onPress={onMenuPress ?? (() => router.push('/(modal)/menu'))}
+                    onPress={onMenuPress}
                     className="mr-3 p-1"
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >

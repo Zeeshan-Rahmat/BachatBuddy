@@ -1,4 +1,5 @@
 // app/(app)/parties/index.tsx
+import InternalTabBar from '@/src/components/common/InternalTabBar';
 import ListItemCard from '@/src/components/common/ListItemCard';
 import PaddingWrapper from '@/src/components/common/PaddingWrapper';
 import RoundedIconButton from '@/src/components/common/RoundedIconButton';
@@ -6,7 +7,7 @@ import SearchFilter from '@/src/components/common/SearchFilter';
 import { ICONS } from '@/src/constants/icons';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
-import { FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 
 const TABS = ['Customers', 'Suppliers', 'Employees'];
 
@@ -30,22 +31,10 @@ export default function PartiesScreen() {
     return (
         <View className="flex-1">
             <ScreenWrapper scrollable={false}>
-                {/* Internal tab bar */}
-                <View className="flex-row border-b border-light-100 bg-white">
-                    {TABS.map(tab => (
-                        <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}
-                            className="flex-1 items-center py-4">
-                            <Text className={`text-sm font-semibold ${activeTab === tab ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                {tab}
-                            </Text>
-                            {activeTab === tab && (
-                                <View className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
-                            )}
-                        </TouchableOpacity>
-                    ))}
-                </View>
-                <PaddingWrapper>
 
+                <InternalTabBar tabs={TABS} activeTab={activeTab} setActiveTab={setActiveTab} />
+
+                <PaddingWrapper addPaddingBottom={false}>
 
                     <SearchFilter
                         value={search}
