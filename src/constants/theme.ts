@@ -8,7 +8,7 @@ export const COLORS = {
 
     primaryTeal: '#1A7A6E',
 
-    background: '#97A0A9',
+    background: '#F5F5F5',
 
     placeholder: '#84878B',
 

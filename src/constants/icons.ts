@@ -75,6 +75,20 @@ import product from "@assets/icons/common/product.png";
 import sale from "@assets/icons/common/sale.png";
 import search from "@assets/icons/common/search.png";
 
+// Menu
+import addfriend from "@assets/icons/menu/addFriend.png";
+import backupRestore from "@assets/icons/menu/backupRestore.png";
+import businessDetail from "@assets/icons/menu/businessDetail.png";
+import changePassword from "@assets/icons/menu/changePassword.png";
+import customizeInvoice from "@assets/icons/menu/customizeInvoice.png";
+import defaultDashboard from "@assets/icons/menu/defaultDashboard.png";
+import edit from "@assets/icons/menu/edit.png";
+import exportIcon from "@assets/icons/menu/export.png";
+import logout from "@assets/icons/menu/logout.png";
+import notificationFilled from "@assets/icons/menu/notificationFilled.png";
+import touchID from "@assets/icons/menu/touchID.png";
+
+
 export const ICONS = {
     AUTH: {
         // Defaults Icons
@@ -152,6 +166,19 @@ export const ICONS = {
         sale,
         product,
         customer,
+    },
+    MENU: {
+        addfriend,
+        backupRestore,
+        businessDetail,
+        changePassword,
+        customizeInvoice,
+        defaultDashboard,
+        touchID,
+        edit,
+        exportIcon,
+        logout,
+        notificationFilled,
     }
 } as const;
 

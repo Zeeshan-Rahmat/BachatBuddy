@@ -6,14 +6,14 @@
 // Dark semi-transparent overlay covers the right side.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { ICONS } from '@/src/constants/icons';
+import { COLORS } from '@/src/constants/theme';
 import { router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect } from 'react';
 import {
   Dimensions,
-  Image,
   ScrollView,
-  Text,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -26,7 +26,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../store/authStore';
+import MenuItem from '../menu/MenuItem';
+import MenuItemsWrapper from '../menu/MenuItemsWrapper';
+import ProfileCard from '../menu/ProfileCard';
 // import { useSignOut } from '../../hooks/auth/useAuth';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -40,25 +42,20 @@ interface DrawerMenuProps {
   onClose: () => void;
 }
 
-interface MenuItemProps {
-  icon: string;
-  label: string;
-  onPress: () => void;
-  isActive?: boolean;
-  isDanger?: boolean;
-  ownerOnly?: boolean;
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
   const insets = useSafeAreaInsets();
-  const { user, role, canAccessDashboard, canAccessBackup } = useAuthStore();
+  // const { user, role, canAccessDashboard, /* not to add */ canAccessBackup } = useAuthStore();
   // const { handleSignOut } = useSignOut();
   const segments = useSegments();
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const overlayOpacity = useSharedValue(0);
+
+  function canAccessDashboard() {
+    return true
+  }
 
   // ── Animation + Status Bar style ─────────────────────────────────────────
   useEffect(() => {
@@ -160,7 +157,7 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
               left: 0,
               bottom: 0,
               width: DRAWER_WIDTH,
-              backgroundColor: '#F1F3F6',
+              backgroundColor: COLORS.background,
             },
           ]}
         >
@@ -170,149 +167,93 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
             contentContainerStyle={{
               paddingTop: insets.top + 12,
               paddingBottom: insets.bottom + 24,
-              paddingHorizontal: 12,
-              gap: 10,
+              paddingHorizontal: 16,
+              gap: 16,
             }}
           >
 
-            {/* ── Section 1: Profile + Navigation ─────────────────────────── */}
-            <View className="bg-white rounded-2xl overflow-hidden">
+            {/* ── Section 1: Profile ─────────────────────────── */}
+
+            <MenuItemsWrapper>
 
               {/* Profile row */}
-              <View className="flex-row items-center px-4 py-4 border-b border-slate-100">
-                {user?.avatar_url ? (
-                  <Image
-                    source={{ uri: user.avatar_url }}
-                    className="w-12 h-12 rounded-full mr-3"
-                  />
-                ) : (
-                  <View className="w-12 h-12 rounded-full bg-emerald-100 items-center justify-center mr-3">
-                    <Text className="text-emerald-700 font-bold text-lg">
-                      {user?.username?.charAt(0).toUpperCase() ?? 'U'}
-                    </Text>
-                  </View>
-                )}
-                <View className="flex-1">
-                  <Text className="text-slate-900 font-bold text-base" numberOfLines={1}>
-                    {user?.username ?? 'User'}
-                  </Text>
-                  <Text className="text-slate-400 text-xs" numberOfLines={1}>
-                    {user?.email ?? ''}
-                  </Text>
-                </View>
-                {/* Edit profile icon */}
-                <TouchableOpacity
-                  onPress={() => navigate('/(modal)/profile-edit')}
-                  className="p-1.5"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={{ fontSize: 18, color: '#64748b' }}>✏️</Text>
-                </TouchableOpacity>
-              </View>
+              <ProfileCard />
 
-              {/* Nav items — Section 1 */}
+            </MenuItemsWrapper>
+
+            <MenuItemsWrapper>
+
+              {/* Nav items — Section 2 */}
               {canAccessDashboard() && (
                 <MenuItem
-                  icon="⊞"
+                  icon={ICONS.MENU.defaultDashboard}
+                  activeIcon={ICONS.AUTH.dashboard}
                   label="Dashboard"
                   isActive={isActive('dashboard')}
                   onPress={() => navigate('/(app)/dashboard')}
                 />
               )}
               <MenuItem
-                icon="🧾"
+                icon={ICONS.MENU.customizeInvoice}
                 label="Customize Invoice"
                 onPress={() => navigate('/(modal)/customize-invoice')}
               />
               <MenuItem
-                icon="🏢"
+                icon={ICONS.MENU.businessDetail}
                 label="Business Detail"
                 onPress={() => navigate('/(modal)/business-detail')}
               />
               <MenuItem
-                icon="🔔"
+                icon={ICONS.MENU.notificationFilled}
                 label="Notification"
                 onPress={() => navigate('/(modal)/notifications')}
               />
               <MenuItem
-                icon="👥"
+                icon={ICONS.MENU.addfriend}
                 label="Invite a Friend"
                 onPress={() => navigate('/(modal)/invite')}
               />
-            </View>
 
-            {/* ── Section 2: Export & Backup ───────────────────────────────── */}
-            <View className="bg-white rounded-2xl overflow-hidden">
+            </MenuItemsWrapper>
+
+            {/* ── Section 3: Export & Backup ───────────────────────────────── */}
+            <MenuItemsWrapper>
               <MenuItem
-                icon="📤"
+                icon={ICONS.MENU.exportIcon}
                 label="Export Reports"
                 onPress={() => navigate('/(modal)/export')}
               />
-              {canAccessBackup() && (
-                <MenuItem
-                  icon="☁️"
-                  label="Backup and Restore"
-                  onPress={() => navigate('/(modal)/backup')}
-                />
-              )}
-            </View>
 
-            {/* ── Section 3: Account ───────────────────────────────────────── */}
-            <View className="bg-white rounded-2xl overflow-hidden">
               <MenuItem
-                icon="🫆"
+                icon={ICONS.MENU.backupRestore}
+                label="Backup and Restore"
+                onPress={() => navigate('/(modal)/backup')}
+              />
+            </MenuItemsWrapper>
+
+            {/* ── Section 4: Account ───────────────────────────────────────── */}
+            <MenuItemsWrapper>
+              <MenuItem
+                icon={ICONS.MENU.touchID}
                 label="Smart Login"
                 onPress={() => navigate('/(auth)/manage-fingerprint')}
               />
               <MenuItem
-                icon="🔒"
+                icon={ICONS.MENU.changePassword}
                 label="Change Password"
                 onPress={() => navigate('/(modal)/change-password')}
               />
               <MenuItem
-                icon="🚪"
+                icon={ICONS.MENU.logout}
                 label="Logout"
                 isDanger
                 onPress={handleLogout}
               />
-            </View>
+            </MenuItemsWrapper>
 
           </ScrollView>
         </Animated.View>
       </GestureDetector>
     </View>
-  );
-}
-
-// ─── MenuItem ─────────────────────────────────────────────────────────────────
-
-function MenuItem({ icon, label, onPress, isActive, isDanger }: MenuItemProps) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      className={`flex-row items-center px-4 py-3.5 ${isActive ? 'bg-emerald-500' : 'bg-white'
-        }`}
-    >
-      {/* Icon circle */}
-      <View
-        className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${isActive ? 'bg-white/20' : 'bg-slate-100'
-          }`}
-      >
-        <Text style={{ fontSize: 16 }}>{icon}</Text>
-      </View>
-
-      {/* Label */}
-      <Text
-        className={`text-base font-medium ${isDanger
-            ? 'text-rose-500'
-            : isActive
-              ? 'text-white'
-              : 'text-slate-700'
-          }`}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
   );
 }
