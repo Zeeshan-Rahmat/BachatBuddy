@@ -67,13 +67,25 @@ import totalSales from "@assets/icons/dashboard/quick-reports/totalSales.png";
 import totalStock from "@assets/icons/dashboard/quick-reports/totalStock.png";
 
 // Common
+import activeAddress from "@assets/icons/common/activeAddress.png";
+import activeDate from "@assets/icons/common/activeDate.png";
+import activePhone from "@assets/icons/common/activePhone.png";
 import activeSearch from "@assets/icons/common/activeSearch.png";
+import address from "@assets/icons/common/address.png";
+import back from "@assets/icons/common/back.png";
+import backBlack from "@assets/icons/common/backBlack.png";
 import customer from "@assets/icons/common/customer.png";
+import date from "@assets/icons/common/date.png";
+import editWhite from "@assets/icons/common/editWhite.png";
 import filter from "@assets/icons/common/filter.png";
+import gender from "@assets/icons/common/gender.png";
+import more from "@assets/icons/common/more.png";
+import phone from "@assets/icons/common/phone.png";
 import plus from "@assets/icons/common/plus.png";
 import product from "@assets/icons/common/product.png";
 import sale from "@assets/icons/common/sale.png";
 import search from "@assets/icons/common/search.png";
+import updateOutline from "@assets/icons/common/updateOutline.png";
 
 // Menu
 import addfriend from "@assets/icons/menu/addFriend.png";
@@ -166,6 +178,18 @@ export const ICONS = {
         sale,
         product,
         customer,
+        back,
+        backBlack,
+        updateOutline,
+        more,
+        editWhite,
+        gender,
+        date,
+        activeDate,
+        address,
+        phone,
+        activeAddress,
+        activePhone,
     },
     MENU: {
         addfriend,

@@ -8,13 +8,22 @@ import { DrawerMenu } from './DrawerMenu';
 interface ScreenWrapperProps {
     children: React.ReactNode;
     scrollable?: boolean;      // default true
-    onMenuPress?: () => void;
+    title?: string; // default 'BachatBuddy'
+    isMenuIncluded?: boolean;      // default true
+    isBottomNavIncluded?: boolean;      // default true
+    leftIcon?: "menu" | "back"; // Default "menu"
+    rightIcons?: "avatarNotification" | "more" | "none"; // Default "avatarNotification"
 }
 
 export default function ScreenWrapper({
     children,
     scrollable = true,
-    onMenuPress,
+    title = "BachatBuddy",
+    isMenuIncluded = true,
+    isBottomNavIncluded = true,
+    leftIcon = "menu",
+    rightIcons = "avatarNotification",
+
 }: ScreenWrapperProps) {
 
     const { isOpen, openDrawer, closeDrawer } = useDrawer();
@@ -22,7 +31,7 @@ export default function ScreenWrapper({
     return (
         <View className="flex-1 bg-light-300">
 
-            <AppHeader onMenuPress={openDrawer} />
+            <AppHeader title={title} leftIcon={leftIcon} rightIcons={rightIcons} onMenuPress={openDrawer} />
 
 
             {scrollable ? (
@@ -37,9 +46,9 @@ export default function ScreenWrapper({
             )}
 
 
-            <BottomNav />
+            {isBottomNavIncluded && <BottomNav />}
 
-            <DrawerMenu isOpen={isOpen} onClose={closeDrawer} />
+            {isMenuIncluded && <DrawerMenu isOpen={isOpen} onClose={closeDrawer} />}
         </View>
     );
 }

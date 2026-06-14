@@ -5,26 +5,36 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { ICONS } from '@/src/constants/icons';
+import { ROUTES } from '@/src/constants/routes';
 import { COLORS } from '@/src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View, type ImageSourcePropType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Avatar from '../common/Avatar';
 import IconWrapper from '../common/IconWrapper';
 // import { useAuthStore } from '../../store/authStore';
 
 interface AppHeaderProps {
+    title?: string;
+    leftIcon?: "menu" | "back"; // Default "menu"
+    rightIcons?: "avatarNotification" | "more" | "none"; // Default "avatarNotification"
     onMenuPress?: () => void;
 }
 
-export function AppHeader({ onMenuPress }: AppHeaderProps) {
+export function AppHeader(
+    {
+        title = "BachatBuddy",
+        leftIcon = "menu",
+        rightIcons = "avatarNotification",
+        onMenuPress
+
+    }: AppHeaderProps
+
+) {
     //   const { user } = useAuthStore();
 
-    const user = {
-        avatar_url: null,
-        username: "Zeeshan Ullah"
-    }
     const insets = useSafeAreaInsets();
 
     return (
@@ -34,51 +44,52 @@ export function AppHeader({ onMenuPress }: AppHeaderProps) {
             end={{ x: 1, y: 0 }}
             style={{ paddingTop: insets.top }}
         >
-            <View className="flex-row items-center px-4 py-3 h-16">
+            <View className="flex-row gap-3 items-center px-4 py-3 h-16">
 
                 {/* Hamburger menu */}
-                <TouchableOpacity
-                    onPress={onMenuPress}
-                    className="mr-3 p-1"
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                    <IconWrapper name={ICONS.TOP_BAR.menu} />
-                </TouchableOpacity>
+                {
+                    leftIcon == "menu"
+                        ? <AppBarIcons icon={ICONS.TOP_BAR.menu} onPress={onMenuPress} />
+                        : <AppBarIcons icon={ICONS.COMMON.back} onPress={() => router.back()} />
+                }
 
                 {/* App title */}
                 <Text className="flex-1 text-white text-xl font-bold tracking-wide">
-                    BachatBuddy
+                    {title}
                 </Text>
 
                 {/* Bell */}
-                <TouchableOpacity
-                    onPress={() => router.push('/(modal)/notifications')}
-                    className="mr-3 p-1"
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                    <IconWrapper name={ICONS.TOP_BAR.notificationOutline} />
-                </TouchableOpacity>
+                {
+                    rightIcons == "avatarNotification"
+                    && <AppBarIcons icon={ICONS.TOP_BAR.notificationOutline} onPress={() => router.push(ROUTES.MODAL.NOTIFICATION)} />
+                }
+
+                {/* More Icon */}
+                {
+                    rightIcons == "more"
+                    && <AppBarIcons icon={ICONS.COMMON.more} onPress={() => router.back()} />
+                }
 
                 {/* Avatar */}
-                <TouchableOpacity
-                    onPress={() => router.push('/(modal)/profile')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                    {user?.avatar_url ? (
-                        <Image
-                            source={{ uri: user.avatar_url }}
-                            className="w-9 h-9 rounded-full border-2 border-white"
-                        />
-                    ) : (
-                        <View className="w-9 h-9 rounded-full bg-white/30 border-2 border-white items-center justify-center">
-                            <Text className="text-white font-bold text-sm">
-                                {user?.username?.charAt(0).toUpperCase() ?? 'U'}
-                            </Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
+                {
+                    rightIcons == "avatarNotification"
+                    && <Avatar onPress={() => router.push(ROUTES.MODAL.PROFILE)} />
+                }
 
             </View>
         </LinearGradient>
     );
+}
+
+function AppBarIcons({ icon, onPress }: { icon: ImageSourcePropType, onPress: (() => void) | undefined }) {
+
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            className="p-1"
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+            <IconWrapper name={icon} />
+        </TouchableOpacity>
+    )
 }

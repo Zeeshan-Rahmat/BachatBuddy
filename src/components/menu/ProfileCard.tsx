@@ -1,6 +1,9 @@
 import { ICONS } from '@/src/constants/icons';
+import { ROUTES } from '@/src/constants/routes';
+import { router } from 'expo-router';
 import React from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
+import Avatar from '../common/Avatar';
 import IconWrapper from '../common/IconWrapper';
 
 interface ProfileCardProps {
@@ -24,31 +27,16 @@ const defaultUser = {
     avatar_url: null,
 }
 
-function usernameInitials(username: string) {
-    const words = username.split(" ");
+const ProfileCard = ({
+    user = defaultUser,
+    onPress = () => router.push(ROUTES.MODAL.PROFILE)
 
+}: ProfileCardProps) => {
     return (
-        words.length > 1
-            ? words[0].charAt(0).toUpperCase() + words[1].charAt(0).toUpperCase()
-            : words[0].charAt(0).toUpperCase()
-    )
-}
+        <View className="flex-row items-center gap-3">
 
-const ProfileCard = ({ user = defaultUser, onPress }: ProfileCardProps) => {
-    return (
-        <View className="flex-row items-center">
-            {user?.avatar_url ? (
-                <Image
-                    source={{ uri: user.avatar_url }}
-                    className="w-12 h-12 rounded-full mr-3"
-                />
-            ) : (
-                <View className="w-12 h-12 rounded-full bg-navy-400/10 border border-light-100 items-center justify-center mr-3">
-                    <Text className="text-navy-400 font-bold text-lg">
-                        {usernameInitials(user.username)}
-                    </Text>
-                </View>
-            )}
+            <Avatar color='dark' size={48} textSize='large' onPress={() => router.push(ROUTES.MODAL.PROFILE)} />
+
             <View className="flex-1">
                 <Text className="text-dark-300 font-bold text-base" numberOfLines={1}>
                     {user?.username}
