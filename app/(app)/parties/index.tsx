@@ -47,7 +47,7 @@ export default function PartiesScreen() {
                                 <ListItemCard
                                     item={{ title: item.name + " - " + item.city, ...item }}
                                     placeholder={ICONS.COMMON.customer}
-                                    isInvoice={true}
+                                    isParty={true}
                                 />
                             )}
                         />

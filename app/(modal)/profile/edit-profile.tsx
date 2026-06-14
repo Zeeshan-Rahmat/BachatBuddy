@@ -6,8 +6,10 @@ import ValueSelect from '@/src/components/common/ValueSelect';
 import DateInput from '@/src/components/form/DateInput';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
+import ProfilePicker from '@components/form/ProfilePicker';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 interface EditProfileModalProps {
     visible: boolean;
@@ -19,8 +21,6 @@ const EditProfileModal = ({ visible, onClose }: EditProfileModalProps) => {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [gender, setGender] = useState('');
-    const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
-    const [formError, setFormError] = useState<string | undefined>(undefined);
     const [address, setAddress] = useState('');
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
@@ -28,6 +28,11 @@ const EditProfileModal = ({ visible, onClose }: EditProfileModalProps) => {
         name: '', username: '', email: '',
     });
 
+    const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
+    const [formError, setFormError] = useState<string | undefined>(undefined);
+
+    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [imageError, setImageError] = useState<string | undefined>(undefined);
 
     const GENDER = ['Male', 'Female'];
 
@@ -54,6 +59,32 @@ const EditProfileModal = ({ visible, onClose }: EditProfileModalProps) => {
         //         params: { email },
         //     });
         // }, 1000);
+    };
+
+    // This function asks for permission and opens the image gallery
+    const handlePickImage = async () => {
+        setImageError(undefined); // Reset errors
+
+        // Request media library permission
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (permissionResult.granted === false) {
+            Alert.alert("Permission Required", "You need to allow access to your photos to upload a profile picture.");
+            return;
+        }
+
+        // Launch the photo gallery
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true, // Shows standard cropping square box
+            aspect: [1, 1],      // Forces a 1:1 square crop ratio
+            quality: 0.8,        // Compresses image slightly for faster uploads
+        });
+
+        // Save image URI if user did not cancel
+        if (!result.canceled) {
+            setImageUri(result.assets[0].uri);
+        }
     };
 
     return (
@@ -127,6 +158,16 @@ const EditProfileModal = ({ visible, onClose }: EditProfileModalProps) => {
                 value={email}
                 onChangeText={(t) => { setEmail(t); setErrors(e => ({ ...e, email: '' })); }}
                 error={errors.email}
+            />
+
+            <ProfilePicker
+                imageUri={imageUri}
+                onPickImage={handlePickImage}
+                error={imageError}
+                icon={<IconWrapper name={ICONS.COMMON.addImage} />}
+                activeIcon={<IconWrapper name={ICONS.COMMON.activeAddImage} />}
+                rightIcon={<IconWrapper name={ICONS.AUTH.user} />}
+                activeRightIcon={<IconWrapper name={ICONS.AUTH.largeVerified} />}
             />
 
             <View className='flex-row gap-4'>

@@ -67,10 +67,12 @@ import totalSales from "@assets/icons/dashboard/quick-reports/totalSales.png";
 import totalStock from "@assets/icons/dashboard/quick-reports/totalStock.png";
 
 // Common
+import activeAddImage from "@assets/icons/common/activeAddImage.png";
 import activeAddress from "@assets/icons/common/activeAddress.png";
 import activeDate from "@assets/icons/common/activeDate.png";
 import activePhone from "@assets/icons/common/activePhone.png";
 import activeSearch from "@assets/icons/common/activeSearch.png";
+import addImage from "@assets/icons/common/addImage.png";
 import address from "@assets/icons/common/address.png";
 import back from "@assets/icons/common/back.png";
 import backBlack from "@assets/icons/common/backBlack.png";
@@ -190,6 +192,8 @@ export const ICONS = {
         phone,
         activeAddress,
         activePhone,
+        activeAddImage,
+        addImage,
     },
     MENU: {
         addfriend,
