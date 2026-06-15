@@ -76,6 +76,7 @@ import addImage from "@assets/icons/common/addImage.png";
 import address from "@assets/icons/common/address.png";
 import back from "@assets/icons/common/back.png";
 import backBlack from "@assets/icons/common/backBlack.png";
+import camera from "@assets/icons/common/camera.png";
 import customer from "@assets/icons/common/customer.png";
 import date from "@assets/icons/common/date.png";
 import editWhite from "@assets/icons/common/editWhite.png";
@@ -194,6 +195,7 @@ export const ICONS = {
         activePhone,
         activeAddImage,
         addImage,
+        camera,
     },
     MENU: {
         addfriend,

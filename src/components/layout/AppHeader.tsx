@@ -21,6 +21,7 @@ interface AppHeaderProps {
     leftIcon?: "menu" | "back"; // Default "menu"
     rightIcons?: "avatarNotification" | "more" | "none"; // Default "avatarNotification"
     onMenuPress?: () => void;
+    onMorePress?: () => void;
 }
 
 export function AppHeader(
@@ -28,7 +29,8 @@ export function AppHeader(
         title = "BachatBuddy",
         leftIcon = "menu",
         rightIcons = "avatarNotification",
-        onMenuPress
+        onMenuPress,
+        onMorePress
 
     }: AppHeaderProps
 
@@ -67,7 +69,7 @@ export function AppHeader(
                 {/* More Icon */}
                 {
                     rightIcons == "more"
-                    && <AppBarIcons icon={ICONS.COMMON.more} onPress={() => router.back()} />
+                    && <AppBarIcons icon={ICONS.COMMON.more} onPress={onMorePress} />
                 }
 
                 {/* Avatar */}

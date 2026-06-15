@@ -17,6 +17,7 @@ interface ListItemCardProps {
         email?: string;
     },
     placeholder: ImageSourcePropType;
+    image?: ImageSourcePropType;
     isProduct?: boolean;
     isInvoice?: boolean;
     isParty?: boolean;
@@ -39,6 +40,7 @@ const ListItemCard = (
     {
         item,
         placeholder,
+        image,
         isProduct = false,
         isInvoice = false,
         isParty = false
@@ -49,7 +51,8 @@ const ListItemCard = (
     return (
         <TouchableOpacity className="bg-white rounded-button mb-3 p-4 flex-row items-center">
 
-            <ImageContainer placeholder={placeholder} />
+
+            <ImageContainer placeholder={placeholder} image={image} />
 
             <View className="flex-1">
                 <Text className="text-black font-bold text-base mb-0.5">{item.title}</Text>

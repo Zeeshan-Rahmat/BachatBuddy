@@ -166,7 +166,7 @@ const EditProfileModal = ({ visible, onClose }: EditProfileModalProps) => {
                 error={imageError}
                 icon={<IconWrapper name={ICONS.COMMON.addImage} />}
                 activeIcon={<IconWrapper name={ICONS.COMMON.activeAddImage} />}
-                rightIcon={<IconWrapper name={ICONS.AUTH.user} />}
+                rightIcon={<IconWrapper name={ICONS.COMMON.camera} />}
                 activeRightIcon={<IconWrapper name={ICONS.AUTH.largeVerified} />}
             />
 

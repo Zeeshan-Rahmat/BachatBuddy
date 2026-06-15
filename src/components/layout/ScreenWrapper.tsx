@@ -13,6 +13,7 @@ interface ScreenWrapperProps {
     isBottomNavIncluded?: boolean;      // default true
     leftIcon?: "menu" | "back"; // Default "menu"
     rightIcons?: "avatarNotification" | "more" | "none"; // Default "avatarNotification"
+    onMorePress?: () => void;
 }
 
 export default function ScreenWrapper({
@@ -23,6 +24,7 @@ export default function ScreenWrapper({
     isBottomNavIncluded = true,
     leftIcon = "menu",
     rightIcons = "avatarNotification",
+    onMorePress,
 
 }: ScreenWrapperProps) {
 
@@ -31,7 +33,7 @@ export default function ScreenWrapper({
     return (
         <View className="flex-1 bg-light-300">
 
-            <AppHeader title={title} leftIcon={leftIcon} rightIcons={rightIcons} onMenuPress={openDrawer} />
+            <AppHeader title={title} leftIcon={leftIcon} rightIcons={rightIcons} onMenuPress={openDrawer} onMorePress={onMorePress} />
 
 
             {scrollable ? (

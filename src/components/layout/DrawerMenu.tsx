@@ -7,6 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { ICONS } from '@/src/constants/icons';
+import { ROUTES } from '@/src/constants/routes';
 import { COLORS } from '@/src/constants/theme';
 import { router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -206,7 +207,7 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
               <MenuItem
                 icon={ICONS.MENU.notificationFilled}
                 label="Notification"
-                onPress={() => navigate('/(modal)/notifications')}
+                onPress={() => navigate(ROUTES.MODAL.NOTIFICATION)}
               />
               <MenuItem
                 icon={ICONS.MENU.addfriend}
