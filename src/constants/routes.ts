@@ -19,6 +19,8 @@ export const ROUTES = {
     MODAL: {
         PROFILE: "/profile",
         NOTIFICATION: "/notification",
+        BUSINES_PROFILE: "/business_profile",
+        CHANGE_PASSWORD: "/change_password",
     },
 
     DASHBOARD: "/dashboard",

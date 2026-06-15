@@ -67,8 +67,8 @@ export default function NewPasswordScreen() {
                     value={confirmPassword}
                     onChangeText={(text) => { setConfirmPassword(text); setErrors(e => ({ ...e, confirm: '' })); }}
                     secureTextEntry={!showConfirm}
-                    rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
-                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
+                    rightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                    activeRightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowConfirm(!showConfirm)}
                     error={errors.confirm}
                 />

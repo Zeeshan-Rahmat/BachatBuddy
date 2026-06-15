@@ -78,10 +78,12 @@ import back from "@assets/icons/common/back.png";
 import backBlack from "@assets/icons/common/backBlack.png";
 import camera from "@assets/icons/common/camera.png";
 import customer from "@assets/icons/common/customer.png";
+import dangerIcon from "@assets/icons/common/dangerIcon.png";
 import date from "@assets/icons/common/date.png";
 import editWhite from "@assets/icons/common/editWhite.png";
 import filter from "@assets/icons/common/filter.png";
 import gender from "@assets/icons/common/gender.png";
+import logoutWhite from "@assets/icons/common/logoutWhite.png";
 import more from "@assets/icons/common/more.png";
 import phone from "@assets/icons/common/phone.png";
 import plus from "@assets/icons/common/plus.png";
@@ -196,6 +198,8 @@ export const ICONS = {
         activeAddImage,
         addImage,
         camera,
+        logoutWhite,
+        dangerIcon,
     },
     MENU: {
         addfriend,

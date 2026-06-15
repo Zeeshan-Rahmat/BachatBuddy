@@ -6,12 +6,13 @@
 // Dark semi-transparent overlay covers the right side.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import LogoutModal from '@/app/(modal)/logout';
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
 import { COLORS } from '@/src/constants/theme';
 import { router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -53,6 +54,8 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const overlayOpacity = useSharedValue(0);
+
+  const [isLogoutModelOpen, setIsLogoutModelOpen] = useState(false);
 
   function canAccessDashboard() {
     return true
@@ -119,12 +122,6 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
 
   const isActive = (segment: string) => activeSegment === segment;
 
-  // ── Logout ──────────────────────────────────────────────────────────────────
-  const handleLogout = useCallback(async () => {
-    onClose();
-    // await handleSignOut();
-  }, [onClose]);
-  // }, [onClose, handleSignOut]);
 
   if (!isOpen && translateX.value === -DRAWER_WIDTH) return null;
 
@@ -201,8 +198,8 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
               />
               <MenuItem
                 icon={ICONS.MENU.businessDetail}
-                label="Business Detail"
-                onPress={() => navigate('/(modal)/business-detail')}
+                label="Business Profile"
+                onPress={() => navigate(ROUTES.MODAL.BUSINES_PROFILE)}
               />
               <MenuItem
                 icon={ICONS.MENU.notificationFilled}
@@ -242,19 +239,22 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
               <MenuItem
                 icon={ICONS.MENU.changePassword}
                 label="Change Password"
-                onPress={() => navigate('/(modal)/change-password')}
+                onPress={() => navigate(ROUTES.MODAL.CHANGE_PASSWORD)}
               />
               <MenuItem
                 icon={ICONS.MENU.logout}
                 label="Logout"
                 isDanger
-                onPress={handleLogout}
+                onPress={() => setIsLogoutModelOpen(true)}
               />
             </MenuItemsWrapper>
 
           </ScrollView>
         </Animated.View>
       </GestureDetector>
+
+      <LogoutModal isVisible={isLogoutModelOpen} onClose={() => setIsLogoutModelOpen(false)} />
+
     </View>
   );
 }
