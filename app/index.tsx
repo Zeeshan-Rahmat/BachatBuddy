@@ -2,34 +2,35 @@ import { useAssets } from 'expo-asset';
 import { router } from 'expo-router';
 import * as NativeSplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Dimensions, Image, Text, View } from 'react-native';
 
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import { ROUTES } from '@/src/constants/routes';
 
-
 NativeSplashScreen.preventAutoHideAsync().catch(() => { });
 
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function SplashScreen() {
-  const splashScreenImage = '../assets/images/splash-illustration.png';
+  const isBoimetricEnable = true;
+
 
   const [assets, error] = useAssets([
-    require(splashScreenImage),
+    require('../assets/images/splash-illustration.png'),
   ]);
 
   useEffect(() => {
     if (assets) {
-
       NativeSplashScreen.hideAsync().catch(() => { });
 
       const timer = setTimeout(() => {
-        router.replace(ROUTES.AUTH.SIGN_IN);
+        router.replace(isBoimetricEnable ? ROUTES.AUTH.FINGERPRINT : ROUTES.AUTH.SIGN_IN);
       }, 2500);
 
       return () => clearTimeout(timer);
     }
   }, [assets]);
-
 
   if (!assets) {
     return null;
@@ -46,11 +47,11 @@ export default function SplashScreen() {
         </Text>
       </View>
 
-      <View className="absolute bottom-0 right-0">
+
+      <View style={{ position: 'absolute', bottom: 0, right: 0, width: SCREEN_WIDTH }}>
         <Image
-          source={require(splashScreenImage)}
-          className="w-full"
-          style={{ height: 220 }}
+          source={require('../assets/images/splash-illustration.png')}
+          style={{ width: '100%', height: 250 }}
           resizeMode="cover"
         />
       </View>

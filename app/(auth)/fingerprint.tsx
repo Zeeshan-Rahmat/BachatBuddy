@@ -9,13 +9,16 @@ import Wrapper from '@/src/components/common/Wrapper';
 import { ROUTES } from '@/src/constants/routes';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, TouchableOpacity } from 'react-native';
 
 export default function FingerprintScreen() {
     const [authenticating, setAuthenticating] = useState(false);
 
     const handleBiometricAuth = async () => {
+
+        if (authenticating) return;
+
         try {
             setAuthenticating(true);
 
@@ -27,7 +30,6 @@ export default function FingerprintScreen() {
                     'Not Available',
                     'Biometric authentication is not set up on this device.',
                 );
-                setAuthenticating(false);
                 return;
             }
 
@@ -41,6 +43,7 @@ export default function FingerprintScreen() {
                 // TODO: retrieve stored credentials from expo-secure-store and call API
                 router.replace(ROUTES.DASHBOARD);
             } else {
+                // Notice: result.error can be checked here if user cancelled explicitly
                 Alert.alert('Failed', 'Biometric authentication failed. Please try again.');
             }
         } catch (error) {
@@ -49,6 +52,15 @@ export default function FingerprintScreen() {
             setAuthenticating(false);
         }
     };
+
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            handleBiometricAuth();
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, []);
 
     return (
         <GradientBackground>
