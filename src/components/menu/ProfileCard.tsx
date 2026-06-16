@@ -29,13 +29,13 @@ const defaultUser = {
 
 const ProfileCard = ({
     user = defaultUser,
-    onPress = () => router.push(ROUTES.MODAL.PROFILE)
+    onPress = () => router.navigate(ROUTES.MODAL.PROFILE)
 
 }: ProfileCardProps) => {
     return (
         <View className="flex-row items-center gap-3">
 
-            <Avatar color='dark' size={48} textSize='large' onPress={() => router.push(ROUTES.MODAL.PROFILE)} />
+            <Avatar color='dark' size={48} textSize='large' onPress={() => router.navigate(ROUTES.MODAL.PROFILE)} />
 
             <View className="flex-1">
                 <Text className="text-dark-300 font-bold text-base" numberOfLines={1}>

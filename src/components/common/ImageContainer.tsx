@@ -5,7 +5,7 @@ import IconWrapper from './IconWrapper';
 interface ImageContainerProps {
     placeholder: ImageSourcePropType;
     image?: ImageSourcePropType;
-    size?: number; // Default 72
+    size?: number; // Default 64
     iconSize?: number; // Default 30
 }
 

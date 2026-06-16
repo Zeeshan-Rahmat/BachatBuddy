@@ -11,6 +11,8 @@ export default function ModalLayout() {
             <Stack.Screen name="change_password/index" />
             <Stack.Screen name="export/index" />
             <Stack.Screen name="smart_login/index" />
+            <Stack.Screen name="invite_friend/index" />
+            <Stack.Screen name="backup_restore/index" />
         </Stack>
     );
 }

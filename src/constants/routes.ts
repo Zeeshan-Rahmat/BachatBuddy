@@ -23,6 +23,8 @@ export const ROUTES = {
         CHANGE_PASSWORD: "/change_password",
         EXPORT_REPORT: "/export",
         SMART_LOGIN: "/smart_login",
+        INVITE_FRIEND: "/invite_friend",
+        BACKUP_RESTORE: "/backup_restore",
     },
 
     DASHBOARD: "/dashboard",
