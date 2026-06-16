@@ -21,6 +21,8 @@ export const ROUTES = {
         NOTIFICATION: "/notification",
         BUSINES_PROFILE: "/business_profile",
         CHANGE_PASSWORD: "/change_password",
+        EXPORT_REPORT: "/export",
+        SMART_LOGIN: "/smart_login",
     },
 
     DASHBOARD: "/dashboard",

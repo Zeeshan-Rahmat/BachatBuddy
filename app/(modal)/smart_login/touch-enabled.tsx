@@ -1,21 +1,21 @@
 import SuccessModal from '@/src/components/modal/SuccessModal';
 import React from 'react';
 
-interface PasswordChandedModalProps {
+interface TouchEnabledModalProps {
     isVisible: boolean;
     onClose?: () => void;
 }
 
-const PasswordChandedModal = ({ isVisible, onClose }: PasswordChandedModalProps) => {
+const TouchEnabledModal = ({ isVisible, onClose }: TouchEnabledModalProps) => {
 
     return (
         <SuccessModal
-            title='Password Reset'
-            subtitle='Your password has been updated!'
+            title='Touch ID Enabled'
+            subtitle='Touch ID has been enabled!'
             isVisible={isVisible}
             onClose={onClose}
         />
     )
 }
 
-export default PasswordChandedModal
+export default TouchEnabledModal

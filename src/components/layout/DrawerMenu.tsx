@@ -219,7 +219,7 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
               <MenuItem
                 icon={ICONS.MENU.exportIcon}
                 label="Export Reports"
-                onPress={() => navigate('/(modal)/export')}
+                onPress={() => navigate(ROUTES.MODAL.EXPORT_REPORT)}
               />
 
               <MenuItem
@@ -234,7 +234,7 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
               <MenuItem
                 icon={ICONS.MENU.touchID}
                 label="Smart Login"
-                onPress={() => navigate('/(auth)/manage-fingerprint')}
+                onPress={() => navigate(ROUTES.MODAL.SMART_LOGIN)}
               />
               <MenuItem
                 icon={ICONS.MENU.changePassword}

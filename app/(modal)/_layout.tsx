@@ -9,6 +9,8 @@ export default function ModalLayout() {
             <Stack.Screen name="logout/index" />
             <Stack.Screen name="business_profile/index" />
             <Stack.Screen name="change_password/index" />
+            <Stack.Screen name="export/index" />
+            <Stack.Screen name="smart_login/index" />
         </Stack>
     );
 }

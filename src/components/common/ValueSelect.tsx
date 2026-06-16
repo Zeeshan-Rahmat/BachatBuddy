@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlatList, Modal, Text, TouchableOpacity, View } from 'react-native';
+import { ColorValue, FlatList, Modal, Text, TouchableOpacity, View } from 'react-native';
 
 interface ValueSelectProps {
     icon: React.ReactNode;
@@ -10,6 +10,7 @@ interface ValueSelectProps {
     error?: string;
     flex?: number | undefined;
     placeholder?: string;
+    bgColor?: ColorValue | undefined;
 }
 
 export default function ValueSelect({
@@ -20,13 +21,14 @@ export default function ValueSelect({
     onChange,
     error,
     flex,
-    placeholder = "Select your role"
+    placeholder = "Select your role",
+    bgColor
 
 }: ValueSelectProps) {
     const [open, setOpen] = useState(false);
 
     return (
-        <View className="mb-4" style={{ flex: flex }}>
+        <View className="mb-4" style={{ flex: flex, backgroundColor: bgColor }}>
             <TouchableOpacity
                 onPress={() => setOpen(true)}
                 className={`flex-row items-center rounded-inputBox border border-light-100 px-3 h-14 ${error ? 'border-red-400' : 'border-gray-200'

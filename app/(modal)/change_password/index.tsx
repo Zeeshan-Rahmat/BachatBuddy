@@ -8,6 +8,7 @@ import Title from '@/src/components/common/Title'
 import ScreenWrapper from '@/src/components/layout/ScreenWrapper'
 import { ICONS } from '@/src/constants/icons'
 import { ROUTES } from '@/src/constants/routes'
+import { COLORS } from '@/src/constants/theme'
 import { router } from 'expo-router'
 import React, { useState } from 'react'
 import PasswordChandedModal from './password-changed'
@@ -37,6 +38,9 @@ const ChangePasswordScreen = () => {
         }
         if (!password || password.length < 6) {
             newErrors.password = 'Password must be at least 6 characters';
+        }
+        if (oldPassword === password) {
+            newErrors.password = 'New Password must be at different from old password';
         }
         if (password !== confirmPassword) {
             newErrors.confirm = 'Passwords do not match';
@@ -69,7 +73,7 @@ const ChangePasswordScreen = () => {
         >
             <PaddingWrapper>
 
-                <Title text='Create New Password' className='text-left  mb-2' />
+                <Title text='Create New Password' className='text-left mt-2 mb-2' />
 
                 <Subtitle text='Your new password should be different from previous used passwords' className='text-left  mb-8' />
 
@@ -79,11 +83,12 @@ const ChangePasswordScreen = () => {
                     placeholder="Old Password"
                     value={oldPassword}
                     onChangeText={(text) => { setOldPassword(text); setErrors(e => ({ ...e, oldPassword: '' })); }}
-                    secureTextEntry={!setShowOldPassword}
+                    secureTextEntry={!showOldPassword}
                     rightIcon={<IconWrapper name={showOldPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
                     activeRightIcon={<IconWrapper name={showOldPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowOldPassword(!showOldPassword)}
                     error={errors.oldPassword}
+                    bgColor={COLORS.white}
                 />
 
                 <InputText
@@ -97,6 +102,7 @@ const ChangePasswordScreen = () => {
                     activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowPassword(!showPassword)}
                     error={errors.password}
+                    bgColor={COLORS.white}
                 />
 
                 <InputText
@@ -110,6 +116,7 @@ const ChangePasswordScreen = () => {
                     activeRightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
                     onRightIconPress={() => setShowConfirm(!showConfirm)}
                     error={errors.confirm}
+                    bgColor={COLORS.white}
                 />
 
 

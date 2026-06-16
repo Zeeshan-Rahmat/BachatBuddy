@@ -105,6 +105,18 @@ import logout from "@assets/icons/menu/logout.png";
 import notificationFilled from "@assets/icons/menu/notificationFilled.png";
 import touchID from "@assets/icons/menu/touchID.png";
 
+// Export Report
+import allCustomers from "@assets/icons/export-report/allCustomers.png";
+import allSuppliers from "@assets/icons/export-report/allSuppliers.png";
+import customerPending from "@assets/icons/export-report/customerPending.png";
+import employeeActivity from "@assets/icons/export-report/employeeActivity.png";
+import employeeList from "@assets/icons/export-report/employeeList.png";
+import outOfStock from "@assets/icons/export-report/outOfStock.png";
+import supplierActivity from "@assets/icons/export-report/supplierActivity.png";
+import topCustomer from "@assets/icons/export-report/topCustomer.png";
+import unpaidInvoice from "@assets/icons/export-report/unpaidInvoice.png";
+
+
 
 export const ICONS = {
     AUTH: {
@@ -213,6 +225,17 @@ export const ICONS = {
         exportIcon,
         logout,
         notificationFilled,
+    },
+    EXPORT: {
+        unpaidInvoice,
+        outOfStock,
+        allCustomers,
+        allSuppliers,
+        topCustomer,
+        customerPending,
+        supplierActivity,
+        employeeList,
+        employeeActivity,
     }
 } as const;
 
