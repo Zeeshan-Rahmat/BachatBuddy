@@ -1,9 +1,11 @@
+import { ICONS } from '@/src/constants/icons';
 import { useState } from 'react';
 import { ColorValue, FlatList, Modal, Text, TouchableOpacity, View } from 'react-native';
+import IconWrapper from './IconWrapper';
 
 interface ValueSelectProps {
     icon: React.ReactNode;
-    rightIcon: React.ReactNode;
+    rightIcon?: React.ReactNode;
     values: string[];
     value: string;
     onChange: (val: string) => void;
@@ -15,7 +17,7 @@ interface ValueSelectProps {
 
 export default function ValueSelect({
     icon,
-    rightIcon,
+    rightIcon = <IconWrapper name={ICONS.AUTH.dropdown} />,
     values,
     value,
     onChange,

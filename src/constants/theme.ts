@@ -12,14 +12,59 @@ export const COLORS = {
 
     placeholder: '#84878B',
 
-    card: '#FFFFFF',
-    border: '#D9D9D9',
-    white: '#FFFFFF',
-    black: '#000000',
+    // --- Primary Brand (Green) ---
+    primary50: '#E8F8EF',
+    primary100: '#C6EDDA',
+    primary200: '#92DDB8',
+    primary300: '#5ECE96',
+    primary400: '#22C55E', // Main Primary
+    primary500: '#1A9E56',
+    primary600: '#147A42',
+    primary700: '#0F5A31',
+    primary800: '#0A3D21',
+    primary900: '#052010',
+
+    // --- Navy ---
+    navy50: '#E8ECF5',
+    navy100: '#C5CFEA',
+    navy200: '#8DA0D5',
+    navy300: '#5470BF',
+    navy400: '#1E3A8A', // Main Navy
+    navy500: '#162E55',
+    navy600: '#112240',
+    navy700: '#0C182C',
+    navy800: '#070E1A',
+    navy900: '#03060D',
+
+    // --- Teal ---
+    teal400: '#1A7A6E',
+    teal500: '#1E8C5A',
+
+    // --- Light ---
+    light50: '#97A0A9',
+    light100: '#D9D9D9',
+    light200: '#E2E2E3',
+    light300: '#F5F5F5',
+
+    // --- Dark ---
+    dark50: '#84878B',
+    dark100: '#606060',
+    dark200: '#505050',
+    dark300: '#252525',
+
+    // --- Status & Neutrals ---
     success: '#2ECC71',
     warning: '#F39C12',
     danger: '#E74C3C',
     info: '#3498DB',
+    surface: '#F5F6FA',
+    card: '#FFFFFF',
+    border: '#D9D9D9',
+    muted: '#ADB5BD',
+
+    // --- Common Defaults ---
+    white: '#FFFFFF',
+    black: '#000000',
 };
 
 export const TYPOGRAPHY = {

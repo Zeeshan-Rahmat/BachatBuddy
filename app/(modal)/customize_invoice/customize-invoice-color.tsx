@@ -1,12 +1,17 @@
 import SectionHeader from '@/src/components/dashboard/SectionHeader';
+import { COLORS } from '@/src/constants/theme';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
+type Color = {
+    id: string;
+    hex: string;
+}
 
-// Color Swatches from your reference design grid
-const INVOICE_COLORS = [
-    { id: 'purple', hex: '#6B21A8' }, // Active default in image
+
+const INVOICE_COLORS: Color[] = [
+    { id: 'purple', hex: '#6B21A8' },
     { id: 'orange', hex: '#F97316' },
     { id: 'cyan', hex: '#0EA5E9' },
     { id: 'pink', hex: '#F43F5E' },
@@ -18,14 +23,12 @@ const INVOICE_COLORS = [
 ];
 
 export default function CustomizeInvoiceColorsScreen() {
-    const [selectedColor, setSelectedColor] = useState('#6B21A8'); // State to drive dynamic preview
+    const [selectedColor, setSelectedColor] = useState('#6B21A8');
 
     return (
         <View className="flex-1">
 
-            {/* ==========================================
-          2. LIVE INVOICE PREVIEW AREA (DYNAMIC VALUES)
-         ========================================== */}
+
             <ScrollView
                 className="flex-1"
                 contentContainerStyle={{ paddingBottom: 24 }}
@@ -33,13 +36,13 @@ export default function CustomizeInvoiceColorsScreen() {
             >
                 <View className="bg-white rounded-sm p-4 border border-gray-200 shadow-sm">
 
-                    {/* Dynamic Top Decorative Design Accent Bar */}
+
                     <View style={{ backgroundColor: selectedColor }} className="h-2 w-full mb-4 rounded-t-xs" />
 
-                    {/* Header Row: Business Info */}
+
                     <View className="flex-row items-start justify-between mb-4 border-b border-slate-100 pb-4">
                         <View className="flex-1 pr-2">
-                            {/* Dynamic Text Color branding */}
+
                             <Text style={{ color: selectedColor }} className="text-xl font-bold">
                                 Zeeshan Electronics
                             </Text>
@@ -53,7 +56,7 @@ export default function CustomizeInvoiceColorsScreen() {
                         </View>
                     </View>
 
-                    {/* Bill To & Invoice Meta Information Info Blocks */}
+
                     <View className="flex-row border-b border-slate-100 pb-3 mb-3">
                         <View className="flex-1 border-r border-slate-100 pr-2">
                             <Text className="text-xs font-bold text-slate-800 mb-0.5">BILL TO</Text>
@@ -68,7 +71,7 @@ export default function CustomizeInvoiceColorsScreen() {
                         </View>
                     </View>
 
-                    {/* Table Header Row */}
+
                     <View className="flex-row border-b border-slate-300 pb-1 mb-2">
                         <Text className="text-[11px] font-bold text-slate-800 w-[12%]">S.NO.</Text>
                         <Text className="text-[11px] font-bold text-slate-800 flex-1">ITEMS</Text>
@@ -77,7 +80,7 @@ export default function CustomizeInvoiceColorsScreen() {
                         <Text className="text-[11px] font-bold text-slate-800 w-[22%] text-right">AMOUNT</Text>
                     </View>
 
-                    {/* Table Data Entry Row */}
+
                     <View className="flex-row border-b border-slate-100 pb-2 mb-3">
                         <Text className="text-xs text-slate-700 w-[12%]">1</Text>
                         <Text className="text-xs text-slate-900 font-medium flex-1">Smart Watch Series 5</Text>
@@ -86,7 +89,7 @@ export default function CustomizeInvoiceColorsScreen() {
                         <Text className="text-xs text-slate-900 font-semibold w-[22%] text-right">99,998 PKR</Text>
                     </View>
 
-                    {/* Summary Financial Block */}
+
                     <View className="flex-row justify-between pt-2">
                         <View className="w-[52%] pr-2">
                             <Text className="text-[11px] font-bold text-slate-900 mb-1">Terms and Condition:</Text>
@@ -110,50 +113,56 @@ export default function CustomizeInvoiceColorsScreen() {
                         </View>
                     </View>
 
-                    {/* Dynamic Bottom Decorative Design Accent Bar */}
+
                     <View style={{ backgroundColor: selectedColor }} className="h-2 w-full mt-6 rounded-b-xs" />
                 </View>
             </ScrollView>
 
-            {/* ==========================================
-          3. OTHER COLORS SELECTOR DRAWER (GRID VIEW)
-         ========================================== */}
+
             <View className="bg-white rounded-button p-4 pb-6">
 
                 <SectionHeader title='OTHER COLORS' marginTop={0} hasViewMore={false} />
 
-                {/* 5-Column Grid Matrix Setup */}
+
                 <View className="flex-row flex-wrap gap-x-3.5 gap-y-4 justify-start">
                     {INVOICE_COLORS.map((color) => {
                         const isSelected = selectedColor === color.hex;
                         return (
-                            <TouchableOpacity
-                                key={color.id}
-                                onPress={() => setSelectedColor(color.hex)}
-                                activeOpacity={0.8}
-                                style={{ backgroundColor: color.hex }}
-                                className="w-[15.5%] aspect-square rounded-xl items-center justify-center shadow-sm relative"
-                            >
-                                {/* Embedded White Box Checkmark for selected item */}
-                                {isSelected && (
-                                    <View className="bg-white/20 w-7 h-7 rounded-lg items-center justify-center border border-white/40">
-                                        <MaterialCommunityIcons name="check" size={16} color="white" />
-                                    </View>
-                                )}
-                            </TouchableOpacity>
+                            <ColorCard color={color} setSelectedColor={setSelectedColor} isSelected={isSelected} />
                         );
                     })}
 
-                    {/* Custom Color Picker Swatch Button Tool Block */}
+
                     <TouchableOpacity
                         activeOpacity={0.7}
-                        className="w-[15.5%] aspect-square rounded-xl items-center justify-center border border-dashed border-gray-300 bg-slate-50"
+                        className="w-[15.5%] h-10 aspect-square rounded-button items-center justify-center border border-dashed border-light-100 bg-light-300"
                     >
-                        <MaterialCommunityIcons name="eyedropper" size={20} color="#94a3b8" />
+                        <MaterialCommunityIcons name="eyedropper" size={20} color={COLORS.placeholder} />
                     </TouchableOpacity>
                 </View>
             </View>
 
         </View>
     );
+}
+
+function ColorCard({ color, isSelected, setSelectedColor }: { color: Color, isSelected: boolean, setSelectedColor: React.Dispatch<React.SetStateAction<string>> }) {
+    return (
+        <TouchableOpacity
+            key={color.id}
+            onPress={() => setSelectedColor(color.hex)}
+            activeOpacity={0.8}
+            style={{ backgroundColor: color.hex }}
+            className="w-[15.5%] h-10 aspect-square rounded-button items-center justify-center"
+        >
+
+            {isSelected && (
+                <View className="absolute inset-0 items-center justify-center">
+                    <View className="bg-white/20 w-7 h-7 rounded-button items-center justify-center border border-white/40">
+                        <MaterialCommunityIcons name="check" size={16} color="white" />
+                    </View>
+                </View>
+            )}
+        </TouchableOpacity>
+    )
 }
