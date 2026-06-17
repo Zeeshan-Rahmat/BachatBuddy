@@ -25,6 +25,8 @@ export const ROUTES = {
         SMART_LOGIN: "/smart_login",
         INVITE_FRIEND: "/invite_friend",
         BACKUP_RESTORE: "/backup_restore",
+        CUSTOMIZE_INVOICE: "/customize_invoice",
+        SIGNATURE_PAD: "/customize_invoice/signature-pad",
     },
 
     DASHBOARD: "/dashboard",

@@ -1,6 +1,6 @@
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
-import { router } from 'expo-router';
+import { navigate } from 'expo-router/build/global-state/routing';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Avatar from '../common/Avatar';
@@ -29,13 +29,13 @@ const defaultUser = {
 
 const ProfileCard = ({
     user = defaultUser,
-    onPress = () => router.navigate(ROUTES.MODAL.PROFILE)
+    onPress = () => navigate(ROUTES.MODAL.PROFILE)
 
 }: ProfileCardProps) => {
     return (
         <View className="flex-row items-center gap-3">
 
-            <Avatar color='dark' size={48} textSize='large' onPress={() => router.navigate(ROUTES.MODAL.PROFILE)} />
+            <Avatar color='dark' size={48} textSize='large' onPress={() => navigate(ROUTES.MODAL.PROFILE)} />
 
             <View className="flex-1">
                 <Text className="text-dark-300 font-bold text-base" numberOfLines={1}>

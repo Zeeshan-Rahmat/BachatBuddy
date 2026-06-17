@@ -188,28 +188,28 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
                   activeIcon={ICONS.AUTH.dashboard}
                   label="Dashboard"
                   isActive={isActive('dashboard')}
-                  onPress={() => router.navigate(ROUTES.DASHBOARD)}
+                  onPress={() => navigate(ROUTES.DASHBOARD)}
                 />
               )}
               <MenuItem
                 icon={ICONS.MENU.customizeInvoice}
                 label="Customize Invoice"
-                onPress={() => router.navigate(ROUTES.DASHBOARD)} // Need to Add This Route
+                onPress={() => navigate(ROUTES.MODAL.CUSTOMIZE_INVOICE)}
               />
               <MenuItem
                 icon={ICONS.MENU.businessDetail}
                 label="Business Profile"
-                onPress={() => router.navigate(ROUTES.MODAL.BUSINES_PROFILE)}
+                onPress={() => navigate(ROUTES.MODAL.BUSINES_PROFILE)}
               />
               <MenuItem
                 icon={ICONS.MENU.notificationFilled}
                 label="Notification"
-                onPress={() => router.navigate(ROUTES.MODAL.NOTIFICATION)}
+                onPress={() => navigate(ROUTES.MODAL.NOTIFICATION)}
               />
               <MenuItem
                 icon={ICONS.MENU.addfriend}
                 label="Invite a Friend"
-                onPress={() => router.navigate(ROUTES.MODAL.INVITE_FRIEND)}
+                onPress={() => navigate(ROUTES.MODAL.INVITE_FRIEND)}
               />
 
             </MenuItemsWrapper>
@@ -219,13 +219,13 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
               <MenuItem
                 icon={ICONS.MENU.exportIcon}
                 label="Export Reports"
-                onPress={() => router.navigate(ROUTES.MODAL.EXPORT_REPORT)}
+                onPress={() => navigate(ROUTES.MODAL.EXPORT_REPORT)}
               />
 
               <MenuItem
                 icon={ICONS.MENU.backupRestore}
                 label="Backup and Restore"
-                onPress={() => router.navigate(ROUTES.MODAL.BACKUP_RESTORE)}
+                onPress={() => navigate(ROUTES.MODAL.BACKUP_RESTORE)}
               />
             </MenuItemsWrapper>
 
@@ -234,12 +234,12 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
               <MenuItem
                 icon={ICONS.MENU.touchID}
                 label="Smart Login"
-                onPress={() => router.navigate(ROUTES.MODAL.SMART_LOGIN)}
+                onPress={() => navigate(ROUTES.MODAL.SMART_LOGIN)}
               />
               <MenuItem
                 icon={ICONS.MENU.changePassword}
                 label="Change Password"
-                onPress={() => router.navigate(ROUTES.MODAL.CHANGE_PASSWORD)}
+                onPress={() => navigate(ROUTES.MODAL.CHANGE_PASSWORD)}
               />
               <MenuItem
                 icon={ICONS.MENU.logout}

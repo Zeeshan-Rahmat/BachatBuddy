@@ -13,6 +13,8 @@ export default function ModalLayout() {
             <Stack.Screen name="smart_login/index" />
             <Stack.Screen name="invite_friend/index" />
             <Stack.Screen name="backup_restore/index" />
+            <Stack.Screen name="customize_invoice/index" />
+            <Stack.Screen name="customize_invoice/signature-pad" />
         </Stack>
     );
 }
