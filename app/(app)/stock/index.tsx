@@ -1,58 +1,91 @@
-// app/(app)/stock/index.tsx
 import ListItemCard from '@/src/components/common/ListItemCard';
 import PaddingWrapper from '@/src/components/common/PaddingWrapper';
 import RoundedIconButton from '@/src/components/common/RoundedIconButton';
 import SearchFilter from '@/src/components/common/SearchFilter';
+import { defaultProduct } from '@/src/constants/defaultData';
 import { ICONS } from '@/src/constants/icons';
+import { handleFilterData } from '@/src/lib/handleFilterData';
+import { mockProducts } from '@/src/lib/sampleData';
+import { FilterType, ProductType } from '@/src/types/appTypes';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
 import { FlatList, View } from 'react-native';
-
-const MOCK_STOCK = [
-    { id: '1', title: 'Smart Watch Series 5', qty: 14, price: 49999, status: 'In Stock', updatedBy: 'Zeeshan Ullah (You)', time: 'Today' },
-    { id: '2', title: 'USB-C Charging Cable', qty: 3, price: 300, status: 'Low Stock', updatedBy: 'Mubashir Shah', time: '2d ago' },
-    { id: '3', title: 'Laptop Stand Aluminium', qty: 0, price: 800, status: 'Out of Stock', updatedBy: 'Qamar Ahmad', time: 'Yesterday' },
-    { id: '4', title: 'Smart Watch Series 5', qty: 14, price: 49999, status: 'In Stock', updatedBy: 'Zafar Iqbal', time: 'Today' },
-    { id: '5', title: 'USB-C Charging Cable', qty: 3, price: 300, status: 'Low Stock', updatedBy: 'Zeeshan Ullah (You)', time: '5d ago' },
-];
+import FilterProductModal from './filter-product';
+import ProductDetailModal from './product-detail';
 
 export default function StockScreen() {
+    const products: ProductType[] = mockProducts;
+
+    const [selectedItem, setSelectedItem] = useState<ProductType>(defaultProduct);
+    const [displayedStock, setDisplayedStock] = useState<ProductType[]>(products);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [isProductDetailModalOpen, setIsProductDetailModalOpen] = useState(false);
     const [search, setSearch] = useState('');
 
-    const filtered = MOCK_STOCK.filter(i =>
-        i.title.toLowerCase().includes(search.toLowerCase())
+    // Combine stateful multi-category modal filters with local text queries smoothly
+    const filtered = displayedStock.filter(item =>
+        item.name.toLowerCase().includes(search.toLowerCase())
     );
+
+    const onApplyFilters = (filters: FilterType) => {
+        // Run advanced filtering logic safely over typed multi-entity datasets
+        const output = handleFilterData(filters, products);
+
+        // Update local list layouts and hide selection screen
+        setDisplayedStock(output as ProductType[]);
+        setIsFilterModalOpen(false);
+    };
 
     return (
         <View className="flex-1">
-
             <ScreenWrapper scrollable={false}>
                 <PaddingWrapper addPaddingBottom={false}>
-
 
                     <SearchFilter
                         value={search}
                         onChangeText={setSearch}
+                        onFilterPress={() => setIsFilterModalOpen(true)}
                     />
-
 
                     <FlatList
                         data={filtered}
-                        keyExtractor={(item) => item.id}
+                        // Fixed: product_id is a number; converted to string to meet native key guidelines
+                        keyExtractor={(item) => item.product_id.toString()}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingBottom: 80 }}
-                        renderItem={({ item }) => {
-                            return (
-                                <ListItemCard item={item} placeholder={ICONS.COMMON.product} isProduct={true} />
-                            );
-                        }}
+                        renderItem={({ item }) => (
+                            <ListItemCard
+                                item={item}
+                                placeholder={ICONS.COMMON.product}
+                                isProduct={true}
+                                onPress={() => {
+                                    setSelectedItem(item);
+                                    setIsProductDetailModalOpen(true);
+                                }}
+                            />
+                        )}
                     />
 
                 </PaddingWrapper>
             </ScreenWrapper>
 
-
             <RoundedIconButton />
+
+            {isFilterModalOpen && (
+                <FilterProductModal
+                    visible={isFilterModalOpen}
+                    onApplyFilters={onApplyFilters}
+                    onClose={() => setIsFilterModalOpen(false)}
+                />
+            )}
+
+            {isProductDetailModalOpen && (
+                <ProductDetailModal
+                    item={selectedItem}
+                    visible={isProductDetailModalOpen}
+                    onClose={() => setIsProductDetailModalOpen(false)}
+                />
+            )}
         </View>
     );
 }

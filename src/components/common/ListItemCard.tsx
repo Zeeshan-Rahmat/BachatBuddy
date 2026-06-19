@@ -1,99 +1,90 @@
+import { getStatusColor } from '@/src/lib/getStatusColor';
+import { AnyItemType } from '@/src/lib/handleFilterData';
 import ImageContainer from '@components/common/ImageContainer';
 import React from 'react';
 import { type ImageSourcePropType, Text, TouchableOpacity, View } from 'react-native';
 
 interface ListItemCardProps {
-    item: {
-        id: string;
-        title: string;
-        status: string;
-        updatedBy: string;
-        time: string;
-        name?: string;
-        city?: string;
-        qty?: number;
-        price?: number;
-        amount?: number;
-        email?: string;
-    },
+    item: AnyItemType;
     placeholder: ImageSourcePropType;
-    image?: ImageSourcePropType;
     isProduct?: boolean;
     isInvoice?: boolean;
     isParty?: boolean;
+    onPress?: () => void;
 }
 
-const successColors: { bg: string; text: string } = { bg: 'bg-success/10', text: 'text-success' }
-const warningColors: { bg: string; text: string } = { bg: 'bg-warning/10', text: 'text-warning' }
-const dangerColors: { bg: string; text: string } = { bg: 'bg-danger/10', text: 'text-danger' }
+const ListItemCard = ({
+    item,
+    placeholder,
+    isProduct = false,
+    isInvoice = false,
+    isParty = false,
+    onPress
+}: ListItemCardProps) => {
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-    'In Stock': successColors,
-    'Low Stock': warningColors,
-    'Out of Stock': dangerColors,
-    'Paid': successColors,
-    'Pending': warningColors,
-    'Unpaid': dangerColors,
-};
+    const colors = getStatusColor(item.status);
 
-const ListItemCard = (
-    {
-        item,
-        placeholder,
-        image,
-        isProduct = false,
-        isInvoice = false,
-        isParty = false
-    }: ListItemCardProps
+    // ==========================================
+    // EXTRACT VALUES DYNAMICALLY BASED ON ENTITY TYPE
+    // ==========================================
+    const title = 'name' in item ? item.name : ('invoice_number' in item ? `Invoice #${item.invoice_number}` : 'N/A');
 
-) => {
-    const colors = STATUS_COLORS[item.status] ?? STATUS_COLORS['In Stock'];
+    // Safely extract creator/updater info depending on object hierarchy
+    const updatedBy = 'user_id' in item ? 'System' : (item.last_updated_by?.name || 'Unknown');
+
+    // Format timestamp string safely
+    const formattedTime = new Date(item.last_updated_at).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric'
+    });
+
+    // Use specific item image uri if available, fallback to required asset placeholder
+    const imageSource = item.img ? { uri: item.img } : undefined;
+
     return (
-        <TouchableOpacity className="bg-white rounded-button mb-3 p-4 flex-row items-center">
+        <TouchableOpacity onPress={onPress} className="bg-white rounded-button mb-3 p-4 flex-row items-center">
 
-
-            <ImageContainer placeholder={placeholder} image={image} />
+            <ImageContainer placeholder={placeholder} image={imageSource} />
 
             <View className="flex-1">
-                <Text className="text-black font-bold text-base mb-0.5">{item.title}</Text>
+                <Text className="text-black font-bold text-base mb-0.5">{title}</Text>
+
                 <Text className="text-dark-50 text-xs mb-1.5">
-                    Updated by <Text className="font-semibold text-dark-300">{item.updatedBy}</Text> • {item.time}
+                    Updated by <Text className="font-semibold text-dark-300">{updatedBy}</Text> • {formattedTime}
                 </Text>
+
                 <View className="flex-row items-center gap-2">
-                    {
-                        isProduct && (
-                            <ProductData qty={item.qty} price={item.price} />
-                        )
-                    }
-                    {
-                        isInvoice && (
-                            <>
-                                <InvoiceData amount={item.amount} />
-                            </>
-                        )
-                    }
-                    {
-                        isParty && (
-                            <>
-                                <PartyData email={item.email} />
-                            </>
-                        )
-                    }
-                    <View className={`ml-auto px-2.5 py-1 rounded-button ${colors.bg}`}>
-                        <Text className={`text-xs font-semibold ${colors.text}`}>{item.status}</Text>
+                    {isProduct && 'quantity' in item && (
+                        <ProductData qty={item.quantity} price={item.max_selling_price} />
+                    )}
+
+                    {isInvoice && 'total_amount' in item && (
+                        <InvoiceData amount={item.total_amount} />
+                    )}
+
+                    {isParty && 'email' in item && (
+                        <PartyData email={item.email} />
+                    )}
+
+                    <View className={`ml-auto px-2.5 py-1 rounded-button ${colors?.bg || 'bg-gray-100'}`}>
+                        <Text className={`text-xs font-semibold ${colors?.text || 'text-gray-700'}`}>
+                            {item.status}
+                        </Text>
                     </View>
                 </View>
             </View>
 
         </TouchableOpacity>
-    )
-}
-
+    );
+};
 
 export default ListItemCard;
 
+// ==========================================
+// SUB-COMPONENTS (With matching DB property types)
+// ==========================================
 
-function ProductData({ qty = 12, price = 1000 }: { qty?: number, price?: number }) {
+function ProductData({ qty = 0, price = 0 }: { qty?: number; price?: number }) {
     return (
         <>
             <Text className="text-dark-300 text-sm">
@@ -104,22 +95,24 @@ function ProductData({ qty = 12, price = 1000 }: { qty?: number, price?: number 
                 PKR {price?.toLocaleString()}
             </Text>
         </>
-    )
+    );
 }
 
-function InvoiceData({ amount = 12000 }: { amount?: number }) {
+function InvoiceData({ amount = 0 }: { amount?: number }) {
     return (
         <>
             <Text className="text-dark-300 text-sm">Amount: </Text>
             <Text className="text-navy-400 font-bold text-sm">PKR {amount.toLocaleString()}</Text>
         </>
-    )
+    );
 }
 
 function PartyData({ email = "example@mail.com" }: { email?: string }) {
     return (
         <>
-            <Text className="text-dark-300 text-xs">{email}</Text>
+            <Text className="text-dark-300 text-xs flex-1" numberOfLines={1}>
+                {email}
+            </Text>
         </>
-    )
+    );
 }

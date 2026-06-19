@@ -253,7 +253,9 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
         </Animated.View>
       </GestureDetector>
 
-      <LogoutModal isVisible={isLogoutModelOpen} onClose={() => setIsLogoutModelOpen(false)} />
+      {
+        isLogoutModelOpen && <LogoutModal isVisible={isLogoutModelOpen} onClose={() => setIsLogoutModelOpen(false)} />
+      }
 
     </View>
   );

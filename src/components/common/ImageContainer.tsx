@@ -7,11 +7,12 @@ interface ImageContainerProps {
     image?: ImageSourcePropType;
     size?: number; // Default 64
     iconSize?: number; // Default 30
+    border?: number;
 }
 
-const ImageContainer = ({ placeholder, image, size = 64, iconSize = 30 }: ImageContainerProps) => {
+const ImageContainer = ({ placeholder, image, size = 64, iconSize = 30, border }: ImageContainerProps) => {
     return (
-        <View className="rounded-button border border-light-100 mr-3 items-center justify-center" style={{ width: size, height: size }}>
+        <View className="rounded-button border border-light-100 mr-3 items-center justify-center" style={{ width: size, height: size, borderWidth: border }}>
             {
                 image ? (
                     <Image source={image} className="w-full h-full" resizeMode="cover" />

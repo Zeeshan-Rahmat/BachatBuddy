@@ -120,7 +120,9 @@ const SmartLoginScreen = () => {
 
             </PaddingWrapper>
 
-            <TouchEnabledModal isVisible={isOpen} onClose={() => setIsOpen(false)} />
+            {
+                isOpen && <TouchEnabledModal isVisible={isOpen} onClose={() => setIsOpen(false)} />
+            }
         </ScreenWrapper>
     )
 }

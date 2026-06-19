@@ -7,9 +7,10 @@ import InputText from './InputText'
 interface SearchFilterProps {
     value: string;
     onChangeText: ((text: string) => void) | undefined;
+    onFilterPress?: () => void;
 }
 
-const SearchFilter = ({ value, onChangeText }: SearchFilterProps) => {
+const SearchFilter = ({ value, onChangeText, onFilterPress }: SearchFilterProps) => {
     return (
         <View className="flex-row items-center gap-3">
 
@@ -22,7 +23,10 @@ const SearchFilter = ({ value, onChangeText }: SearchFilterProps) => {
                 bgColor="#fff"
                 flex={1}
             />
-            <TouchableOpacity className="mb-4 w-14 h-14 bg-primary-400 rounded-button items-center justify-center">
+            <TouchableOpacity
+                onPress={onFilterPress}
+                className="mb-4 w-14 h-14 bg-primary-400 rounded-button items-center justify-center"
+            >
                 <IconWrapper name={ICONS.COMMON.filter} />
             </TouchableOpacity>
         </View>

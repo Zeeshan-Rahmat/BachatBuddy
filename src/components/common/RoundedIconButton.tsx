@@ -4,9 +4,10 @@ import IconWrapper from '@components/common/IconWrapper'
 import React from 'react'
 import { TouchableOpacity } from 'react-native'
 
-const RoundedIconButton = () => {
+const RoundedIconButton = ({ onPress }: { onPress?: () => void }) => {
     return (
         <TouchableOpacity
+            onPress={onPress}
             className="absolute right-6 bottom-27 w-18 h-18 bg-primary-400 rounded-full items-center justify-center"
             style={
                 {

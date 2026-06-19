@@ -29,7 +29,7 @@ export default function Button({ label, onPress, loading, leftIcon, width = "w-f
                 <>
                     {leftIcon && <View className="mr-4">{leftIcon}</View>}
                     <Text
-                        className={`text-xl font-bold ${bgColor == "gray" ? `text-black ` : "text-white "}`}
+                        className={`text-xl font-semibold ${bgColor == "gray" ? `text-black ` : "text-white "}`}
                     >
                         {label}
                     </Text>

@@ -80,6 +80,7 @@ import camera from "@assets/icons/common/camera.png";
 import customer from "@assets/icons/common/customer.png";
 import dangerIcon from "@assets/icons/common/dangerIcon.png";
 import date from "@assets/icons/common/date.png";
+import deleteWhite from "@assets/icons/common/deleteWhite.png";
 import editWhite from "@assets/icons/common/editWhite.png";
 import filter from "@assets/icons/common/filter.png";
 import gender from "@assets/icons/common/gender.png";
@@ -212,6 +213,7 @@ export const ICONS = {
         camera,
         logoutWhite,
         dangerIcon,
+        deleteWhite,
     },
     MENU: {
         addfriend,

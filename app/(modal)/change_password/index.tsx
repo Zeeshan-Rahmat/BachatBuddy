@@ -134,7 +134,9 @@ const ChangePasswordScreen = () => {
 
             </PaddingWrapper>
 
-            <PasswordChandedModal isVisible={isOpen} onClose={() => setIsOpen(false)} />
+            {
+                isOpen && <PasswordChandedModal isVisible={isOpen} onClose={() => setIsOpen(false)} />
+            }
         </ScreenWrapper>
     )
 }
