@@ -12,7 +12,6 @@ import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
 import { FlatList, View } from 'react-native';
 import AddProductManualModal from './add-product-manual';
-import AddProductOptionsModal from './add-product-options';
 import EditProductModal from './edit-product';
 import FilterProductModal from './filter-product';
 import ProductDetailModal from './product-detail';
@@ -24,8 +23,7 @@ export default function StockScreen() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isProductDetailModalOpen, setIsProductDetailModalOpen] = useState(false);
     const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
-    const [isAddProductOptionsModalOpen, setIsAddProductOptionsModalOpen] = useState(false);
-    const [isAddProductManualModalOpen, setIsAddProductManualModalOpen] = useState(false);
+    const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
     const [selectedItem, setSelectedItem] = useState<ProductType>(defaultProduct);
     const [displayedStock, setDisplayedStock] = useState<ProductType[]>(products);
@@ -50,9 +48,8 @@ export default function StockScreen() {
         setIsProductDetailModalOpen(false);
     }
 
-    const handleAddManually = () => {
-        setIsAddProductManualModalOpen(true);
-        setIsAddProductOptionsModalOpen(false);
+    const handleAddProduct = () => {
+        setIsAddProductModalOpen(true);
     }
 
     return (
@@ -88,7 +85,7 @@ export default function StockScreen() {
                 </PaddingWrapper>
             </ScreenWrapper>
 
-            <RoundedIconButton onPress={() => setIsAddProductOptionsModalOpen(true)} />
+            <RoundedIconButton onPress={() => setIsAddProductModalOpen(true)} />
 
 
             {/* MODALS */}
@@ -130,20 +127,11 @@ export default function StockScreen() {
                 />
             )}
 
-            {isAddProductOptionsModalOpen && (
-                <AddProductOptionsModal
-                    visible={isAddProductOptionsModalOpen}
-                    onClose={() => setIsAddProductOptionsModalOpen(false)}
-                    onAddManually={handleAddManually}
-                />
-            )}
-
             {
-                isAddProductManualModalOpen &&
+                isAddProductModalOpen &&
                 <AddProductManualModal
-                    visible={isAddProductManualModalOpen}
-                    onClose={() => setIsAddProductManualModalOpen(false)}
-
+                    visible={isAddProductModalOpen}
+                    onClose={() => setIsAddProductModalOpen(false)}
                 />
             }
         </View>
