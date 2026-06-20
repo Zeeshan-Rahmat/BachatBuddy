@@ -1,3 +1,4 @@
+import { getRelativeTimeShort } from '@/src/lib/DateFunctions';
 import { getStatusColor } from '@/src/lib/getStatusColor';
 import { AnyItemType } from '@/src/lib/handleFilterData';
 import ImageContainer from '@components/common/ImageContainer';
@@ -33,10 +34,7 @@ const ListItemCard = ({
     const updatedBy = 'user_id' in item ? 'System' : (item.last_updated_by?.name || 'Unknown');
 
     // Format timestamp string safely
-    const formattedTime = new Date(item.last_updated_at).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric'
-    });
+    const formattedTime = getRelativeTimeShort(item.last_updated_at);
 
     // Use specific item image uri if available, fallback to required asset placeholder
     const imageSource = item.img ? { uri: item.img } : undefined;

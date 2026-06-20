@@ -22,9 +22,40 @@ import activeRole from "@assets/icons/auth/active/activeRole.png";
 import activeShow from '@assets/icons/auth/active/activeShow.png';
 import activeUser from '@assets/icons/auth/active/activeUser.png';
 
+const authIcons = {
+    // Defaults Icons
+    user,
+    role,
+    password,
+    dropdown,
+    show,
+    hide,
+    fingerprint,
+    largeFingerprint,
+    email,
+    otp,
+    largeVerified,
+    dashboard,
+
+    // Active Icons
+    activeUser,
+    activeRole,
+    activePassword,
+    activeDropdown,
+    activeShow,
+    activeHide,
+    activeEmail,
+    activeOTP
+};
+
 // Top Bar Icons
 import menu from '@assets/icons/top-bar/menu.png';
 import notificationOutline from '@assets/icons/top-bar/notificationOutline.png';
+
+const topBarIcons = {
+    menu,
+    notificationOutline
+};
 
 // Bottom Navigation Icons
 // Filled
@@ -41,6 +72,21 @@ import reportsOutline from "@assets/icons/bottom-nav/reportsOutline.png";
 import salesOutline from "@assets/icons/bottom-nav/salesOutline.png";
 import stockOutline from "@assets/icons/bottom-nav/stockOutline.png";
 
+const bottomNavIcons = {
+    // Filled
+    homeFilled,
+    stockFilled,
+    salesFilled,
+    reportsFilled,
+    partiesFilled,
+
+    // Ouline
+    homeOutline,
+    stockOutline,
+    salesOutline,
+    reportsOutline,
+    partiesOutline,
+};
 
 // Dashboard Icons
 // Summary Cards
@@ -65,6 +111,31 @@ import profitLoss from "@assets/icons/dashboard/quick-reports/profitLoss.png";
 import topProducts from "@assets/icons/dashboard/quick-reports/topProducts.png";
 import totalSales from "@assets/icons/dashboard/quick-reports/totalSales.png";
 import totalStock from "@assets/icons/dashboard/quick-reports/totalStock.png";
+
+const dashboardIcons = {
+    // Summary 
+    totalCardSales,
+    totalProducts,
+    usersActive,
+    loans,
+    topRightArrow,
+
+    // Action
+    newSale,
+    addProduct,
+    ledger,
+    invoice,
+
+    // Reports
+    invoiceSum,
+    ledgerSum,
+    lowStock,
+    pendingDues,
+    profitLoss,
+    topProducts,
+    totalSales,
+    totalStock,
+};
 
 // Common
 import activeAddImage from "@assets/icons/common/activeAddImage.png";
@@ -93,6 +164,34 @@ import sale from "@assets/icons/common/sale.png";
 import search from "@assets/icons/common/search.png";
 import updateOutline from "@assets/icons/common/updateOutline.png";
 
+const commonIcons = {
+    search,
+    activeSearch,
+    filter,
+    plus,
+    sale,
+    product,
+    customer,
+    back,
+    backBlack,
+    updateOutline,
+    more,
+    editWhite,
+    gender,
+    date,
+    activeDate,
+    address,
+    phone,
+    activeAddress,
+    activePhone,
+    activeAddImage,
+    addImage,
+    camera,
+    logoutWhite,
+    dangerIcon,
+    deleteWhite,
+};
+
 // Menu
 import addfriend from "@assets/icons/menu/addFriend.png";
 import backupRestore from "@assets/icons/menu/backupRestore.png";
@@ -106,6 +205,20 @@ import logout from "@assets/icons/menu/logout.png";
 import notificationFilled from "@assets/icons/menu/notificationFilled.png";
 import touchID from "@assets/icons/menu/touchID.png";
 
+const menuIcons = {
+    addfriend,
+    backupRestore,
+    businessDetail,
+    changePassword,
+    customizeInvoice,
+    defaultDashboard,
+    touchID,
+    edit,
+    exportIcon,
+    logout,
+    notificationFilled,
+};
+
 // Export Report
 import allCustomers from "@assets/icons/export-report/allCustomers.png";
 import allSuppliers from "@assets/icons/export-report/allSuppliers.png";
@@ -117,128 +230,58 @@ import supplierActivity from "@assets/icons/export-report/supplierActivity.png";
 import topCustomer from "@assets/icons/export-report/topCustomer.png";
 import unpaidInvoice from "@assets/icons/export-report/unpaidInvoice.png";
 
+const exportReportIcons = {
+    unpaidInvoice,
+    outOfStock,
+    allCustomers,
+    allSuppliers,
+    topCustomer,
+    customerPending,
+    supplierActivity,
+    employeeList,
+    employeeActivity,
+};
+
+
+// Stock / Inventory
+// Default
+import minus from "@assets/icons/stock/default/minus.png";
+import productBox from "@assets/icons/stock/default/productBox.png";
+import purchaseMoney from "@assets/icons/stock/default/purchaseMoney.png";
+import sellingMoney from "@assets/icons/stock/default/sellingMoney.png";
+import warehouse from "@assets/icons/stock/default/warehouse.png";
+
+// Active
+import activeProductBox from "@assets/icons/stock/active/activeProductBox.png";
+import activePurchaseMoney from "@assets/icons/stock/active/activePurchaseMoney.png";
+import activeSellingMoney from "@assets/icons/stock/active/activeSellingMoney.png";
+import activeWarehouse from "@assets/icons/stock/active/activeWarehouse.png";
+
+const stockIcons = {
+    // Default
+    minus,
+    productBox,
+    warehouse,
+    purchaseMoney,
+    sellingMoney,
+
+    // Active
+    activeProductBox,
+    activeWarehouse,
+    activePurchaseMoney,
+    activeSellingMoney,
+};
 
 
 export const ICONS = {
-    AUTH: {
-        // Defaults Icons
-        user,
-        role,
-        password,
-        dropdown,
-        show,
-        hide,
-        fingerprint,
-        largeFingerprint,
-        email,
-        otp,
-        largeVerified,
-        dashboard,
-
-        // Active Icons
-        activeUser,
-        activeRole,
-        activePassword,
-        activeDropdown,
-        activeShow,
-        activeHide,
-        activeEmail,
-        activeOTP
-    },
-    TOP_BAR: {
-        menu,
-        notificationOutline
-    },
-    BOTTOM_NAV: {
-        // Filled
-        homeFilled,
-        stockFilled,
-        salesFilled,
-        reportsFilled,
-        partiesFilled,
-
-        // Ouline
-        homeOutline,
-        stockOutline,
-        salesOutline,
-        reportsOutline,
-        partiesOutline,
-    },
-    DASHBOARD: {
-        // Summary 
-        totalCardSales,
-        totalProducts,
-        usersActive,
-        loans,
-        topRightArrow,
-
-        // Action
-        newSale,
-        addProduct,
-        ledger,
-        invoice,
-
-        // Reports
-        invoiceSum,
-        ledgerSum,
-        lowStock,
-        pendingDues,
-        profitLoss,
-        topProducts,
-        totalSales,
-        totalStock,
-    },
-    COMMON: {
-        search,
-        activeSearch,
-        filter,
-        plus,
-        sale,
-        product,
-        customer,
-        back,
-        backBlack,
-        updateOutline,
-        more,
-        editWhite,
-        gender,
-        date,
-        activeDate,
-        address,
-        phone,
-        activeAddress,
-        activePhone,
-        activeAddImage,
-        addImage,
-        camera,
-        logoutWhite,
-        dangerIcon,
-        deleteWhite,
-    },
-    MENU: {
-        addfriend,
-        backupRestore,
-        businessDetail,
-        changePassword,
-        customizeInvoice,
-        defaultDashboard,
-        touchID,
-        edit,
-        exportIcon,
-        logout,
-        notificationFilled,
-    },
-    EXPORT: {
-        unpaidInvoice,
-        outOfStock,
-        allCustomers,
-        allSuppliers,
-        topCustomer,
-        customerPending,
-        supplierActivity,
-        employeeList,
-        employeeActivity,
-    }
+    AUTH: authIcons,
+    TOP_BAR: topBarIcons,
+    BOTTOM_NAV: bottomNavIcons,
+    DASHBOARD: dashboardIcons,
+    COMMON: commonIcons,
+    MENU: menuIcons,
+    EXPORT: exportReportIcons,
+    STOCK: stockIcons,
 } as const;
 
 export type IconKey = keyof typeof ICONS;

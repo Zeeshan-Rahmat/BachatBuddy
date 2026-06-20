@@ -1,22 +1,27 @@
-export function getRelativeTime(date: Date | string): string {
-    // Correct way to check if the value is NOT a Date instance
+export function getRelativeTimeShort(date: Date | string): string {
     const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) return 'Invalid date';
 
-    // Fallback case: Handle invalid date strings gracefully so your app doesn't crash
-    if (isNaN(dateObj.getTime())) {
-        return 'Invalid date';
-    }
-
-    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
     const now = new Date();
 
-    // Calculate the difference in milliseconds
-    const diffInTime = dateObj.getTime() - now.getTime();
+    // Calculate the difference in days absolute to midnight milestones
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const itemDateStart = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
 
-    // Convert to days and round to the nearest whole integer
+    const diffInTime = itemDateStart.getTime() - todayStart.getTime();
     const diffInDays = Math.round(diffInTime / (1000 * 60 * 60 * 24));
 
-    return rtf.format(diffInDays, 'day');
+    // 1. Handle explicit words first
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === -1) return 'Yesterday';
+    if (diffInDays === 1) return 'Tomorrow';
+
+    // 2. For numbers further out, generate the short format (e.g., "2d ago" or "7d ago")
+    if (diffInDays < 0) {
+        return `${Math.abs(diffInDays)}d ago`;
+    } else {
+        return `In ${diffInDays}d`;
+    }
 }
 
 export function formatDateTime(date: Date | string): string {

@@ -332,7 +332,7 @@ export const mockProducts: ProductType[] = [
         status: "In Stock",
         added_stock: 400,
         sold_stock: 60,
-        img: "https://images.unsplash.com/photo-1585909693684-0a6e4f157821?w=200",
+        img: undefined,
         created_at: "2026-01-25T09:15:00Z",
         last_updated_at: "2026-05-14T11:00:00Z"
     },

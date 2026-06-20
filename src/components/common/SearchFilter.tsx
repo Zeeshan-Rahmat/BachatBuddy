@@ -1,6 +1,7 @@
 import { ICONS } from '@/src/constants/icons'
 import React from 'react'
-import { TouchableOpacity, View } from 'react-native'
+import { View } from 'react-native'
+import IconButton from '../ui/IconButton'
 import IconWrapper from './IconWrapper'
 import InputText from './InputText'
 
@@ -23,12 +24,10 @@ const SearchFilter = ({ value, onChangeText, onFilterPress }: SearchFilterProps)
                 bgColor="#fff"
                 flex={1}
             />
-            <TouchableOpacity
+            <IconButton
+                icon={<IconWrapper name={ICONS.COMMON.filter} />}
                 onPress={onFilterPress}
-                className="mb-4 w-14 h-14 bg-primary-400 rounded-button items-center justify-center"
-            >
-                <IconWrapper name={ICONS.COMMON.filter} />
-            </TouchableOpacity>
+            />
         </View>
     )
 }

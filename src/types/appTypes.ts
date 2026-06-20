@@ -1,7 +1,7 @@
-type DateRangeFilterType = 'Today' | 'This Week' | 'This Month' | '';
-type StockStatusFilterType = StockStatusType | '';
-type PartyStatusFilterType = PartyStatusType | '';
-type InvoiceStatusFilterType = InvoiceStatusType | '';
+export type DateRangeFilterType = 'Today' | 'This Week' | 'This Month' | '';
+export type StockStatusFilterType = StockStatusType | '';
+export type PartyStatusFilterType = PartyStatusType | '';
+export type InvoiceStatusFilterType = InvoiceStatusType | '';
 
 
 export type FilterType = {

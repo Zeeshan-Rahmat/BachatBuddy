@@ -1,5 +1,5 @@
 import FilterModal from '@/src/components/modal/FilterModal';
-import { DateRangeType, StockStatusType } from '@/src/lib/handleFilterData';
+import { DateRangeFilterType, StockStatusFilterType } from '@/src/types/appTypes';
 import React, { useState } from 'react';
 
 interface FilterProductModalProps {
@@ -13,8 +13,8 @@ export default function FilterProductModal({ visible, onApplyFilters, onClose }:
     // 1. Core State Hooks matching the visual design options
     const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
     const [toDate, setToDate] = useState<Date | undefined>(undefined);
-    const [activeRange, setActiveRange] = useState<DateRangeType>('');
-    const [activeStatus, setActiveStatus] = useState<StockStatusType>('');
+    const [activeRange, setActiveRange] = useState<DateRangeFilterType>('');
+    const [activeStatus, setActiveStatus] = useState<StockStatusFilterType>('');
     const [selectedUser, setSelectedUser] = useState('');
     const [sortBy, setSortBy] = useState('');
 

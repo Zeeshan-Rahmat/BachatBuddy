@@ -15,7 +15,7 @@ export const handleFilterData = (filters: FilterType, itemsData: AnyItemType[]):
 
     // Helper to securely parse dates whether they arrive as ISO strings or Date instances
     const getItemDate = (item: AnyItemType): Date => {
-        return new Date(item.created_at);
+        return new Date(item.last_updated_at);
     };
 
     // ==========================================
