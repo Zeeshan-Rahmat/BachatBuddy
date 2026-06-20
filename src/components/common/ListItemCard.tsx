@@ -3,7 +3,7 @@ import { getStatusColor } from '@/src/lib/getStatusColor';
 import { AnyItemType } from '@/src/lib/handleFilterData';
 import ImageContainer from '@components/common/ImageContainer';
 import React from 'react';
-import { type ImageSourcePropType, Text, TouchableOpacity, View } from 'react-native';
+import { ColorValue, type ImageSourcePropType, Text, TouchableOpacity, View } from 'react-native';
 
 interface ListItemCardProps {
     item: AnyItemType;
@@ -11,15 +11,20 @@ interface ListItemCardProps {
     isProduct?: boolean;
     isInvoice?: boolean;
     isParty?: boolean;
+    isSelected?: boolean;
+    borderColor?: ColorValue;
+
     onPress?: () => void;
 }
 
 const ListItemCard = ({
     item,
     placeholder,
+    borderColor,
     isProduct = false,
     isInvoice = false,
     isParty = false,
+    isSelected,
     onPress
 }: ListItemCardProps) => {
 
@@ -40,7 +45,14 @@ const ListItemCard = ({
     const imageSource = item.img ? { uri: item.img } : undefined;
 
     return (
-        <TouchableOpacity onPress={onPress} className="bg-white rounded-button mb-3 p-4 flex-row items-center">
+        <TouchableOpacity
+            onPress={onPress}
+            className={`bg-white rounded-button mb-3 p-4 flex-row items-center 
+                ${isSelected === undefined ? "" : isSelected ? "border border-primary-400" : "border border-light-100"} 
+                ${borderColor && "border"}
+                `}
+            style={{ borderColor: borderColor }}
+        >
 
             <ImageContainer placeholder={placeholder} image={imageSource} />
 
