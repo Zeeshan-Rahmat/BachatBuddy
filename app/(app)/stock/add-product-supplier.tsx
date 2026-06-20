@@ -10,11 +10,12 @@ import { FlatList } from 'react-native';
 
 interface AddProductSupplierModalProps {
     visible: boolean;
-    selectedSupplier: SupplierType;
+    selectedSupplier?: SupplierType;
+    setSelectedSupplier?: React.Dispatch<React.SetStateAction<SupplierType | undefined>>;
     onSelected: () => void;
 }
 
-const AddProductSupplierModal = ({ visible, selectedSupplier, onSelected }: AddProductSupplierModalProps) => {
+const AddProductSupplierModal = ({ visible, selectedSupplier, setSelectedSupplier, onSelected }: AddProductSupplierModalProps) => {
 
     const suppliers = mockSuppliers;
 
@@ -23,6 +24,12 @@ const AddProductSupplierModal = ({ visible, selectedSupplier, onSelected }: AddP
     const filtered = suppliers.filter(s =>
         s.name.toLowerCase().includes(search.toLowerCase())
     );
+
+    const handleSelectSupplier = (supplier: SupplierType) => {
+
+        setSelectedSupplier && setSelectedSupplier(supplier);
+        onSelected();
+    }
 
     return (
         <CustomModal visible={visible}>
@@ -39,13 +46,13 @@ const AddProductSupplierModal = ({ visible, selectedSupplier, onSelected }: AddP
                 showsVerticalScrollIndicator={false}
                 className='max-h-120'
 
-                renderItem={({ item }) => (
+                renderItem={({ item: supplier }) => (
                     <ListItemCard
-                        item={item}
+                        item={supplier}
                         placeholder={ICONS.COMMON.customer}
                         isParty={true}
-                        isSelected={item.supplier_id === selectedSupplier.supplier_id}
-                        onPress={onSelected}
+                        isSelected={selectedSupplier ? supplier.supplier_id === selectedSupplier.supplier_id : false}
+                        onPress={() => handleSelectSupplier(supplier)}
                     />
                 )}
             />

@@ -8,7 +8,7 @@ interface ButtonProps {
     loading?: boolean;
     leftIcon?: React.ReactNode;
     width?: "w-fit" | "flex-1" | "w-full"; // Default "w-full"
-    bgColor?: "green" | "gray" | "red"; // Default "green"
+    bgColor?: "green" | "gray" | "red" | "blue"; // Default "green"
 }
 
 export default function Button({ label, onPress, loading, leftIcon, width = "w-full", bgColor = "green" }: ButtonProps) {
@@ -20,7 +20,9 @@ export default function Button({ label, onPress, loading, leftIcon, width = "w-f
             className={`
                 rounded-button h-14 flex-row items-center justify-center mt-2 px-6
                 ${width == "w-fit" ? `${width} self-center` : width}
-                ${bgColor == "green" ? `bg-primary-400` : bgColor == "gray" ? "bg-dark-50/20" : "bg-danger"}
+                ${bgColor == "green" ? `bg-primary-400`
+                    : bgColor == "gray" ? "bg-dark-50/20"
+                        : bgColor == "blue" ? "bg-navy-400" : "bg-danger"}
                 `}
         >
             {loading ? (
