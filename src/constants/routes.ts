@@ -31,15 +31,15 @@ export const ROUTES = {
 
     DASHBOARD: "/dashboard",
     STOCK: "/stock",
-    SALE: "/sale",
+
+    SALE: {
+        INDEX: "/sale",
+        INVOICE_DETAILS: "/sale/[id]",
+    },
+
     REPORTS: "/reports",
     PARTIES: "/parties",
 
     SPLASH_SCREEN: "/",
 
-    USER_DETAILS: (id: string | number) =>
-        `/user/${id}` as const,
-
-    PRODUCT_DETAILS: (slug: string) =>
-        `/product/${slug}` as const,
 } as const;

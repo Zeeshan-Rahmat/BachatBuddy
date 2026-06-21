@@ -1,7 +1,8 @@
 import CustomModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
 import { COLORS } from '@/src/constants/theme';
-import { DateRangeType, StockStatusType } from '@/src/lib/handleFilterData';
+import { mockUsers } from '@/src/lib/sampleData';
+import { AnyStatusFilterType, DateRangeFilterType, InvoiceStatusFilterType, PartyStatusFilterType, StockStatusFilterType } from '@/src/types/appTypes';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React from 'react';
@@ -21,8 +22,10 @@ interface FilterModalProps {
     selectedUser: string;
     sortBy: string;
 
-    activeRange: DateRangeType;
-    activeStatus: StockStatusType;
+    activeRange: DateRangeFilterType;
+    activeStatus: AnyStatusFilterType;
+
+    statusValues?: "productStatus" | "invoiceStatus" | "partyStatus";
 
     handleResetAll: () => void;
     handleApply: () => void;
@@ -33,12 +36,19 @@ interface FilterModalProps {
     setSelectedUser: React.Dispatch<React.SetStateAction<string>>;
     setSortBy: React.Dispatch<React.SetStateAction<string>>;
 
-    setActiveRange: React.Dispatch<React.SetStateAction<DateRangeType>>;
-    setActiveStatus: React.Dispatch<React.SetStateAction<StockStatusType>>;
+    setActiveRange: React.Dispatch<React.SetStateAction<DateRangeFilterType>>;
+    setActiveStatus: React.Dispatch<React.SetStateAction<StockStatusFilterType | InvoiceStatusFilterType | PartyStatusFilterType>>;
 }
 
-const USERS = ['Zeeshan Ullah', 'Muhammad Mubashir', 'Qamar Ahmad', 'Zafar Iqbal']
+const USERS = mockUsers.map(user => user.name);
+const DATE_RANGES = ['Today', 'This Week', 'This Month']
 const SORT_BY = ['Newest to Oldest (Newest First)', 'Oldest to Newest (Oldest First)']
+
+const STATUS_VALUES = {
+    productStatus: ['In Stock', 'Low Stock', 'Out of Stock'],
+    invoiceStatus: ['Paid', 'Pending', 'Unpaid'],
+    partyStatus: ['Active', 'Inactive'],
+}
 
 const FilterModal = ({
     visible,
@@ -49,6 +59,8 @@ const FilterModal = ({
     activeStatus,
     selectedUser,
     sortBy,
+
+    statusValues = "productStatus",
 
     handleResetAll,
     handleApply,
@@ -103,13 +115,13 @@ const FilterModal = ({
 
 
                 <View className="flex-row gap-x-2.5 mb-5">
-                    {(['Today', 'This Week', 'This Month'] as DateRangeType[]).map((range) => {
+                    {(DATE_RANGES).map((range) => {
                         const isSelected = activeRange === range;
                         return <FilterDateStatusCard
                             key={range}
                             label={range}
                             isSelected={isSelected}
-                            onPress={(val) => setActiveRange(val as DateRangeType)}
+                            onPress={(val) => setActiveRange(val as DateRangeFilterType)}
                         />;
                     })}
                 </View>
@@ -123,13 +135,13 @@ const FilterModal = ({
                 />
 
                 <View className="flex-row gap-x-2.5 mb-5">
-                    {(['In Stock', 'Low Stock', 'Out of Stock'] as StockStatusType[]).map((status) => {
+                    {(STATUS_VALUES[statusValues]).map((status) => {
                         const isSelected = activeStatus === status;
                         return <FilterDateStatusCard
                             key={status}
                             label={status}
                             isSelected={isSelected}
-                            onPress={(val) => setActiveStatus(val as StockStatusType)}
+                            onPress={(val) => setActiveStatus(val as AnyStatusFilterType)}
                         />;
                     })}
                 </View>
@@ -193,8 +205,8 @@ const FilterModal = ({
 export default FilterModal
 
 interface FilterCardProps {
-    label: DateRangeType | StockStatusType;
-    onPress: (value: DateRangeType | StockStatusType) => void;
+    label: string;
+    onPress: (value: string) => void;
     isSelected: boolean;
 }
 

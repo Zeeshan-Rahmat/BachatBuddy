@@ -1,16 +1,18 @@
+import { COLORS } from '@/src/constants/theme';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { ColorValue, Text, View } from 'react-native';
 
 interface InfoFieldProps {
     label: string;
     value: string;
+    valueColor?: ColorValue;
 }
 
-const InfoField = ({ label, value }: InfoFieldProps) => {
+const InfoField = ({ label, value, valueColor = COLORS.dark300 }: InfoFieldProps) => {
     return (
         <View className='flex-row justify-between'>
             <Text className='text-dark-50 text-lg font-semibold'>{label}</Text>
-            <Text className='text-dark-300 text-lg font-semibold'>{value}</Text>
+            <Text className='text-lg font-semibold' style={{ color: valueColor }}>{value}</Text>
         </View>
     )
 }

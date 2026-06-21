@@ -38,7 +38,7 @@ const ALL_TABS = [
     {
         key: 'sale',
         label: 'Sale',
-        route: ROUTES.SALE,
+        route: ROUTES.SALE.INDEX,
         segment: 'sale',
         icon: SaleIcon,
         ownerOnly: false,

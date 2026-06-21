@@ -2,7 +2,7 @@
 // ==========================================
 // 1. USER MOCK DATA (5 Records)
 
-import { CustomerType, ProductType, SupplierType, UserType } from "../types/appTypes";
+import { CustomerType, InvoiceType, ProductType, SupplierType, UserType } from "../types/appTypes";
 
 // ==========================================
 export const mockUsers: UserType[] = [
@@ -353,5 +353,230 @@ export const mockProducts: ProductType[] = [
         img: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=200",
         created_at: "2026-03-10T15:00:00Z",
         last_updated_at: "2026-06-01T13:20:00Z"
+    }
+];
+
+export const mockInvoices: InvoiceType[] = [
+    {
+        invoice_id: "inv_1001",
+        created_by: mockUsers[2], // Cashier Michael
+        last_updated_by: mockUsers[2],
+        customer: mockCustomers[0], // John Doe
+        invoice_number: "INV-2026-001",
+        invoice_items: [
+            {
+                invoice_item_id: "initm_101",
+                product: mockProducts[0], // Wireless Mechanical Keyboard
+                quantity: 1,
+                purchase_price: 45.00,
+                selling_price: 89.99,
+                subtotal: 89.99,
+                profit: 44.99
+            },
+            {
+                invoice_item_id: "initm_102",
+                product: mockProducts[1], // Ergonomic Mouse
+                quantity: 2,
+                purchase_price: 18.50,
+                selling_price: 34.99,
+                subtotal: 69.98,
+                profit: 32.98
+            }
+        ],
+        subtotal: 159.97,
+        discount: 10, // 10% Off
+        discount_amount: 16.00,
+        total_amount: 143.97,
+        paid_amount: 143.97,
+        remaining_amount: 0.00,
+        total_items: 3,
+        status: "Paid",
+        due_date: "2026-06-10T12:00:00Z",
+        img: "https://api.dicebear.com/7.x/identicon/svg?seed=INV001",
+        created_at: "2026-06-10T11:45:00Z",
+        last_updated_at: "2026-06-10T11:55:00Z"
+    },
+    {
+        invoice_id: "inv_1002",
+        created_by: mockUsers[2], // Cashier Michael
+        last_updated_by: mockUsers[1], // Manager Sarah verified
+        customer: mockCustomers[1], // Jane Smith Logistics
+        invoice_number: "INV-2026-002",
+        invoice_items: [
+            {
+                invoice_item_id: "initm_103",
+                product: mockProducts[4], // Ultra-Wide 34" Curved Monitor
+                quantity: 2,
+                purchase_price: 280.00,
+                selling_price: 449.99,
+                subtotal: 899.98,
+                profit: 339.98
+            }
+        ],
+        subtotal: 899.98,
+        discount: 0,
+        discount_amount: 0.00,
+        total_amount: 899.98,
+        paid_amount: 500.00, // Partial payment made
+        remaining_amount: 399.98,
+        total_items: 2,
+        status: "Pending",
+        due_date: "2026-07-15T17:00:00Z",
+        created_at: "2026-06-15T14:20:00Z",
+        last_updated_at: "2026-06-16T09:30:00Z"
+    },
+    {
+        invoice_id: "inv_1003",
+        created_by: mockUsers[2],
+        last_updated_by: mockUsers[2],
+        customer: mockCustomers[2], // Robert Downey
+        invoice_number: "INV-2026-003",
+        invoice_items: [
+            {
+                invoice_item_id: "initm_104",
+                product: mockProducts[2], // Premium Mesh Executive Chair
+                quantity: 4,
+                purchase_price: 150.00,
+                selling_price: 270.00,
+                subtotal: 1080.00,
+                profit: 480.00
+            }
+        ],
+        subtotal: 1080.00,
+        discount: 5, // 5% Flat Corporate Markdown
+        discount_amount: 54.00,
+        total_amount: 1026.00,
+        paid_amount: 1026.00,
+        remaining_amount: 0.00,
+        total_items: 4,
+        status: "Paid",
+        due_date: "2026-06-17T10:00:00Z",
+        created_at: "2026-06-17T09:15:00Z",
+        last_updated_at: "2026-06-17T10:00:00Z"
+    },
+    {
+        invoice_id: "inv_1004",
+        created_by: mockUsers[3], // Inventory Clerk Emily
+        last_updated_by: mockUsers[3],
+        customer: mockCustomers[3], // Clara Oswald
+        invoice_number: "INV-2026-004",
+        invoice_items: [
+            {
+                invoice_item_id: "initm_105",
+                product: mockProducts[3], // Eco-Friendly Gel Wrist Rest
+                quantity: 5,
+                purchase_price: 4.20,
+                selling_price: 12.00,
+                subtotal: 60.00,
+                profit: 39.00
+            }
+        ],
+        subtotal: 60.00,
+        discount: 0,
+        discount_amount: 0.00,
+        total_amount: 60.00,
+        paid_amount: 0.00, // Fully Unpaid / Delivered on Credit Terms
+        remaining_amount: 60.00,
+        total_items: 5,
+        status: "Unpaid",
+        due_date: "2026-06-25T12:00:00Z",
+        created_at: "2026-06-18T10:30:00Z",
+        last_updated_at: "2026-06-18T10:30:00Z"
+    },
+    {
+        invoice_id: "inv_1005",
+        created_by: mockUsers[2],
+        last_updated_by: mockUsers[1],
+        customer: mockCustomers[1], // Jane Smith Logistics
+        invoice_number: "INV-2026-005",
+        invoice_items: [
+            {
+                invoice_item_id: "initm_106",
+                product: mockProducts[0], // Wireless Mechanical Keyboard
+                quantity: 10,
+                purchase_price: 45.00,
+                selling_price: 85.00,
+                subtotal: 850.00,
+                profit: 400.00
+            },
+            {
+                invoice_item_id: "initm_107",
+                product: mockProducts[1], // Ergonomic Mouse
+                quantity: 10,
+                purchase_price: 18.50,
+                selling_price: 30.00,
+                subtotal: 300.00,
+                profit: 115.00
+            }
+        ],
+        subtotal: 1150.00,
+        discount: 12, // Bulk Procurement Rate Cut
+        discount_amount: 138.00,
+        total_amount: 1012.00,
+        paid_amount: 0.00,
+        remaining_amount: 1012.00,
+        total_items: 20,
+        status: "Unpaid",
+        due_date: "2026-07-02T16:00:00Z",
+        created_at: "2026-06-19T15:10:00Z",
+        last_updated_at: "2026-06-19T16:00:00Z"
+    },
+    {
+        invoice_id: "inv_1006",
+        created_by: mockUsers[2],
+        last_updated_by: mockUsers[2],
+        customer: mockCustomers[0], // John Doe
+        invoice_number: "INV-2026-006",
+        invoice_items: [
+            {
+                invoice_item_id: "initm_108",
+                product: mockProducts[3], // Eco-Friendly Gel Wrist Rest
+                quantity: 1,
+                purchase_price: 4.20,
+                selling_price: 14.99,
+                subtotal: 14.99,
+                profit: 10.79
+            }
+        ],
+        subtotal: 14.99,
+        discount: 0,
+        discount_amount: 0.00,
+        total_amount: 14.99,
+        paid_amount: 14.99,
+        remaining_amount: 0.00,
+        total_items: 1,
+        status: "Paid",
+        due_date: "2026-06-20T11:00:00Z",
+        created_at: "2026-06-20T10:15:00Z",
+        last_updated_at: "2026-06-20T10:20:00Z"
+    },
+    {
+        invoice_id: "inv_1007",
+        created_by: mockUsers[0], // Admin Alex
+        last_updated_by: mockUsers[0],
+        customer: mockCustomers[4], // Arthur Dent
+        invoice_number: "INV-2026-007",
+        invoice_items: [
+            {
+                invoice_item_id: "initm_109",
+                product: mockProducts[1], // Ergonomic Mouse
+                quantity: 1,
+                purchase_price: 18.50,
+                selling_price: 39.99,
+                subtotal: 39.99,
+                profit: 21.49
+            }
+        ],
+        subtotal: 39.99,
+        discount: 0,
+        discount_amount: 0.00,
+        total_amount: 39.99,
+        paid_amount: 15.00, // Small down payment token
+        remaining_amount: 24.99,
+        total_items: 1,
+        status: "Pending",
+        due_date: "2026-07-20T00:00:00Z",
+        created_at: "2026-06-20T14:00:00Z",
+        last_updated_at: "2026-06-20T14:45:00Z"
     }
 ];

@@ -65,7 +65,7 @@ export default function StockScreen() {
 
                     <FlatList
                         data={filtered}
-                        // Fixed: product_id is a number; converted to string to meet native key guidelines
+
                         keyExtractor={(item) => item.product_id.toString()}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingBottom: 80 }}
@@ -90,42 +90,50 @@ export default function StockScreen() {
 
             {/* MODALS */}
 
-            {isFilterModalOpen && (
-                <FilterProductModal
-                    visible={isFilterModalOpen}
-                    onApplyFilters={onApplyFilters}
-                    onClose={() => setIsFilterModalOpen(false)}
-                />
-            )}
+            {
+                isFilterModalOpen && (
+                    <FilterProductModal
+                        visible={isFilterModalOpen}
+                        onApplyFilters={onApplyFilters}
+                        onClose={() => setIsFilterModalOpen(false)}
+                    />
+                )
+            }
 
-            {isProductDetailModalOpen && (
-                <ProductDetailModal
-                    item={selectedItem}
-                    visible={isProductDetailModalOpen}
-                    onClose={() => setIsProductDetailModalOpen(false)}
-                    onRemove={() => setIsDeleteModalOpen(true)}
-                    onEdit={() => setIsEditProductModalOpen(true)}
-                />
-            )}
+            {
+                isProductDetailModalOpen && (
+                    <ProductDetailModal
+                        item={selectedItem}
+                        visible={isProductDetailModalOpen}
+                        onClose={() => setIsProductDetailModalOpen(false)}
+                        onRemove={() => setIsDeleteModalOpen(true)}
+                        onEdit={() => setIsEditProductModalOpen(true)}
+                    />
+                )
+            }
 
-            {isDeleteModalOpen && (
-                <DeleteModal
-                    title='Remove Product'
-                    subtitle='You are going to remove below product'
-                    removeItem={selectedItem.name}
-                    isVisible={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onDelete={handleDelete}
-                />
-            )}
+            {
+                isDeleteModalOpen && (
+                    <DeleteModal
+                        title='Remove Product'
+                        subtitle='You are going to remove below product'
+                        removeItem={selectedItem.name}
+                        isVisible={isDeleteModalOpen}
+                        onClose={() => setIsDeleteModalOpen(false)}
+                        onDelete={handleDelete}
+                    />
+                )
+            }
 
-            {isEditProductModalOpen && (
-                <EditProductModal
-                    product={selectedItem}
-                    visible={isEditProductModalOpen}
-                    onClose={() => setIsEditProductModalOpen(false)}
-                />
-            )}
+            {
+                isEditProductModalOpen && (
+                    <EditProductModal
+                        product={selectedItem}
+                        visible={isEditProductModalOpen}
+                        onClose={() => setIsEditProductModalOpen(false)}
+                    />
+                )
+            }
 
             {
                 isAddProductModalOpen &&

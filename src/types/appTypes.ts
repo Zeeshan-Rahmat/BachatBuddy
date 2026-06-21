@@ -3,12 +3,14 @@ export type StockStatusFilterType = StockStatusType | '';
 export type PartyStatusFilterType = PartyStatusType | '';
 export type InvoiceStatusFilterType = InvoiceStatusType | '';
 
+export type AnyStatusFilterType = StockStatusFilterType | InvoiceStatusFilterType | PartyStatusFilterType;
+
 
 export type FilterType = {
     fromDate: string;
     toDate: string;
     activeRange: DateRangeFilterType;
-    activeStatus: StockStatusFilterType | PartyStatusFilterType | InvoiceStatusFilterType;
+    activeStatus: AnyStatusFilterType;
     selectedUser: string;
     sortBy: string;
 }
@@ -88,27 +90,6 @@ export type ProductType = {
     last_updated_at: Date | string;
 };
 
-export type InvoiceType = {
-    invoice_id: string;
-    created_by: UserType;
-    last_updated_by: UserType;
-    customer: CustomerType;
-    invoice_number: string;
-    invoice_item: InvoiceItemType;
-    subtotal: number;
-    discount: number;
-    discount_amount: number;
-    total_amount: number;
-    paid_amount: number;
-    remaining_amount: number;
-    total_items: number;
-    status: string;
-    due_date: Date | string;
-    img?: string;
-    created_at: Date | string;
-    last_updated_at: Date | string;
-}
-
 export type InvoiceItemType = {
     invoice_item_id: string;
     product: ProductType;
@@ -117,8 +98,28 @@ export type InvoiceItemType = {
     selling_price: number;
     subtotal: number;
     profit: number;
+};
 
-}
+export type InvoiceType = {
+    invoice_id: string;
+    created_by: UserType;
+    last_updated_by: UserType;
+    customer: CustomerType;
+    invoice_number: string;
+    invoice_items: InvoiceItemType[];
+    subtotal: number;
+    discount: number;
+    discount_amount: number;
+    total_amount: number;
+    paid_amount: number;
+    remaining_amount: number;
+    total_items: number;
+    status: InvoiceStatusType;
+    due_date: Date | string;
+    img?: string;
+    created_at: Date | string;
+    last_updated_at: Date | string;
+};
 
 export type ItemType = {
     id: string;

@@ -3,29 +3,42 @@ import PaddingWrapper from '@/src/components/common/PaddingWrapper';
 import RoundedIconButton from '@/src/components/common/RoundedIconButton';
 import SearchFilter from '@/src/components/common/SearchFilter';
 import { ICONS } from '@/src/constants/icons';
+import { ROUTES } from '@/src/constants/routes';
+import { handleFilterData } from '@/src/lib/handleFilterData';
+import { mockInvoices } from '@/src/lib/sampleData';
+import { FilterType, InvoiceType } from '@/src/types/appTypes';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { FlatList, View } from 'react-native';
-
-const MOCK_SALES = [
-    { id: '1', name: 'Rahmat Ullah', city: 'Togh Sarai', amount: 49999, status: 'Paid', updatedBy: 'Zeeshan Ullah (You)', time: 'Today' },
-    { id: '2', name: 'Ahmad Aslam', city: 'Kahi', amount: 1100, status: 'Pending', updatedBy: 'Mubashir Shah', time: '2d ago' },
-    { id: '3', name: 'Junaid Rehman', city: 'Kohat', amount: 95000, status: 'Unpaid', updatedBy: 'Qamar Ahmad', time: 'Yesterday' },
-    { id: '4', name: 'Rahmat Ullah', city: 'Togh Sarai', amount: 49999, status: 'Paid', updatedBy: 'Zafar Iqbal', time: 'Today' },
-    { id: '5', name: 'Ahmad Aslam', city: 'Kahi', amount: 1100, status: 'Pending', updatedBy: 'Zeeshan Ullah (You)', time: '2d ago' },
-    { id: '6', name: 'Rahmat Ullah', city: 'Togh Sarai', amount: 49999, status: 'Paid', updatedBy: 'Zafar Iqbal', time: 'Today' },
-    { id: '7', name: 'Ahmad Aslam', city: 'Kahi', amount: 1100, status: 'Pending', updatedBy: 'Zeeshan Ullah (You)', time: '2d ago' },
-];
-
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-    'Paid': { bg: 'bg-emerald-100', text: 'text-emerald-600' },
-    'Pending': { bg: 'bg-amber-100', text: 'text-amber-600' },
-    'Unpaid': { bg: 'bg-rose-100', text: 'text-rose-600' },
-};
+import FilterInvoiceModal from './filter-invoice';
 
 export default function SaleScreen() {
+
+    const invoices: InvoiceType[] = mockInvoices;
+
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+    const [displayedStock, setDisplayedStock] = useState<InvoiceType[]>(invoices);
+
     const [search, setSearch] = useState('');
-    const filtered = MOCK_SALES.filter(i => i.name.toLowerCase().includes(search.toLowerCase()));
+    const filtered = displayedStock.filter(i => i.invoice_number.toLowerCase().includes(search.toLowerCase()));
+
+    const onApplyFilters = (filters: FilterType) => {
+        // Run advanced filtering logic safely over typed multi-entity datasets
+        const output = handleFilterData(filters, invoices);
+
+        // Update local list layouts and hide selection screen
+        setDisplayedStock(output as InvoiceType[]);
+        setIsFilterModalOpen(false);
+    };
+
+    const onInvoicePress = (invoiceId: string) => {
+        router.push({
+            pathname: ROUTES.SALE.INVOICE_DETAILS,
+            params: { id: invoiceId }
+        });
+    }
 
     return (
         <View className="flex-1">
@@ -35,20 +48,22 @@ export default function SaleScreen() {
                     <SearchFilter
                         value={search}
                         onChangeText={setSearch}
+                        onFilterPress={() => setIsFilterModalOpen(true)}
                     />
 
                     <FlatList
                         data={filtered}
-                        keyExtractor={i => i.id}
+                        keyExtractor={i => i.invoice_id}
                         showsVerticalScrollIndicator={false}
 
                         renderItem={({ item }) => {
 
                             return (
                                 <ListItemCard
-                                    item={{ title: item.name + " - " + item.city, ...item }}
+                                    item={item}
                                     placeholder={ICONS.COMMON.sale}
                                     isInvoice={true}
+                                    onPress={() => onInvoicePress(item.invoice_id)}
                                 />
                             );
                         }}
@@ -59,6 +74,16 @@ export default function SaleScreen() {
 
 
             <RoundedIconButton />
+
+            {
+                isFilterModalOpen && (
+                    <FilterInvoiceModal
+                        visible={isFilterModalOpen}
+                        onApplyFilters={onApplyFilters}
+                        onClose={() => setIsFilterModalOpen(false)}
+                    />
+                )
+            }
         </View>
     );
 }

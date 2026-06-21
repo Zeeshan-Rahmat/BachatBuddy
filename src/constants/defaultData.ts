@@ -1,4 +1,4 @@
-import { ProductType, SupplierType, UserType } from "../types/appTypes"
+import { CustomerType, InvoiceType, ProductType, SupplierType, UserType } from "../types/appTypes"
 
 const mockUsers: UserType[] = [
     {
@@ -69,7 +69,7 @@ export const defaultProduct: ProductType = {
     product_id: 1001,
     created_by: mockUsers[0],
     last_updated_by: mockUsers[2], // Updated by inventory clerk Emily
-    supplier_id: defaultSupplier, // Supplied by Apex Tech
+    supplier: defaultSupplier, // Supplied by Apex Tech
     name: "Wireless Mechanical Keyboard",
     purchase_price: 45.00,
     min_selling_price: 79.99,
@@ -83,3 +83,83 @@ export const defaultProduct: ProductType = {
     created_at: "2026-01-20T10:00:00Z",
     last_updated_at: "2026-06-18T15:40:00Z"
 }
+
+export const defaultProduct2: ProductType = {
+    product_id: 1002,
+    created_by: mockUsers[1],
+    last_updated_by: mockUsers[0],
+    supplier: defaultSupplier,
+    name: "Ergonomic Bluetooth Mouse",
+    purchase_price: 18.50,
+    min_selling_price: 29.99,
+    max_selling_price: 39.99,
+    quantity: 8,
+    minimum_quantity: 15,
+    status: "Low Stock", // Low Stock trigger (8 < 15)
+    added_stock: 50,
+    sold_stock: 42,
+    img: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=200",
+    created_at: "2026-01-22T14:30:00Z",
+    last_updated_at: "2026-06-19T09:12:00Z"
+}
+
+
+
+export const defaultCustomer: CustomerType =
+{
+    customer_id: "cust_001",
+    created_by: mockUsers[2], // Created by Cashier Michael
+    last_updated_by: mockUsers[2],
+    name: "John Doe",
+    phone: "+1-555-4433",
+    email: "johndoe@email.com",
+    address: "12 Treehouse Lane, Orlando, FL",
+    status: "Active",
+    total_purchases: 1450.75,
+    pending_dues: 0.00,
+    total_orders: 12,
+    img: "https://api.dicebear.com/7.x/pixel-art/svg?seed=John",
+    last_purchase_date: "2026-06-18T15:20:00Z",
+    created_at: "2026-01-22T10:30:00Z",
+    last_updated_at: "2026-06-18T15:25:00Z"
+};
+
+export const defaultInvoice: InvoiceType = {
+    invoice_id: "inv_1001",
+    created_by: mockUsers[2], // Cashier Michael
+    last_updated_by: mockUsers[2],
+    customer: defaultCustomer, // John Doe
+    invoice_number: "INV-2026-001",
+    invoice_items: [
+        {
+            invoice_item_id: "initm_101",
+            product: defaultProduct, // Wireless Mechanical Keyboard
+            quantity: 1,
+            purchase_price: 45.00,
+            selling_price: 89.99,
+            subtotal: 89.99,
+            profit: 44.99
+        },
+        {
+            invoice_item_id: "initm_102",
+            product: defaultProduct2, // Ergonomic Mouse
+            quantity: 2,
+            purchase_price: 18.50,
+            selling_price: 34.99,
+            subtotal: 69.98,
+            profit: 32.98
+        }
+    ],
+    subtotal: 159.97,
+    discount: 10, // 10% Off
+    discount_amount: 16.00,
+    total_amount: 143.97,
+    paid_amount: 143.97,
+    remaining_amount: 0.00,
+    total_items: 3,
+    status: "Paid",
+    due_date: "2026-06-10T12:00:00Z",
+    img: "https://api.dicebear.com/7.x/identicon/svg?seed=INV001",
+    created_at: "2026-06-10T11:45:00Z",
+    last_updated_at: "2026-06-10T11:55:00Z"
+};
