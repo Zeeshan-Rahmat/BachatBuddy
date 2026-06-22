@@ -266,7 +266,7 @@ const AddProductManualModal = ({ visible, onClose }: AddProductManualModalProps)
                     visible={isSupplierModalOpen}
                     selectedSupplier={selectedSupplier}
                     setSelectedSupplier={setSelectedSupplier}
-                    onSelected={() => setIsSupplierModalOpen(false)}
+                    onClose={() => setIsSupplierModalOpen(false)}
                 />
             }
         </>

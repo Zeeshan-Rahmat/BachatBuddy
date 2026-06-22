@@ -59,6 +59,7 @@ export default function StockScreen() {
 
                     <SearchFilter
                         value={search}
+                        searchPlaceholder="Search Products"
                         onChangeText={setSearch}
                         onFilterPress={() => setIsFilterModalOpen(true)}
                     />

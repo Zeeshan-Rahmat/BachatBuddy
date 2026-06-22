@@ -2,7 +2,7 @@ import CustomModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
 import { COLORS } from '@/src/constants/theme';
 import { mockUsers } from '@/src/lib/sampleData';
-import { AnyStatusFilterType, DateRangeFilterType, InvoiceStatusFilterType, PartyStatusFilterType, StockStatusFilterType } from '@/src/types/appTypes';
+import { AnyStatusFilterType, DateRangeFilterType } from '@/src/types/appTypes';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React from 'react';
@@ -37,7 +37,7 @@ interface FilterModalProps {
     setSortBy: React.Dispatch<React.SetStateAction<string>>;
 
     setActiveRange: React.Dispatch<React.SetStateAction<DateRangeFilterType>>;
-    setActiveStatus: React.Dispatch<React.SetStateAction<StockStatusFilterType | InvoiceStatusFilterType | PartyStatusFilterType>>;
+    setActiveStatus: React.Dispatch<React.SetStateAction<AnyStatusFilterType>>;
 }
 
 const USERS = mockUsers.map(user => user.name);

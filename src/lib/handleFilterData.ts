@@ -1,14 +1,8 @@
 import {
-    CustomerType,
-    FilterType,
-    InvoiceType,
-    ProductType,
-    SupplierType,
-    UserType
+    AnyItemType,
+    FilterType
 } from "../types/appTypes";
 
-// Define a unified Union type for all supported entity items
-export type AnyItemType = ProductType | InvoiceType | UserType | CustomerType | SupplierType;
 
 export const handleFilterData = (filters: FilterType, itemsData: AnyItemType[]): AnyItemType[] => {
     let filteredResults: AnyItemType[] = [...itemsData];

@@ -7,7 +7,7 @@ import CustomeModal from '@/src/components/modal/CustomModal';
 import IconButton from '@/src/components/ui/IconButton';
 import { ICONS } from '@/src/constants/icons';
 import { COLORS } from '@/src/constants/theme';
-import { ProductType } from '@/src/types/appTypes';
+import { ProductType, SupplierType } from '@/src/types/appTypes';
 import ProfilePicker from '@components/form/ProfilePicker';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,6 +23,9 @@ interface EditProductModalProps {
 
 const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) => {
     const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+
+
+    const [selectedSupplier, setSelectedSupplier] = useState<SupplierType | undefined>(product.supplier);
 
     const [productName, setProductName] = useState(product.name);
     const [stock, setStock] = useState(product.quantity);
@@ -208,10 +211,10 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
 
                     <View className='min-h-16 justify-center items-center border border-light-100 rounded-button mb-4'>
                         {
-                            product.supplier
+                            selectedSupplier
                                 ? (
                                     <ListItemCard
-                                        item={product.supplier}
+                                        item={selectedSupplier}
                                         placeholder={ICONS.COMMON.customer}
                                         isParty={true}
                                         onPress={onPressSupplier}
@@ -264,8 +267,9 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
                 isSupplierModalOpen &&
                 <AddProductSupplierModal
                     visible={isSupplierModalOpen}
-                    selectedSupplier={product.supplier}
-                    onSelected={() => setIsSupplierModalOpen(false)}
+                    selectedSupplier={selectedSupplier}
+                    onClose={() => setIsSupplierModalOpen(false)}
+                    setSelectedSupplier={setSelectedSupplier}
                 />
             }
         </>

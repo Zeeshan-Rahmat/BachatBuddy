@@ -1,6 +1,6 @@
 import { getRelativeTimeShort } from '@/src/lib/DateFunctions';
 import { getStatusColor } from '@/src/lib/getStatusColor';
-import { AnyItemType } from '@/src/lib/handleFilterData';
+import { AnyItemType } from '@/src/types/appTypes';
 import ImageContainer from '@components/common/ImageContainer';
 import React from 'react';
 import { ColorValue, type ImageSourcePropType, Text, TouchableOpacity, View } from 'react-native';

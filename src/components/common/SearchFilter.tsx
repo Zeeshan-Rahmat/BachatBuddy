@@ -7,27 +7,32 @@ import InputText from './InputText'
 
 interface SearchFilterProps {
     value: string;
+    searchPlaceholder: string;
+    hasFilter?: boolean;
     onChangeText: ((text: string) => void) | undefined;
     onFilterPress?: () => void;
 }
 
-const SearchFilter = ({ value, onChangeText, onFilterPress }: SearchFilterProps) => {
+const SearchFilter = ({ value, searchPlaceholder, hasFilter = true, onChangeText, onFilterPress }: SearchFilterProps) => {
     return (
         <View className="flex-row items-center gap-3">
 
             <InputText
                 icon={<IconWrapper name={ICONS.COMMON.search} />}
                 activeIcon={<IconWrapper name={ICONS.COMMON.activeSearch} />}
-                placeholder="Search Items"
+                placeholder={searchPlaceholder}
                 value={value}
                 onChangeText={onChangeText}
                 bgColor="#fff"
                 flex={1}
             />
-            <IconButton
-                icon={<IconWrapper name={ICONS.COMMON.filter} />}
-                onPress={onFilterPress}
-            />
+            {
+                hasFilter &&
+                <IconButton
+                    icon={<IconWrapper name={ICONS.COMMON.filter} />}
+                    onPress={onFilterPress}
+                />
+            }
         </View>
     )
 }

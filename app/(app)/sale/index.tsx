@@ -47,6 +47,7 @@ export default function SaleScreen() {
 
                     <SearchFilter
                         value={search}
+                        searchPlaceholder="Search Invoices"
                         onChangeText={setSearch}
                         onFilterPress={() => setIsFilterModalOpen(true)}
                     />

@@ -5,58 +5,68 @@ import SearchFilter from '@/src/components/common/SearchFilter';
 import Title from '@/src/components/common/Title';
 import CustomModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
-import { mockSuppliers } from '@/src/lib/sampleData';
-import { SupplierType } from '@/src/types/appTypes';
+import { mockCustomers } from '@/src/lib/sampleData';
+import { CustomerType } from '@/src/types/appTypes';
 import React, { useState } from 'react';
 import { FlatList } from 'react-native';
 
-interface AddProductSupplierModalProps {
+interface EditInvoiceCustomerModalProps {
     visible: boolean;
-    selectedSupplier?: SupplierType;
-    setSelectedSupplier?: React.Dispatch<React.SetStateAction<SupplierType | undefined>>;
+    selectedCustomer?: CustomerType;
+    setSelectedCustomer?: React.Dispatch<React.SetStateAction<CustomerType | undefined>>;
     onClose: () => void;
 }
 
-const AddProductSupplierModal = ({ visible, selectedSupplier, setSelectedSupplier, onClose }: AddProductSupplierModalProps) => {
+const EditInvoiceCustomerModal = ({
+    visible,
+    selectedCustomer,
+    setSelectedCustomer,
+    onClose
 
-    const suppliers = mockSuppliers;
+}: EditInvoiceCustomerModalProps
+
+) => {
+
+    const customer = mockCustomers;
 
     const [search, setSearch] = useState('');
 
-    const filtered = suppliers.filter(s =>
+    const filtered = customer.filter(s =>
         s.name.toLowerCase().includes(search.toLowerCase())
     );
 
-    const handleSelectSupplier = (supplier: SupplierType) => {
+    const handleSelectedCustomer = (supplier: CustomerType) => {
 
-        setSelectedSupplier && setSelectedSupplier(supplier);
+        setSelectedCustomer && setSelectedCustomer(supplier);
         onClose();
     }
 
     return (
         <CustomModal visible={visible}>
-            <Title text='Add Supplier' />
+            <Title text='Add Customer' />
 
             <SearchFilter
                 value={search}
-                searchPlaceholder="Search Suppliers"
-                onChangeText={setSearch}
+                searchPlaceholder='Search Customers'
                 hasFilter={false}
+                onChangeText={setSearch}
             />
 
             <FlatList
                 data={filtered}
-                keyExtractor={i => i.supplier_id}
+                keyExtractor={i => i.customer_id}
                 showsVerticalScrollIndicator={false}
                 className='max-h-120'
 
-                renderItem={({ item: supplier }) => (
+                renderItem={({ item: customer }) => (
                     <ListItemCard
-                        item={supplier}
+                        item={customer}
                         placeholder={ICONS.COMMON.customer}
                         isParty={true}
-                        isSelected={selectedSupplier ? supplier.supplier_id === selectedSupplier.supplier_id : false}
-                        onPress={() => handleSelectSupplier(supplier)}
+                        isSelected={selectedCustomer?.customer_id
+                            ? customer.customer_id === selectedCustomer?.customer_id
+                            : false}
+                        onPress={() => handleSelectedCustomer(customer)}
                     />
                 )}
             />
@@ -71,4 +81,4 @@ const AddProductSupplierModal = ({ visible, selectedSupplier, setSelectedSupplie
     )
 }
 
-export default AddProductSupplierModal
+export default EditInvoiceCustomerModal

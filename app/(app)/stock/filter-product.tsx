@@ -1,5 +1,5 @@
 import FilterModal from '@/src/components/modal/FilterModal';
-import { DateRangeFilterType, StockStatusFilterType } from '@/src/types/appTypes';
+import { AnyStatusFilterType, DateRangeFilterType } from '@/src/types/appTypes';
 import React, { useState } from 'react';
 
 interface FilterProductModalProps {
@@ -14,7 +14,7 @@ export default function FilterProductModal({ visible, onApplyFilters, onClose }:
     const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
     const [toDate, setToDate] = useState<Date | undefined>(undefined);
     const [activeRange, setActiveRange] = useState<DateRangeFilterType>('');
-    const [activeStatus, setActiveStatus] = useState<StockStatusFilterType>('');
+    const [activeStatus, setActiveStatus] = useState<AnyStatusFilterType>('');
     const [selectedUser, setSelectedUser] = useState('');
     const [sortBy, setSortBy] = useState('');
 

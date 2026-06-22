@@ -5,6 +5,7 @@ export type InvoiceStatusFilterType = InvoiceStatusType | '';
 
 export type AnyStatusFilterType = StockStatusFilterType | InvoiceStatusFilterType | PartyStatusFilterType;
 
+export type AnyItemType = ProductType | InvoiceType | UserType | CustomerType | SupplierType;
 
 export type FilterType = {
     fromDate: string;
