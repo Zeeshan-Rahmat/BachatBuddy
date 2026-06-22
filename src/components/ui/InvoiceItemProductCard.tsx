@@ -8,19 +8,21 @@ import ImageContainer from '../common/ImageContainer';
 interface InvoiceItemProductCardProps {
     title: string;
     img?: ImageSourcePropType | string;
+    stockQuantity?: number;
     sellingPrice: number;
 }
 
 const InvoiceItemProductCard = ({
     title,
     img,
+    stockQuantity = 0,
     sellingPrice,
 }: InvoiceItemProductCardProps
 ) => {
 
     const imageSource = typeof img === 'string' ? { uri: img } : img;
 
-    const [quantity, setQuantity] = useState(0)
+    const [quantity, setQuantity] = useState(stockQuantity)
     const [updatedSellingPrice, setUpdatedSellingPrice] = useState(sellingPrice.toString())
     const [totalAmount, setTotalAmount] = useState(quantity * parseFloat(updatedSellingPrice))
 

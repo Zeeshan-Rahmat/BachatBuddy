@@ -19,6 +19,7 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import EditInvoiceProductsModal from './edit-invoce-produts'
 import EditInvoiceCustomerModal from './edit-invoice-customer'
 import EditInvoiceDetailModal from './edit-invoice-detail'
+import EditInvoiceSubtotalModal from './edit-invoice-subtotal'
 
 const InvoiceDetailScreen = () => {
 
@@ -32,6 +33,7 @@ const InvoiceDetailScreen = () => {
     const [isEditInvoiceDetailModalOpen, setIsEditInvoiceDetailModalOpen] = useState(false);
     const [isEditInvoiceCustomerModalOpen, setIsEditInvoiceCustomerModalOpen] = useState(false);
     const [isEditInvoiceProductsModalOpen, setIsEditInvoiceProductsModalOpen] = useState(false);
+    const [isEditInvoiceSubtotalModalOpen, setIsEditInvoiceSubtotalModalOpen] = useState(false);
 
     const [showMore, setShowMore] = useState(false)
 
@@ -132,7 +134,13 @@ const InvoiceDetailScreen = () => {
             <View className='bg-white mt-2 p-4 pb-10 rounded-button gap-2'>
                 {
                     invoice
-                        ? <InvoiceTotal invoice={invoice} onDelete={() => setIsDeleteModalOpen(true)} />
+                        ? (
+                            <InvoiceTotal
+                                invoice={invoice}
+                                onDelete={() => setIsDeleteModalOpen(true)}
+                                onPress={() => setIsEditInvoiceSubtotalModalOpen(true)}
+                            />
+                        )
                         : <Text className='text-xl text-dark-50 text-center font-semibold'>Not Found</Text>
                 }
             </View>
@@ -181,6 +189,17 @@ const InvoiceDetailScreen = () => {
                     selectedProducts={selectedProducts}
                     onClose={() => setIsEditInvoiceProductsModalOpen(false)}
                     setSelectedProducts={setSelectedProducts}
+                />
+            }
+
+
+            {
+                isEditInvoiceSubtotalModalOpen &&
+                invoice &&
+                <EditInvoiceSubtotalModal
+                    visible={isEditInvoiceSubtotalModalOpen}
+                    invoice={invoice}
+                    onClose={() => setIsEditInvoiceSubtotalModalOpen(false)}
                 />
             }
 
@@ -239,8 +258,20 @@ function InvoiceDetail({ invoice, showMore, setShowMore }: InvoiceDetailProps): 
     )
 }
 
+interface InvoiceTotalProps {
+    invoice: InvoiceType,
+    onDelete: () => void,
+    onPress: () => void
+}
 
-function InvoiceTotal({ invoice, onDelete }: { invoice: InvoiceType, onDelete: () => void }): React.JSX.Element {
+
+function InvoiceTotal({
+    invoice,
+    onDelete,
+    onPress
+}: InvoiceTotalProps
+): React.JSX.Element {
+
     const statusColors = {
         'Paid': COLORS.success,
         'Pending': COLORS.warning,
@@ -249,6 +280,7 @@ function InvoiceTotal({ invoice, onDelete }: { invoice: InvoiceType, onDelete: (
     return (
         <>
             <TouchableOpacity
+                onPress={onPress}
                 className='gap-2'
             >
                 <InfoField

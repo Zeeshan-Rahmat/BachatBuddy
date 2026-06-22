@@ -65,9 +65,21 @@ const EditInvoiceProductsModal = ({
                     ? (
                         selectedProducts
                             ? (
-                                <View className='mt-3 p-3'>
-                                    <Text className='text-lg font-medium text-center'>Selected Products</Text>
-                                </View>
+                                <FlatList
+                                    data={selectedProducts}
+                                    keyExtractor={i => i.invoice_item_id.toString()}
+                                    showsVerticalScrollIndicator={false}
+                                    className='min-h-80 max-h-100 mt-3'
+
+                                    renderItem={({ item: invoiceItem }) => (
+                                        <InvoiceItemProductCard
+                                            title={invoiceItem.product.name}
+                                            img={invoiceItem.product.img}
+                                            sellingPrice={invoiceItem.selling_price}
+                                            stockQuantity={invoiceItem.quantity}
+                                        />
+                                    )}
+                                />
                             )
                             : (
                                 <View className='mt-3 p-3'>

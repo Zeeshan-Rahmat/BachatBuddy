@@ -28,11 +28,11 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
     const [selectedSupplier, setSelectedSupplier] = useState<SupplierType | undefined>(product.supplier);
 
     const [productName, setProductName] = useState(product.name);
-    const [stock, setStock] = useState(product.quantity);
-    const [minStock, setMinStock] = useState(product.minimum_quantity);
-    const [purchasePrice, setPurchasePrice] = useState(product.purchase_price);
-    const [maxSellingPrice, setMaxSellingPrice] = useState(product.max_selling_price);
-    const [minSellingPrice, setMinSellingPrice] = useState(product.min_selling_price);
+    const [stock, setStock] = useState(product.quantity.toString());
+    const [minStock, setMinStock] = useState(product.minimum_quantity.toString());
+    const [purchasePrice, setPurchasePrice] = useState(product.purchase_price.toString());
+    const [maxSellingPrice, setMaxSellingPrice] = useState(product.max_selling_price.toString());
+    const [minSellingPrice, setMinSellingPrice] = useState(product.min_selling_price.toString());
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({
         productName: '', stock: '', minStock: '', purchasePrice: '', maxSellingPrice: '', minSellingPrice: '',
@@ -81,19 +81,19 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
     };
 
     const onStockAdd = () => {
-        setStock((prev) => prev + 1)
+        setStock((prev) => (parseInt(prev) + 1).toString())
     }
 
     const onStockMinus = () => {
-        setStock((prev) => Math.max(0, prev - 1));
+        setStock((prev) => (Math.max(0, parseInt(prev) - 1)).toString());
     };
 
     const onMinStockAdd = () => {
-        setMinStock((prev) => prev + 1)
+        setMinStock((prev) => (parseInt(prev) + 1).toString())
     }
 
     const onMinStockMinus = () => {
-        setMinStock((prev) => Math.max(0, prev - 1));
+        setMinStock((prev) => (Math.max(0, parseInt(prev) - 1)).toString());
     };
 
     const onPressSupplier = () => {
@@ -137,8 +137,8 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
                             icon={<IconWrapper name={ICONS.STOCK.warehouse} />}
                             activeIcon={<IconWrapper name={ICONS.STOCK.activeWarehouse} />}
                             placeholder="Stock Quantity"
-                            value={stock.toString()}
-                            onChangeText={(t) => { setStock(parseInt(t)); setErrors(e => ({ ...e, stock: '' })); }}
+                            value={stock}
+                            onChangeText={(t) => { setStock(t); setErrors(e => ({ ...e, stock: '' })); }}
                             error={errors.stock}
                             keyboardType='numeric'
                         />
@@ -160,8 +160,8 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
                             icon={<IconWrapper name={ICONS.STOCK.warehouse} />}
                             activeIcon={<IconWrapper name={ICONS.STOCK.activeWarehouse} />}
                             placeholder="Minimum Stock Quantity"
-                            value={minStock.toString()}
-                            onChangeText={(t) => { setMinStock(parseInt(t)); setErrors(e => ({ ...e, minStock: '' })); }}
+                            value={minStock}
+                            onChangeText={(t) => { setMinStock(t); setErrors(e => ({ ...e, minStock: '' })); }}
                             error={errors.minStock}
                             keyboardType='numeric'
                         />
@@ -181,8 +181,8 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
                         icon={<IconWrapper name={ICONS.STOCK.purchaseMoney} />}
                         activeIcon={<IconWrapper name={ICONS.STOCK.activePurchaseMoney} />}
                         placeholder="Purchase Price"
-                        value={purchasePrice.toString()}
-                        onChangeText={(t) => { setPurchasePrice(parseInt(t)); setErrors(e => ({ ...e, purchasePrice: '' })); }}
+                        value={purchasePrice}
+                        onChangeText={(t) => { setPurchasePrice(t); setErrors(e => ({ ...e, purchasePrice: '' })); }}
                         error={errors.purchasePrice}
                         keyboardType='numeric'
                     />
@@ -192,8 +192,8 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
                         icon={<IconWrapper name={ICONS.STOCK.sellingMoney} />}
                         activeIcon={<IconWrapper name={ICONS.STOCK.activeSellingMoney} />}
                         placeholder="Minimum Selling Price"
-                        value={minSellingPrice.toString()}
-                        onChangeText={(t) => { setMinSellingPrice(parseInt(t)); setErrors(e => ({ ...e, minSellingPrice: '' })); }}
+                        value={minSellingPrice}
+                        onChangeText={(t) => { setMinSellingPrice(t); setErrors(e => ({ ...e, minSellingPrice: '' })); }}
                         error={errors.minSellingPrice}
                         keyboardType='numeric'
                     />
@@ -203,8 +203,8 @@ const EditProductModal = ({ product, visible, onClose }: EditProductModalProps) 
                         icon={<IconWrapper name={ICONS.STOCK.sellingMoney} />}
                         activeIcon={<IconWrapper name={ICONS.STOCK.activeSellingMoney} />}
                         placeholder="Maximum Selling Price"
-                        value={maxSellingPrice.toString()}
-                        onChangeText={(t) => { setMaxSellingPrice(parseInt(t)); setErrors(e => ({ ...e, maxSellingPrice: '' })); }}
+                        value={maxSellingPrice}
+                        onChangeText={(t) => { setMaxSellingPrice(t); setErrors(e => ({ ...e, maxSellingPrice: '' })); }}
                         error={errors.maxSellingPrice}
                         keyboardType='numeric'
                     />
