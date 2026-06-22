@@ -74,7 +74,7 @@ export default function SaleScreen() {
             </ScreenWrapper>
 
 
-            <RoundedIconButton />
+            <RoundedIconButton onPress={() => router.push(ROUTES.SALE.ADD_INVOICE)} />
 
             {
                 isFilterModalOpen && (

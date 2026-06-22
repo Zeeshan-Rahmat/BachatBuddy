@@ -28,18 +28,15 @@ const EditInvoiceSubtotalModal = ({ visible, invoice, onClose }: EditInvoiceSubt
     const [loading, setLoading] = useState(false);
     const [isPercent, setIsPercent] = useState(false);
 
-    // Keep inputs strictly as raw string states
     const [paidAmountInput, setPaidAmountInput] = useState(invoice.paid_amount.toString());
     const [discountInput, setDiscountInput] = useState(invoice.discount_amount.toString());
 
     const [errors, setErrors] = useState({ paidAmount: '', discount: '' });
 
-    // --- DERIVED STATE (Calculated instantly on every render!) ---
     const subtotal = invoice.subtotal;
     const parsedDiscount = parseFloat(discountInput) || 0;
     const parsedPaidAmount = parseFloat(paidAmountInput) || 0;
 
-    // Calculate exact discount amount and discount percentage based on toggle switch
     const discountAmount = isPercent
         ? (parsedDiscount / 100) * subtotal
         : parsedDiscount;
@@ -53,11 +50,10 @@ const EditInvoiceSubtotalModal = ({ visible, invoice, onClose }: EditInvoiceSubt
 
     // --- HANDLERS ---
     const handleToggleType = () => {
-        // Automatically swap the text value in the input box so the user doesn't get disoriented
         setIsPercent(!isPercent);
         setDiscountInput(
             !isPercent
-                ? discountPercent.toFixed(1).replace(/\.0$/, '') // Show clean percent string
+                ? discountPercent.toFixed(1).replace(/\.0$/, '')
                 : discountAmount.toString()
         );
     };

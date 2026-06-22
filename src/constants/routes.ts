@@ -35,6 +35,7 @@ export const ROUTES = {
     SALE: {
         INDEX: "/sale",
         INVOICE_DETAILS: "/sale/[id]",
+        ADD_INVOICE: "/sale/add-invoice",
     },
 
     REPORTS: "/reports",
