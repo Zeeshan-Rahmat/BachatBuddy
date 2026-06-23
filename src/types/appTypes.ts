@@ -139,3 +139,12 @@ export type ItemType = {
     email?: string;
     img?: string;
 };
+
+
+export type TimePeriodType = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
+
+export interface ReportFilterType {
+    values: string[];
+    value: string;
+    onChange: (val: string) => void;
+}
