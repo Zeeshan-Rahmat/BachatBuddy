@@ -65,35 +65,11 @@ export const fastSlowMovingProductsData = [
 // ============================================================================
 // For Grouped Bar charts, pass a flat array alternating columns with spacing offsets
 export const productCategoryBarData = [
-    { value: 145, label: 'USB-C', frontColor: '#4F46E5' },
-    { value: 0, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 120, label: 'Watch 5', frontColor: '#4F46E5' },
-    { value: 0, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 88, label: 'Mouse', frontColor: '#4F46E5' },
-    { value: 0, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 76, label: 'Speaker', frontColor: '#4F46E5' },
-    { value: 0, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 64, label: 'Keyboard', frontColor: '#4F46E5' },
-    { value: 0, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 0, label: 'Stand', frontColor: '#4F46E5' },
-    { value: 14, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 0, label: 'Webcam', frontColor: '#4F46E5' },
-    { value: 11, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 0, label: 'Adapter', frontColor: '#4F46E5' },
-    { value: 9, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 0, label: 'Splitter', frontColor: '#4F46E5' },
-    { value: 7, frontColor: '#EF4444', spacing: 20 },
-
-    { value: 0, label: 'Pad', frontColor: '#4F46E5' },
-    { value: 5, frontColor: '#EF4444', spacing: 20 }
+    { value: 145, label: '1', frontColor: COLORS.primaryGreen },
+    { value: 120, label: '2', frontColor: COLORS.primaryGreen },
+    { value: 88, label: '3', frontColor: COLORS.primaryGreen },
+    { value: 76, label: '4', frontColor: COLORS.primaryGreen },
+    { value: 64, label: '5', frontColor: COLORS.primaryGreen },
 ];
 
 // ============================================================================

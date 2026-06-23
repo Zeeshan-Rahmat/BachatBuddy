@@ -22,7 +22,7 @@ export default function ReportCard({
 
 }: ReportCardProps) {
     return (
-        <View className="mb-8">
+        <View className="mt-2 mb-4">
             <SectionHeader
                 title={title}
                 marginTop={0}

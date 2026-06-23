@@ -1,21 +1,24 @@
 import CustomLineChart from '@/src/components/report/CustomLineChart'
-import LegendItem from '@/src/components/report/LegendItem'
+import CustomPieChart from '@/src/components/report/CustomPieChart'
+import MultiLineChart from '@/src/components/report/MultiLineChart'
 import ReportCard from '@/src/components/report/ReportCard'
 import { duesPieData, monthlySalesData, profitData, revenueData } from '@/src/constants/giftedChart'
-import { ReportFilterType, TimePeriodType } from '@/src/types/appTypes'
+import { COLORS } from '@/src/constants/theme'
+import { calculateChartScale } from '@/src/lib/calculateChartScale'
+import { calculateMultiLineChartScale } from '@/src/lib/calculateMultiLineChartScale'
+import { LegendPieChartType, ReportFilterType, TimePeriodType } from '@/src/types/appTypes'
 import React, { useState } from 'react'
 import { View } from 'react-native'
-import { PieChart } from 'react-native-gifted-charts'
 
 const SalesReport = () => {
 
-    const filterOptions: TimePeriodType[] = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
+    const timePeriodFilterValues: TimePeriodType[] = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
 
     const [salesOverviewTimePeriod, setSalesOverviewTimePeriod] = useState<TimePeriodType>('Monthly');
 
     const salesFilter: ReportFilterType = {
         value: salesOverviewTimePeriod,
-        values: filterOptions,
+        values: timePeriodFilterValues,
         onChange(val) {
             setSalesOverviewTimePeriod(val as TimePeriodType)
         }
@@ -25,38 +28,51 @@ const SalesReport = () => {
 
     const revenueProfitFilter: ReportFilterType = {
         value: revenueProfitTimePeriod,
-        values: filterOptions,
+        values: timePeriodFilterValues,
         onChange(val) {
             setRevenueProfitTimePeriod(val as TimePeriodType)
         }
     }
 
+    const revenueProfitLabels = [
+        {
+            label: "Revenue",
+            color: COLORS.primaryGreen,
+            dotColor: COLORS.darkGreen,
+        },
+        {
+            label: "Profit",
+            color: COLORS.navy300,
+            dotColor: COLORS.primaryNavy,
+        },
+    ];
+
+    const paymentStatusLabels: LegendPieChartType[] = [
+        { color: "bg-success", label: "Paid Dues", value: "145,000" },
+        { color: "bg-warning", label: "Pending Dues", value: "42,000" },
+        { color: "bg-danger", label: "Unpaid Dues", value: "18,000" }
+    ]
+
     return (
         <View>
             {/* Sales Overview */}
             <ReportCard title="SALES OVERVIEW" hasFilter={salesFilter}>
-                <View className="rounded-button items-center justify-center overflow-hidden">
-                    <CustomLineChart firstLine={monthlySalesData} />
-                </View>
+                <CustomLineChart firstLineData={monthlySalesData} chartScale={calculateChartScale(monthlySalesData, 10)} />
             </ReportCard>
 
             {/* Payment Status */}
             <ReportCard title="PAYMENT STATUS">
-                <View className="flex-row items-center">
-                    <View className="flex-1">
-                        <LegendItem color="bg-success" label="Paid Dues" value="145,000" />
-                        <LegendItem color="bg-warning" label="Pending Dues" value="42,000" />
-                        <LegendItem color="bg-danger" label="Unpaid Dues" value="18,000" />
-                    </View>
-                    <PieChart data={duesPieData} radius={80} />
-                </View>
+                <CustomPieChart data={duesPieData} radius={90} legendLabelData={paymentStatusLabels} />
             </ReportCard>
 
             {/* Revenue vs Profit */}
             <ReportCard title="REVENUE VS PROFIT" hasFilter={revenueProfitFilter}>
-                <View className="rounded-button items-center justify-center overflow-hidden">
-                    <CustomLineChart firstLine={revenueData} secondLine={profitData} />
-                </View>
+                <MultiLineChart
+                    firstLineData={revenueData}
+                    secondLineData={profitData}
+                    legendData={revenueProfitLabels}
+                    chartScale={calculateMultiLineChartScale([revenueData, profitData], 10)}
+                />
             </ReportCard>
         </View>
     )

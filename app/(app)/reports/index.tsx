@@ -6,6 +6,7 @@ import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
 import SalesReport from './sales-report';
+import StockReport from './stock-report';
 
 const TABS = ['Sales', 'Stock', 'Parties'];
 
@@ -17,14 +18,14 @@ export default function ReportsScreen() {
 
             <InternalTabBar tabs={TABS} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-            <PaddingWrapper>
+            <PaddingWrapper addPaddingBottom={false} hasLowPaddingTop>
                 <ScrollView
                     className="flex-1"
                     showsVerticalScrollIndicator={false}
                 >
 
                     {activeTab === 'Sales' && <SalesReport />}
-                    {activeTab === 'Stock' && <PlaceHolderReport title="Stock Reports" />}
+                    {activeTab === 'Stock' && <StockReport />}
                     {activeTab === 'Parties' && <PlaceHolderReport title="Parties Reports" />}
 
                 </ScrollView>

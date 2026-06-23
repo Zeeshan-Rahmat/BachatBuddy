@@ -1,53 +1,61 @@
 import { COLORS } from '@/src/constants/theme';
+import { ChartScaleType } from '@/src/types/appTypes';
 import React from 'react';
+import { View } from 'react-native';
 import { LineChart, lineDataItem } from 'react-native-gifted-charts';
 
 interface CustomLineChartProps {
-    firstLine?: lineDataItem[];
-    secondLine?: lineDataItem[];
+    firstLineData?: lineDataItem[];
+    secondLineData?: lineDataItem[];
+
+    chartScale?: ChartScaleType;
 }
 
-export default function CustomLineChart({ firstLine, secondLine }: CustomLineChartProps) {
+export default function CustomLineChart({ firstLineData, secondLineData, chartScale }: CustomLineChartProps) {
     return (
-        <LineChart
-            data={firstLine}
-            data2={secondLine}
 
-            width={300}
-            height={220}
-            spacing={48}
-            initialSpacing={24}
-            endSpacing={20}
+        <View className="rounded-button items-center justify-center overflow-hidden">
+            <LineChart
+                data={firstLineData}
+                data2={secondLineData}
 
-            thickness={3}
-            dataPointsRadius={4}
+                width={300}
+                height={220}
+                spacing={48}
+                initialSpacing={24}
+                endSpacing={20}
 
-            color={COLORS.primaryGreen}
-            dataPointsColor={COLORS.darkGreen}
+                thickness={3}
+                dataPointsRadius={4}
 
-            color2={COLORS.navy300}
-            dataPointsColor2={COLORS.primaryNavy}
+                color={COLORS.primaryGreen}
+                dataPointsColor={COLORS.darkGreen}
 
-            hideRules={false}
-            focusedDataPointColor="#1e3a1e"
+                color2={COLORS.navy300}
+                dataPointsColor2={COLORS.primaryNavy}
 
-            maxValue={90000}
-            noOfSections={9} // Evenly splits lines from 10k to 90k intervals
-            yAxisColor="transparent" // Clean baseline configuration
-            yAxisTextStyle={{ color: '#475569', fontSize: 12, fontWeight: '500' }}
-            yAxisLabelContainerStyle={{ width: 45 }}
+                hideRules={false}
+                focusedDataPointColor="#1e3a1e"
 
-            xAxisColor="#cbd5e1" // Soft separator baseline slate color
-            xAxisLabelTextStyle={{
-                color: '#1e3a8a', // Deep indigo font accents
-                fontSize: 11,
-                fontWeight: '500',
-                textAlign: 'center'
-            }}
+                maxValue={chartScale?.maxValue}
+                noOfSections={chartScale?.noOfSections}
 
-            rulesColor="#e2e8f0" // Fine light-grey container matrix guidelines
-            rulesType="solid"
-            hideYAxisText={false}
-        />
+                yAxisColor="transparent" // Clean baseline configuration
+                yAxisTextStyle={{ color: '#475569', fontSize: 12, fontWeight: '500' }}
+                yAxisLabelContainerStyle={{ width: 45 }}
+
+                xAxisColor="#cbd5e1" // Soft separator baseline slate color
+                xAxisLabelTextStyle={{
+                    color: '#1e3a8a', // Deep indigo font accents
+                    fontSize: 11,
+                    fontWeight: '500',
+                    textAlign: 'center'
+                }}
+
+                rulesColor="#e2e8f0" // Fine light-grey container matrix guidelines
+                rulesType="solid"
+                hideYAxisText={false}
+            />
+        </View>
     )
 }

@@ -142,9 +142,26 @@ export type ItemType = {
 
 
 export type TimePeriodType = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
+export type ProductRankingType = 'Top 5' | 'Top 10' | 'Bottom 5' | 'Bottom 10';
 
 export interface ReportFilterType {
     values: string[];
     value: string;
     onChange: (val: string) => void;
+}
+
+export interface LegendLineChartType {
+    label: string;
+    color: string;
+    dotColor: string;
+}
+
+export interface LegendPieChartType {
+    color: string;
+    label: string;
+    value: string;
+}
+export interface ChartScaleType {
+    maxValue: number;
+    noOfSections: number;
 }
