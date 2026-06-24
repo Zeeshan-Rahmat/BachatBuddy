@@ -2,27 +2,12 @@ import React from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 
 interface AvatarProps {
-    user?: {
-        id: string;
-        username: string;
-        email: string;
-        role: string;
-        business_name: string | null;
-        avatar_url: string | null
-    };
+    name?: string;
+    img?: string;
     size?: number;
     color?: "dark" | "light";
     textSize?: "extraLarge" | "large" | "small";
     onPress?: () => void;
-}
-
-const defaultUser = {
-    id: "ZU1100",
-    username: "Zeeshan Ullah",
-    email: "zeeshanullah@email.com",
-    role: "owner",
-    business_name: "Zeeshan Electronics",
-    avatar_url: null,
 }
 
 function usernameInitials(username: string) {
@@ -35,15 +20,15 @@ function usernameInitials(username: string) {
     )
 }
 
-const Avatar = ({ user = defaultUser, size = 36, color = "light", textSize = "small", onPress }: AvatarProps) => {
+const Avatar = ({ name, img, size = 36, color = "light", textSize = "small", onPress }: AvatarProps) => {
     return (
         <TouchableOpacity
             onPress={onPress}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-            {user?.avatar_url ? (
+            {img ? (
                 <Image
-                    source={{ uri: user.avatar_url }}
+                    source={{ uri: img }}
                     className={`rounded-full border ${color == "light" ? "border-white" : "border-light-100"}`}
                     style={{ width: size, height: size }}
                 />
@@ -61,7 +46,7 @@ const Avatar = ({ user = defaultUser, size = 36, color = "light", textSize = "sm
                         ${color == "light" ? "text-white" : "text-navy-400"}`
                     }
                     >
-                        {usernameInitials(user.username)}
+                        {usernameInitials(name ?? "Unknown")}
                     </Text>
                 </View>
             )}

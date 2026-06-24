@@ -12,6 +12,7 @@ import { COLORS } from '@/src/constants/theme'
 import { mockInvoices } from '@/src/lib/sampleData'
 import { CustomerType, InvoiceType } from '@/src/types/appTypes'
 import { formatDateTime } from '@/src/Utility/DateFunctions'
+import { getStatusRGBColor } from '@/src/Utility/getStatusColor'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import { router, useLocalSearchParams } from 'expo-router'
 import React, { useState } from 'react'
@@ -216,16 +217,11 @@ interface InvoiceDetailProps {
 }
 
 function InvoiceDetail({ invoice, showMore, setShowMore }: InvoiceDetailProps): React.JSX.Element {
-    const statusColors = {
-        'Paid': COLORS.success,
-        'Pending': COLORS.warning,
-        'Unpaid': COLORS.danger,
-    }
     return (
         <>
             <InfoField label='Invoice No.' value={invoice.invoice_number} />
             <InfoField label='Due Date' value={formatDateTime(invoice.due_date)} />
-            <InfoField label='Invoice Status' value={invoice.status} valueColor={statusColors[invoice.status]} />
+            <InfoField label='Invoice Status' value={invoice.status} valueColor={getStatusRGBColor(invoice.status)} />
 
             {
                 showMore

@@ -3,9 +3,13 @@ export type StockStatusFilterType = StockStatusType | '';
 export type PartyStatusFilterType = PartyStatusType | '';
 export type InvoiceStatusFilterType = InvoiceStatusType | '';
 
+export type StatusColorType = StockStatusType | PartyStatusType | InvoiceStatusType;
+
 export type AnyStatusFilterType = StockStatusFilterType | InvoiceStatusFilterType | PartyStatusFilterType;
 
-export type AnyItemType = ProductType | InvoiceType | UserType | CustomerType | SupplierType;
+export type AnyItemType = ProductType | InvoiceType | EmployeeType | CustomerType | SupplierType;
+
+export type PartyType = EmployeeType | CustomerType | SupplierType;
 
 export type FilterType = {
     fromDate: string;
@@ -23,6 +27,24 @@ export type RoleType = 'Owner' | 'Employee';
 
 export type UserType = {
     user_id: string;
+    name: string;
+    phone: string;
+    email: string;
+    role: string;
+    username: string;
+    password: string;
+    status: PartyStatusType;
+    biometric_enabled: boolean;
+    address: string;
+    img?: string;
+    created_at: Date | string;
+    last_updated_at: Date | string;
+}
+
+export type EmployeeType = {
+    employee_id: string;
+    created_by: UserType;
+    last_updated_by: UserType;
     name: string;
     phone: string;
     email: string;

@@ -72,7 +72,7 @@ const ProfileScreen = () => {
 
             </PaddingWrapper>
 
-            <EditProfileModal visible={isOpen} onClose={() => setIsOpen(false)} />
+            {isOpen && <EditProfileModal visible={isOpen} onClose={() => setIsOpen(false)} />}
         </ScreenWrapper>
     )
 }

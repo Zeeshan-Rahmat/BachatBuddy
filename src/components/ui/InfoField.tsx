@@ -12,7 +12,7 @@ const InfoField = ({ label, value, valueColor = COLORS.dark300 }: InfoFieldProps
     return (
         <View className='flex-row justify-between'>
             <Text className='text-dark-50 text-lg font-semibold'>{label}</Text>
-            <Text className='text-lg font-semibold' style={{ color: valueColor }}>{value}</Text>
+            <Text className='text-lg text-right font-semibold max-w-70' style={{ color: valueColor }}>{value}</Text>
         </View>
     )
 }
