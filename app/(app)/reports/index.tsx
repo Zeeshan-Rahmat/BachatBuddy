@@ -1,10 +1,10 @@
 // app/(app)/reports/index.tsx
 import InternalTabBar from '@/src/components/common/InternalTabBar';
 import PaddingWrapper from '@/src/components/common/PaddingWrapper';
-import PlaceHolderReport from '@/src/components/report/PlaceHolderReport';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
+import PartyReport from './party-report';
 import SalesReport from './sales-report';
 import StockReport from './stock-report';
 
@@ -26,7 +26,7 @@ export default function ReportsScreen() {
 
                     {activeTab === 'Sales' && <SalesReport />}
                     {activeTab === 'Stock' && <StockReport />}
-                    {activeTab === 'Parties' && <PlaceHolderReport title="Parties Reports" />}
+                    {activeTab === 'Parties' && <PartyReport />}
 
                 </ScrollView>
             </PaddingWrapper>

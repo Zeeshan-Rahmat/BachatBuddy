@@ -67,7 +67,7 @@ export type SupplierType = {
     supplied_products: number;
     total_supply_value: number;
     img?: string;
-    last_purchase_date: Date | string;
+    last_supplied_date: Date | string; // <-- Change This to supplied 
     created_at: Date | string;
     last_updated_at: Date | string;
 }

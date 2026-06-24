@@ -1,5 +1,5 @@
-import { getRelativeTimeShort } from '@/src/lib/DateFunctions';
-import { getStatusColor } from '@/src/lib/getStatusColor';
+import { getRelativeTimeShort } from '@/src/Utility/DateFunctions';
+import { getStatusColor } from '@/src/Utility/getStatusColor';
 import { AnyItemType } from '@/src/types/appTypes';
 import ImageContainer from '@components/common/ImageContainer';
 import React from 'react';

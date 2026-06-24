@@ -6,9 +6,9 @@ import CustomModal from '@/src/components/modal/CustomModal';
 import CloseButton from '@/src/components/ui/CloseButton';
 import DetailsText from '@/src/components/ui/DetailsText';
 import { ICONS } from '@/src/constants/icons';
-import { formatDateTime } from '@/src/lib/DateFunctions';
-import { getStatusColor } from '@/src/lib/getStatusColor';
 import { ProductType } from '@/src/types/appTypes';
+import { formatDateTime } from '@/src/Utility/DateFunctions';
+import { getStatusColor } from '@/src/Utility/getStatusColor';
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 

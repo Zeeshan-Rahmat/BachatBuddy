@@ -99,7 +99,7 @@ export const mockSuppliers: SupplierType[] = [
         supplied_products: 45,
         total_supply_value: 125000.50,
         img: "https://api.dicebear.com/7.x/identicon/svg?seed=Apex",
-        last_purchase_date: "2026-06-10T14:00:00Z",
+        last_supplied_date: "2026-06-10T14:00:00Z",
         created_at: "2026-01-15T11:00:00Z",
         last_updated_at: "2026-06-10T15:30:00Z"
     },
@@ -115,7 +115,7 @@ export const mockSuppliers: SupplierType[] = [
         supplied_products: 120,
         total_supply_value: 45200.00,
         img: "https://api.dicebear.com/7.x/identicon/svg?seed=Global",
-        last_purchase_date: "2026-06-15T09:00:00Z",
+        last_supplied_date: "2026-06-15T09:00:00Z",
         created_at: "2026-01-20T09:30:00Z",
         last_updated_at: "2026-06-15T10:00:00Z"
     },
@@ -131,7 +131,7 @@ export const mockSuppliers: SupplierType[] = [
         supplied_products: 12,
         total_supply_value: 89000.00,
         img: "https://api.dicebear.com/7.x/identicon/svg?seed=Elite",
-        last_purchase_date: "2026-05-28T16:45:00Z",
+        last_supplied_date: "2026-05-28T16:45:00Z",
         created_at: "2026-02-18T14:20:00Z",
         last_updated_at: "2026-05-28T17:00:00Z"
     },
@@ -147,7 +147,7 @@ export const mockSuppliers: SupplierType[] = [
         supplied_products: 78,
         total_supply_value: 61350.75,
         img: "https://api.dicebear.com/7.x/identicon/svg?seed=Nexus",
-        last_purchase_date: "2026-06-02T11:15:00Z",
+        last_supplied_date: "2026-06-02T11:15:00Z",
         created_at: "2026-03-05T10:00:00Z",
         last_updated_at: "2026-06-02T12:00:00Z"
     },
@@ -163,7 +163,7 @@ export const mockSuppliers: SupplierType[] = [
         supplied_products: 5,
         total_supply_value: 3400.00,
         img: "https://api.dicebear.com/7.x/identicon/svg?seed=Legacy",
-        last_purchase_date: "2026-02-10T13:20:00Z",
+        last_supplied_date: "2026-02-10T13:20:00Z",
         created_at: "2026-01-11T08:45:00Z",
         last_updated_at: "2026-04-19T10:30:00Z"
     }
