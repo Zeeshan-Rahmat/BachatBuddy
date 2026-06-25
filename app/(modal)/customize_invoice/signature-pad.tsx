@@ -2,33 +2,38 @@ import InputText from '@/src/components/common/InputText';
 import PaddingWrapper from '@/src/components/common/PaddingWrapper';
 import ScreenWrapper from '@/src/components/layout/ScreenWrapper';
 import { COLORS } from '@/src/constants/theme';
+import { useInvoiceCustomizationStore } from '@/src/store/invoiceCustomizationStore';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
-// Import the native drawing engine
 import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
 
 export default function SignaturePadScreen() {
     const [signatureLabel, setSignatureLabel] = useState('');
     const signatureRef = useRef<SignatureViewRef>(null);
+    const setSignature = useInvoiceCustomizationStore((state) => state.setSignature);
 
-    // 1. Triggered when user finishes a stroke or taps Add
     const handleOK = (signatureBase64: string) => {
-        console.log('Signature captured successfully!');
-        console.log('Data Base64 URI:', signatureBase64.substring(0, 50) + '...');
-
         if (!signatureLabel.trim()) {
             Alert.alert('Label Required', 'Please provide a signature label (e.g., Manager Sign) before saving.');
             return;
         }
 
-        // TODO: Pass { signatureBase64, label: signatureLabel } back to your invoice preview state layout
-        Alert.alert('Saved', `Signature "${signatureLabel}" attached successfully!`);
+        setSignature({
+            label: signatureLabel.trim(),
+            dataUri: signatureBase64,
+        });
+
+        router.back();
     };
 
-    // 2. Clear canvas data
     const handleClear = () => {
         signatureRef.current?.clearSignature();
+    };
+
+    const handleEmpty = () => {
+        Alert.alert('Signature Required', 'Please draw your signature before adding it.');
     };
 
     const handleSaveTrigger = () => {
@@ -49,11 +54,6 @@ export default function SignaturePadScreen() {
 
                     {/* Top Form Group Section */}
                     <View className="flex-1">
-
-                        {/* LABEL INPUT FIELD */}
-                        <Text className="text-xs font-bold text-gray-500 tracking-wider mb-2 uppercase">
-                            Label
-                        </Text>
 
                         <InputText
                             icon={<MaterialCommunityIcons name="tag" size={24} color={COLORS.placeholder} />}
@@ -78,6 +78,7 @@ export default function SignaturePadScreen() {
                             <SignatureScreen
                                 ref={signatureRef}
                                 onOK={handleOK}
+                                onEmpty={handleEmpty}
                                 autoClear={false}
                                 descriptionText=""
                                 clearText="Clear"

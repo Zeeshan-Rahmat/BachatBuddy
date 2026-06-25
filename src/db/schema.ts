@@ -18,6 +18,24 @@ export const invoiceStatusValues = ['Paid', 'Pending', 'Unpaid'] as const;
 export const syncOperationValues = ['insert', 'update', 'delete', 'approval'] as const;
 export const syncQueueStatusValues = ['queued', 'processing', 'failed'] as const;
 
+export const authSessions = sqliteTable(
+    'auth_sessions',
+    {
+        id: text('id').primaryKey(),
+        userId: text('user_id').notNull().references(() => users.id),
+        accessToken: text('access_token').notNull(),
+        refreshToken: text('refresh_token').notNull(),
+        expiresAt: integer('expires_at').notNull(),
+        isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+        updatedAt: integer('updated_at').notNull(),
+        createdAt: integer('created_at').notNull(),
+    },
+    (table) => [
+        index('idx_auth_sessions_user_id').on(table.userId),
+        index('idx_auth_sessions_active').on(table.isActive),
+    ],
+);
+
 export const users = sqliteTable(
     'users',
     {
@@ -248,6 +266,8 @@ export const invoiceItemRelations = relations(invoiceItems, ({ one }) => ({
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUserRow = typeof users.$inferInsert;
+export type AuthSessionRow = typeof authSessions.$inferSelect;
+export type NewAuthSessionRow = typeof authSessions.$inferInsert;
 export type CustomerRow = typeof customers.$inferSelect;
 export type NewCustomerRow = typeof customers.$inferInsert;
 export type SupplierRow = typeof suppliers.$inferSelect;

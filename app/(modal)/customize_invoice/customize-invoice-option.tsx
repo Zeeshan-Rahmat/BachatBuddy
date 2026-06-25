@@ -2,10 +2,11 @@ import ValueSelect from '@/src/components/common/ValueSelect';
 import SectionHeader from '@/src/components/dashboard/SectionHeader';
 import { ROUTES } from '@/src/constants/routes';
 import { COLORS } from '@/src/constants/theme';
+import { useInvoiceCustomizationStore } from '@/src/store/invoiceCustomizationStore';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 
 type FontSizeSetting = 'Small' | 'Medium' | 'Large';
 
@@ -16,11 +17,10 @@ const FONT_FAMILIES = ['Arial', 'Times New Roman', 'Calibri']
 export default function CustomizeInvoiceOptionScreen() {
     const [selectedFontSize, setSelectedFontSize] = useState<FontSizeSetting>('Medium');
     const [selectedFontFamily, setSelectedFontFamily] = useState(FONT_FAMILIES[0]); // Spelling match for 'Ariel' placeholder from image
+    const signature = useInvoiceCustomizationStore((state) => state.signature);
+    const clearSignature = useInvoiceCustomizationStore((state) => state.clearSignature);
 
-    // Skeleton function to route user to the Signature Pad Canvas screen
     const handleOpenSignaturePad = () => {
-        console.log('Navigating to Signature Canvas view...');
-        // TODO: router.push('/path-to-your-signature-pad-screen');
         router.push(ROUTES.MODAL.SIGNATURE_PAD)
     };
 
@@ -71,18 +71,60 @@ export default function CustomizeInvoiceOptionScreen() {
 
             <SectionHeader title='INVOICE SIGNATURE' fontSize={14} marginTop={0} hasViewMore={false} textColor={COLORS.dark50} />
 
-            <View className="bg-white rounded-button p-4 items-center justify-center min-h-25">
+            <View className="bg-white rounded-button p-4 min-h-25">
+                {signature ? (
+                    <View>
+                        <View className="flex-row items-center justify-between mb-3">
+                            <View className="flex-1 pr-3">
+                                <Text className="text-xs font-semibold text-dark-50 uppercase tracking-wider">
+                                    Signature Label
+                                </Text>
+                                <Text className="text-base font-bold text-dark-300 mt-0.5" numberOfLines={1}>
+                                    {signature.label}
+                                </Text>
+                            </View>
 
-                <TouchableOpacity
-                    onPress={handleOpenSignaturePad}
-                    activeOpacity={0.7}
-                    className="flex-row items-center justify-center border border-dashed border-primary-400/30 bg-primary-400/10 px-5 py-2.5 rounded-button"
-                >
-                    <MaterialCommunityIcons name="plus" size={18} color={COLORS.primary500} />
-                    <Text className="text-primary-500 text-sm font-bold ml-1">
-                        Add Signature and Label
-                    </Text>
-                </TouchableOpacity>
+                            <View className="flex-row gap-x-2">
+                                <TouchableOpacity
+                                    onPress={handleOpenSignaturePad}
+                                    activeOpacity={0.7}
+                                    className="w-10 h-10 rounded-full bg-primary-400/10 items-center justify-center"
+                                >
+                                    <MaterialCommunityIcons name="pencil" size={18} color={COLORS.primary500} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={clearSignature}
+                                    activeOpacity={0.7}
+                                    className="w-10 h-10 rounded-full bg-rose-100 items-center justify-center"
+                                >
+                                    <MaterialCommunityIcons name="delete-outline" size={20} color="#e11d48" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View className="h-28 border border-light-100 rounded-button bg-slate-50 overflow-hidden items-center justify-center">
+                            <Image
+                                source={{ uri: signature.dataUri }}
+                                className="w-full h-full"
+                                resizeMode="contain"
+                            />
+                        </View>
+                    </View>
+                ) : (
+                    <View className="items-center justify-center">
+                        <TouchableOpacity
+                            onPress={handleOpenSignaturePad}
+                            activeOpacity={0.7}
+                            className="flex-row items-center justify-center border border-dashed border-primary-400/30 bg-primary-400/10 px-5 py-2.5 rounded-button"
+                        >
+                            <MaterialCommunityIcons name="plus" size={18} color={COLORS.primary500} />
+                            <Text className="text-primary-500 text-sm font-bold ml-1">
+                                Add Signature and Label
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
             </View>
 

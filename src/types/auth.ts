@@ -11,7 +11,9 @@ export type SyncStatus =
     | 'synced'
     | 'pending_insert'
     | 'pending_update'
-    | 'pending_approval';
+    | 'pending_delete'
+    | 'pending_approval'
+    | 'rejected';
 
 // ─── Core User Entity ────────────────────────────────────────────────────────
 // Mirrors the local SQLite `users` table via Drizzle schema
@@ -34,6 +36,12 @@ export interface AuthSession {
     refresh_token: string;
     expires_at: number;     // Unix ms timestamp
     user: User;
+}
+
+export interface SignUpResult {
+    email: string;
+    requiresEmailConfirmation: boolean;
+    session: AuthSession | null;
 }
 
 // ─── Auth Store State ────────────────────────────────────────────────────────
