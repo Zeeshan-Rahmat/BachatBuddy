@@ -2,8 +2,6 @@ import Button from '@/src/components/common/Button';
 import IconWrapper from '@/src/components/common/IconWrapper';
 import InputText from '@/src/components/common/InputText';
 import Title from '@/src/components/common/Title';
-import ValueSelect from '@/src/components/common/ValueSelect';
-import DateInput from '@/src/components/form/DateInput';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
 import ProfilePicker from '@components/form/ProfilePicker';
@@ -20,7 +18,6 @@ const EditProfileModal = ({ visible, onClose }: EditProfileModalProps) => {
     const [name, setName] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
-    const [gender, setGender] = useState('');
     const [address, setAddress] = useState('');
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
@@ -28,13 +25,8 @@ const EditProfileModal = ({ visible, onClose }: EditProfileModalProps) => {
         name: '', username: '', email: '',
     });
 
-    const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
-    const [formError, setFormError] = useState<string | undefined>(undefined);
-
     const [imageUri, setImageUri] = useState<string | null>(null);
     const [imageError, setImageError] = useState<string | undefined>(undefined);
-
-    const GENDER = ['Male', 'Female'];
 
     const validate = () => {
         const e = { name: '', username: '', email: '', };
@@ -108,31 +100,6 @@ const EditProfileModal = ({ visible, onClose }: EditProfileModalProps) => {
                 onChangeText={(t) => { setUsername(t); setErrors(e => ({ ...e, username: '' })); }}
                 error={errors.username}
             />
-
-            <View className='flex-row gap-4'>
-                <ValueSelect
-                    flex={1}
-                    icon={<IconWrapper name={ICONS.COMMON.gender} />}
-                    rightIcon={<IconWrapper name={ICONS.AUTH.dropdown} />}
-                    values={GENDER}
-                    value={gender}
-                    placeholder='Gender'
-                    onChange={(t) => setGender(t)}
-                />
-
-                <DateInput
-                    flex={1}
-                    date={birthDate}
-                    onDateChange={(newDate) => {
-                        setBirthDate(newDate);
-                        setFormError(undefined); // Clear error after selecting
-                    }}
-                    placeholder="Date of Birth"
-                    icon={<IconWrapper name={ICONS.COMMON.date} />}
-                    activeIcon={<IconWrapper name={ICONS.COMMON.activeDate} />}
-                    error={formError}
-                />
-            </View>
 
             <InputText
                 icon={<IconWrapper name={ICONS.COMMON.address} />}

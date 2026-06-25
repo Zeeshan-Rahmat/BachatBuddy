@@ -3,49 +3,48 @@ import PaddingWrapper from '@/src/components/common/PaddingWrapper'
 import RoundedIconButton from '@/src/components/common/RoundedIconButton'
 import SearchFilter from '@/src/components/common/SearchFilter'
 import DeleteModal from '@/src/components/modal/DeleteModal'
-import { defaultSupplier } from '@/src/constants/defaultData'
+import { defaultEmployee } from '@/src/constants/defaultData'
 import { ICONS } from '@/src/constants/icons'
-import { mockSuppliers } from '@/src/lib/sampleData'
-import { FilterType, SupplierType } from '@/src/types/appTypes'
+import { mockEmployees } from '@/src/lib/sampleData'
+import { EmployeeType, FilterType } from '@/src/types/appTypes'
 import { handleFilterData } from '@/src/Utility/handleFilterData'
 import React, { useState } from 'react'
 import { FlatList } from 'react-native-gesture-handler'
-import EditCustomerSupplierModal from './add-customer-supplier'
+import AddEditEmployeeModal from './add-employee'
 import FilterPartyModal from './filter-party'
 import PartyDetailModal from './party-detail'
 
-export default function SupplierScreen() {
+export default function EmployeeScreen() {
 
-    const suppliers: SupplierType[] = mockSuppliers;
+    const employees: EmployeeType[] = mockEmployees;
 
     const [search, setSearch] = useState('');
 
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isPartyDetailModalOpen, setIsPartyDetailModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isEditCustomerSupplierModalOpen, setIsEditCustomerSupplierModalOpen] = useState(false);
-    const [isAddCustomerSupplierModalOpen, setIsAddCustomerSupplierModalOpen] = useState(false);
+    const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
+    const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
 
-    const [selectedSupplier, setSelectedSupplier] = useState<SupplierType | undefined>(undefined);
+    const [selectedEmployee, setSelectedEmployee] = useState<EmployeeType | undefined>(undefined);
 
-    const [displayedSupplier, setDisplayedSupplier] = useState<SupplierType[]>(suppliers);
+    const [displayedEmployee, setDisplayedEmployee] = useState<EmployeeType[]>(employees);
 
-    const filtered = displayedSupplier.filter(c =>
+    const filtered = displayedEmployee.filter(c =>
         c.name.toLowerCase().includes(search.toLowerCase())
     );
 
     const onApplyFilters = (filters: FilterType) => {
         // Run advanced filtering logic safely over typed multi-entity datasets
-        const output = handleFilterData(filters, suppliers);
+        const output = handleFilterData(filters, employees);
 
         // Update local list layouts and hide selection screen
-        setDisplayedSupplier(output as SupplierType[]);
+        setDisplayedEmployee(output as EmployeeType[]);
         setIsFilterModalOpen(false);
     };
 
-
-    const handleListItemPress = (supplier: SupplierType) => {
-        setSelectedSupplier(supplier)
+    const handleListItemPress = (employee: EmployeeType) => {
+        setSelectedEmployee(employee)
         setIsPartyDetailModalOpen(true)
     }
 
@@ -54,36 +53,36 @@ export default function SupplierScreen() {
         setIsPartyDetailModalOpen(false)
     }
 
-
     return (
         <>
             <PaddingWrapper addPaddingBottom={false}>
 
                 <SearchFilter
                     value={search}
-                    searchPlaceholder={"Search Supplier"}
+                    searchPlaceholder={"Search Customer"}
                     onChangeText={setSearch}
 
                     onFilterPress={() => setIsFilterModalOpen(true)}
                 />
 
 
-                <FlatList data={filtered} keyExtractor={i => i.supplier_id} showsVerticalScrollIndicator={false}
+                <FlatList data={filtered} keyExtractor={i => i.employee_id} showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => (
                         <ListItemCard
                             item={item}
                             placeholder={ICONS.COMMON.customer}
-                            isParty
+                            isParty={true}
                             onPress={() => handleListItemPress(item)}
                         />
                     )}
                 />
 
+
             </PaddingWrapper>
 
             <RoundedIconButton
                 bottom={25}
-                onPress={() => setIsAddCustomerSupplierModalOpen(true)}
+                onPress={() => setIsAddEmployeeModalOpen(true)}
             />
 
             {
@@ -100,19 +99,19 @@ export default function SupplierScreen() {
                 isPartyDetailModalOpen &&
                 <PartyDetailModal
                     visible={isPartyDetailModalOpen}
-                    party={selectedSupplier ?? defaultSupplier}
+                    party={selectedEmployee ?? defaultEmployee}
                     onClose={() => setIsPartyDetailModalOpen(false)}
                     onRemove={() => setIsDeleteModalOpen(true)}
-                    onEdit={() => setIsEditCustomerSupplierModalOpen(true)}
+                    onEdit={() => setIsEditEmployeeModalOpen(true)}
                 />
             }
 
             {
                 isDeleteModalOpen &&
                 <DeleteModal
-                    title='Remove Supplier'
-                    subtitle='You are going to remove below supplier'
-                    removeItem={selectedSupplier?.name ?? "Unknown"}
+                    title='Remove Customer'
+                    subtitle='You are going to remove below customer'
+                    removeItem={selectedEmployee?.name ?? "Unknown"}
                     isVisible={isDeleteModalOpen}
                     onClose={() => setIsDeleteModalOpen(false)}
                     onDelete={handleDelete}
@@ -120,21 +119,20 @@ export default function SupplierScreen() {
             }
 
             {
-                isEditCustomerSupplierModalOpen &&
-                <EditCustomerSupplierModal
-                    visible={isEditCustomerSupplierModalOpen}
-                    title='Edit Supplier'
-                    customerOrSupplier={selectedSupplier}
-                    onClose={() => setIsEditCustomerSupplierModalOpen(false)}
+                isEditEmployeeModalOpen &&
+                <AddEditEmployeeModal
+                    visible={isEditEmployeeModalOpen}
+                    employee={selectedEmployee}
+                    onClose={() => setIsEditEmployeeModalOpen(false)}
                 />
             }
 
             {
-                isAddCustomerSupplierModalOpen &&
-                <EditCustomerSupplierModal
-                    visible={isAddCustomerSupplierModalOpen}
-                    title='Add Supplier'
-                    onClose={() => setIsAddCustomerSupplierModalOpen(false)}
+                isAddEmployeeModalOpen &&
+                <AddEditEmployeeModal
+                    visible={isAddEmployeeModalOpen}
+                    title='Add Employee'
+                    onClose={() => setIsAddEmployeeModalOpen(false)}
                 />
             }
         </>

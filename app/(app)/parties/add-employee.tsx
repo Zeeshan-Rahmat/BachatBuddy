@@ -4,36 +4,44 @@ import InputText from '@/src/components/common/InputText';
 import Title from '@/src/components/common/Title';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
+import { EmployeeType } from '@/src/types/appTypes';
 import ProfilePicker from '@components/form/ProfilePicker';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { Alert, View } from 'react-native';
 
-interface EditBusinessProfileProps {
+interface AddEditEmployeeModalProps {
     visible: boolean;
+    title?: "Add Employee" | "Edit Employee";
+    employee?: EmployeeType;
     onClose: () => void;
 }
 
-const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => {
-    const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [address, setAddress] = useState('');
-    const [phone, setPhone] = useState('');
+const AddEditEmployeeModal = ({ visible, title = "Edit Employee", employee, onClose }: AddEditEmployeeModalProps) => {
+
+    const [name, setName] = useState(employee?.name ?? "");
+    const [email, setEmail] = useState(employee?.email ?? "");
+    const [password, setPassword] = useState(employee?.password ?? "");
+    const [address, setAddress] = useState(employee?.address ?? "");
+    const [phone, setPhone] = useState(employee?.phone ?? "");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({
-        name: '', username: '', email: '',
+        name: '', email: '', password: '', phone: '', address: '',
     });
 
-    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+
+    const [imageUri, setImageUri] = useState<string | null>(employee?.img ?? null);
     const [imageError, setImageError] = useState<string | undefined>(undefined);
 
     const validate = () => {
-        const e = { name: '', username: '', email: '', };
+        const e = { name: '', email: '', password: '', phone: '', address: '' };
         let valid = true;
         if (!name.trim()) { e.name = 'Name is required'; valid = false; }
-        if (!username.trim()) { e.username = 'Username is required'; valid = false; }
         if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { e.email = 'Valid email is required'; valid = false; }
+        if (!password.trim()) { e.password = 'Password is required'; valid = false; }
+        if (!phone.trim()) { e.phone = 'Phone is required'; valid = false; }
+        if (!address.trim()) { e.address = 'Address is required'; valid = false; }
         setErrors(e);
         return valid;
     };
@@ -81,8 +89,9 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
 
     return (
         <CustomeModal visible={visible}>
-            <Title text='Edit Business Profile' />
+            <Title text={title} />
 
+            {/* Name Input Box */}
             <InputText
                 icon={<IconWrapper name={ICONS.AUTH.user} />}
                 activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
@@ -92,32 +101,7 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
                 error={errors.name}
             />
 
-            <InputText
-                icon={<IconWrapper name={ICONS.AUTH.user} />}
-                activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
-                placeholder="Username"
-                value={username}
-                onChangeText={(t) => { setUsername(t); setErrors(e => ({ ...e, username: '' })); }}
-                error={errors.username}
-            />
-
-            <InputText
-                icon={<IconWrapper name={ICONS.COMMON.address} />}
-                activeIcon={<IconWrapper name={ICONS.COMMON.activeAddress} />}
-                placeholder="Home Address"
-                value={address}
-                onChangeText={(t) => setAddress(t)}
-            />
-
-            <InputText
-                icon={<IconWrapper name={ICONS.COMMON.phone} />}
-                activeIcon={<IconWrapper name={ICONS.COMMON.activePhone} />}
-                placeholder="Phone Number"
-                value={phone}
-                onChangeText={(t) => setPhone(t)}
-                keyboardType='numeric'
-            />
-
+            {/* Email Input Box */}
             <InputText
                 icon={<IconWrapper name={ICONS.AUTH.email} />}
                 activeIcon={<IconWrapper name={ICONS.AUTH.activeEmail} />}
@@ -125,6 +109,39 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
                 value={email}
                 onChangeText={(t) => { setEmail(t); setErrors(e => ({ ...e, email: '' })); }}
                 error={errors.email}
+            />
+
+            {/* Password Input Box */}
+            <InputText
+                icon={<IconWrapper name={ICONS.AUTH.password} />}
+                activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={(t) => { setPassword(t); setErrors(e => ({ ...e, password: '' })); }}
+                secureTextEntry={!showPassword}
+                rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
+                onRightIconPress={() => setShowPassword(!showPassword)}
+                error={errors.password}
+            />
+
+            {/* Phone Input Box */}
+            <InputText
+                icon={<IconWrapper name={ICONS.COMMON.phone} />}
+                activeIcon={<IconWrapper name={ICONS.COMMON.activePhone} />}
+                placeholder="Phone Number"
+                value={phone}
+                onChangeText={(t) => { setPhone(t); setErrors(e => ({ ...e, phone: '' })); }}
+                keyboardType='numeric'
+            />
+
+            {/* Address Input Box */}
+            <InputText
+                icon={<IconWrapper name={ICONS.COMMON.address} />}
+                activeIcon={<IconWrapper name={ICONS.COMMON.activeAddress} />}
+                placeholder="Home Address"
+                value={address}
+                onChangeText={(t) => { setAddress(t); setErrors(e => ({ ...e, address: '' })); }}
             />
 
             <ProfilePicker
@@ -137,6 +154,7 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
                 activeRightIcon={<IconWrapper name={ICONS.AUTH.largeVerified} />}
             />
 
+            {/* Buttons */}
             <View className='flex-row gap-4'>
                 <Button
                     leftIcon={<IconWrapper name={ICONS.COMMON.backBlack} />}
@@ -147,8 +165,8 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
                 />
 
                 <Button
-                    leftIcon={<IconWrapper name={ICONS.COMMON.updateOutline} />}
-                    label='UPDATE'
+                    leftIcon={<IconWrapper name={employee ? ICONS.COMMON.updateOutline : ICONS.COMMON.plus} />}
+                    label={employee ? 'UPDATE' : 'ADD'}
                     width='flex-1'
                 />
             </View>
@@ -156,4 +174,4 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
     )
 }
 
-export default EditBusinessProfile
+export default AddEditEmployeeModal

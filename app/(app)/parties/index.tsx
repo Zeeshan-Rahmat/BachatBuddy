@@ -1,10 +1,10 @@
 // app/(app)/parties/index.tsx
 import InternalTabBar from '@/src/components/common/InternalTabBar';
-import RoundedIconButton from '@/src/components/common/RoundedIconButton';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import CustomerScreen from './customer';
+import EmployeeScreen from './employee';
 import SupplierScreen from './supplier';
 
 const TABS = ['Customers', 'Suppliers', 'Employees'];
@@ -21,12 +21,10 @@ export default function PartiesScreen() {
 
                 {activeTab === 'Customers' && <CustomerScreen />}
                 {activeTab === 'Suppliers' && <SupplierScreen />}
-                {activeTab === 'Employees' && <CustomerScreen />}
+                {activeTab === 'Employees' && <EmployeeScreen />}
 
             </ScreenWrapper>
 
-
-            <RoundedIconButton />
         </View>
     );
 }

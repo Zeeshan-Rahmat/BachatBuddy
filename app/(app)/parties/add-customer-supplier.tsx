@@ -4,36 +4,40 @@ import InputText from '@/src/components/common/InputText';
 import Title from '@/src/components/common/Title';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
+import { CustomerType, SupplierType } from '@/src/types/appTypes';
 import ProfilePicker from '@components/form/ProfilePicker';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { Alert, View } from 'react-native';
 
-interface EditBusinessProfileProps {
+interface EditCustomerSupplierModalProps {
     visible: boolean;
+    title?: "Add Customer" | "Add Supplier" | "Edit Customer" | "Edit Supplier";
+    customerOrSupplier?: CustomerType | SupplierType;
     onClose: () => void;
 }
 
-const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => {
-    const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [address, setAddress] = useState('');
-    const [phone, setPhone] = useState('');
+const EditCustomerSupplierModal = ({ visible, title = "Edit Customer", customerOrSupplier, onClose }: EditCustomerSupplierModalProps) => {
+
+    const [name, setName] = useState(customerOrSupplier?.name ?? "");
+    const [email, setEmail] = useState(customerOrSupplier?.email ?? "");
+    const [address, setAddress] = useState(customerOrSupplier?.address ?? "");
+    const [phone, setPhone] = useState(customerOrSupplier?.phone ?? "");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({
-        name: '', username: '', email: '',
+        name: '', email: '', phone: '', address: '',
     });
 
-    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [imageUri, setImageUri] = useState<string | null>(customerOrSupplier?.img ?? null);
     const [imageError, setImageError] = useState<string | undefined>(undefined);
 
     const validate = () => {
-        const e = { name: '', username: '', email: '', };
+        const e = { name: '', email: '', phone: '', address: '' };
         let valid = true;
         if (!name.trim()) { e.name = 'Name is required'; valid = false; }
-        if (!username.trim()) { e.username = 'Username is required'; valid = false; }
         if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { e.email = 'Valid email is required'; valid = false; }
+        if (!phone.trim()) { e.phone = 'Phone is required'; valid = false; }
+        if (!address.trim()) { e.address = 'Address is required'; valid = false; }
         setErrors(e);
         return valid;
     };
@@ -81,7 +85,7 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
 
     return (
         <CustomeModal visible={visible}>
-            <Title text='Edit Business Profile' />
+            <Title text={title} />
 
             <InputText
                 icon={<IconWrapper name={ICONS.AUTH.user} />}
@@ -92,31 +96,6 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
                 error={errors.name}
             />
 
-            <InputText
-                icon={<IconWrapper name={ICONS.AUTH.user} />}
-                activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
-                placeholder="Username"
-                value={username}
-                onChangeText={(t) => { setUsername(t); setErrors(e => ({ ...e, username: '' })); }}
-                error={errors.username}
-            />
-
-            <InputText
-                icon={<IconWrapper name={ICONS.COMMON.address} />}
-                activeIcon={<IconWrapper name={ICONS.COMMON.activeAddress} />}
-                placeholder="Home Address"
-                value={address}
-                onChangeText={(t) => setAddress(t)}
-            />
-
-            <InputText
-                icon={<IconWrapper name={ICONS.COMMON.phone} />}
-                activeIcon={<IconWrapper name={ICONS.COMMON.activePhone} />}
-                placeholder="Phone Number"
-                value={phone}
-                onChangeText={(t) => setPhone(t)}
-                keyboardType='numeric'
-            />
 
             <InputText
                 icon={<IconWrapper name={ICONS.AUTH.email} />}
@@ -125,6 +104,23 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
                 value={email}
                 onChangeText={(t) => { setEmail(t); setErrors(e => ({ ...e, email: '' })); }}
                 error={errors.email}
+            />
+
+            <InputText
+                icon={<IconWrapper name={ICONS.COMMON.phone} />}
+                activeIcon={<IconWrapper name={ICONS.COMMON.activePhone} />}
+                placeholder="Phone Number"
+                value={phone}
+                onChangeText={(t) => { setPhone(t); setErrors(e => ({ ...e, phone: '' })); }}
+                keyboardType='numeric'
+            />
+
+            <InputText
+                icon={<IconWrapper name={ICONS.COMMON.address} />}
+                activeIcon={<IconWrapper name={ICONS.COMMON.activeAddress} />}
+                placeholder="Home Address"
+                value={address}
+                onChangeText={(t) => { setAddress(t); setErrors(e => ({ ...e, address: '' })); }}
             />
 
             <ProfilePicker
@@ -147,8 +143,8 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
                 />
 
                 <Button
-                    leftIcon={<IconWrapper name={ICONS.COMMON.updateOutline} />}
-                    label='UPDATE'
+                    leftIcon={<IconWrapper name={customerOrSupplier ? ICONS.COMMON.updateOutline : ICONS.COMMON.plus} />}
+                    label={customerOrSupplier ? 'UPDATE' : 'ADD'}
                     width='flex-1'
                 />
             </View>
@@ -156,4 +152,4 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
     )
 }
 
-export default EditBusinessProfile
+export default EditCustomerSupplierModal

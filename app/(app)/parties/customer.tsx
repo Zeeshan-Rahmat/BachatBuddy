@@ -1,6 +1,8 @@
 import ListItemCard from '@/src/components/common/ListItemCard'
 import PaddingWrapper from '@/src/components/common/PaddingWrapper'
+import RoundedIconButton from '@/src/components/common/RoundedIconButton'
 import SearchFilter from '@/src/components/common/SearchFilter'
+import DeleteModal from '@/src/components/modal/DeleteModal'
 import { defaultCustomer } from '@/src/constants/defaultData'
 import { ICONS } from '@/src/constants/icons'
 import { mockCustomers } from '@/src/lib/sampleData'
@@ -8,6 +10,7 @@ import { CustomerType, FilterType } from '@/src/types/appTypes'
 import { handleFilterData } from '@/src/Utility/handleFilterData'
 import React, { useState } from 'react'
 import { FlatList } from 'react-native-gesture-handler'
+import EditCustomerSupplierModal from './add-customer-supplier'
 import FilterPartyModal from './filter-party'
 import PartyDetailModal from './party-detail'
 
@@ -19,6 +22,9 @@ export default function CustomerScreen() {
 
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isPartyDetailModalOpen, setIsPartyDetailModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isEditCustomerSupplierModalOpen, setIsEditCustomerSupplierModalOpen] = useState(false);
+    const [isAddCustomerSupplierModalOpen, setIsAddCustomerSupplierModalOpen] = useState(false);
 
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | undefined>(undefined);
 
@@ -42,6 +48,10 @@ export default function CustomerScreen() {
         setIsPartyDetailModalOpen(true)
     }
 
+    const handleDelete = () => {
+        setIsDeleteModalOpen(false);
+        setIsPartyDetailModalOpen(false)
+    }
 
     return (
         <>
@@ -70,6 +80,11 @@ export default function CustomerScreen() {
 
             </PaddingWrapper>
 
+            <RoundedIconButton
+                bottom={25}
+                onPress={() => setIsAddCustomerSupplierModalOpen(true)}
+            />
+
             {
                 isFilterModalOpen && (
                     <FilterPartyModal
@@ -86,6 +101,38 @@ export default function CustomerScreen() {
                     visible={isPartyDetailModalOpen}
                     party={selectedCustomer ?? defaultCustomer}
                     onClose={() => setIsPartyDetailModalOpen(false)}
+                    onRemove={() => setIsDeleteModalOpen(true)}
+                    onEdit={() => setIsEditCustomerSupplierModalOpen(true)}
+                />
+            }
+
+            {
+                isDeleteModalOpen &&
+                <DeleteModal
+                    title='Remove Customer'
+                    subtitle='You are going to remove below customer'
+                    removeItem={selectedCustomer?.name ?? "Unknown"}
+                    isVisible={isDeleteModalOpen}
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onDelete={handleDelete}
+                />
+            }
+
+            {
+                isEditCustomerSupplierModalOpen &&
+                <EditCustomerSupplierModal
+                    visible={isEditCustomerSupplierModalOpen}
+                    customerOrSupplier={selectedCustomer}
+                    onClose={() => setIsEditCustomerSupplierModalOpen(false)}
+                />
+            }
+
+            {
+                isAddCustomerSupplierModalOpen &&
+                <EditCustomerSupplierModal
+                    visible={isAddCustomerSupplierModalOpen}
+                    title='Add Customer'
+                    onClose={() => setIsAddCustomerSupplierModalOpen(false)}
                 />
             }
         </>

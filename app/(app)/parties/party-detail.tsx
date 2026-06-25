@@ -17,15 +17,19 @@ interface PartyDetailModalProps {
     visible: boolean;
     party: PartyType;
     onClose: () => void;
+    onRemove: () => void;
+    onEdit: () => void;
 }
 
-export default function PartyDetailModal({ visible, party, onClose }: PartyDetailModalProps) {
+export default function PartyDetailModal({ visible, party, onClose, onRemove, onEdit }: PartyDetailModalProps) {
 
 
     const [showMore, setShowMore] = useState(false)
 
     return (
         <CustomModal visible={visible}>
+
+            {/* Party Image and Detail */}
             <View className='items-center'>
                 <Avatar name={party.name} size={100} color='dark' textSize='extraLarge' />
 
@@ -42,6 +46,8 @@ export default function PartyDetailModal({ visible, party, onClose }: PartyDetai
                 <InfoField label='Address' value={party.address ?? "Not Added"} />
             </View>
 
+
+            {/* Customer Ledger */}
             {
                 'total_orders' in party && 'total_purchases' in party && 'pending_dues' in party &&
                 (
@@ -49,16 +55,33 @@ export default function PartyDetailModal({ visible, party, onClose }: PartyDetai
                         <SectionHeader title='CUSTOMER LEDGER' fontSize={16} marginTop={16} marginBottom={8} textColor={COLORS.dark100} hasViewMore={false} />
                         <View className='bg-light-300 rounded-button gap-2 p-2'>
                             <InfoField label='Total No. of Orders' value={party.total_orders.toString()} />
-                            <InfoField label='Total Purchases' value={party.total_purchases.toString()} />
-                            <InfoField label='Total Pending Dues' value={party.pending_dues.toString()} />
+                            <InfoField label='Total Purchases' value={party.total_purchases.toString() + " PKR"} />
+                            <InfoField label='Total Pending Dues' value={party.pending_dues.toString() + " PKR"} />
                         </View>
                     </>
                 )
             }
 
+
+            {/* Supplier Ledger */}
+            {
+                'supplied_products' in party && 'total_supply_value' in party &&
+                (
+                    <>
+                        <SectionHeader title='SUPPLIER LEDGER' fontSize={16} marginTop={16} marginBottom={8} textColor={COLORS.dark100} hasViewMore={false} />
+                        <View className='bg-light-300 rounded-button gap-2 p-2'>
+                            <InfoField label='Total Supplied Products' value={party.supplied_products.toString()} />
+                            <InfoField label='Total Supply Value' value={party.total_supply_value.toString() + " PKR"} />
+                        </View>
+                    </>
+                )
+            }
+
+
+            {/* Party Meta Data */}
             <View className='bg-light-300 rounded-button gap-2 p-2 mt-4'>
 
-                <InfoField label='Created by' value={party.created_by.name} />
+                <InfoField label='Created at' value={formatDateTime(party.created_at)} />
                 {
                     showMore
                         ? (
@@ -66,9 +89,10 @@ export default function PartyDetailModal({ visible, party, onClose }: PartyDetai
                                 onPress={() => setShowMore(false)}
                                 className='gap-2'
                             >
-                                <InfoField label='Created at' value={formatDateTime(party.created_at)} />
-                                <InfoField label='Updated by' value={party.last_updated_by.name} />
+
+                                {'created_by' in party && <InfoField label='Created by' value={party.created_by.name} />}
                                 <InfoField label='Last Updated at' value={formatDateTime(party.last_updated_at)} />
+                                {'last_updated_by' in party && <InfoField label='Updated by' value={party.last_updated_by.name} />}
                             </TouchableOpacity>
                         )
                         : (
@@ -91,14 +115,14 @@ export default function PartyDetailModal({ visible, party, onClose }: PartyDetai
                     label='REMOVE'
                     bgColor='red'
                     width='flex-1'
-                // onPress={onRemove}
+                    onPress={onRemove}
                 />
 
                 <Button
                     leftIcon={<IconWrapper name={ICONS.COMMON.editWhite} />}
                     label='EDIT'
                     width='flex-1'
-                // onPress={onEdit}
+                    onPress={onEdit}
                 />
             </View>
 

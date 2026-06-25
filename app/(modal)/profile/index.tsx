@@ -60,8 +60,6 @@ const ProfileScreen = () => {
                     <View className='bg-white p-4 rounded-card gap-2'>
                         <InfoField label='User Name' value={defaultUser.username} />
                         <InfoField label='Name' value={defaultUser.name} />
-                        <InfoField label='Gender' value={defaultUser.gender ?? "Not Added"} />
-                        <InfoField label='Date of Birth' value={defaultUser.dateOfBirth ?? "Not Added"} />
                         <InfoField label='Address' value={defaultUser.address ?? "Not Added"} />
                     </View>
                     <View className='bg-white p-4 rounded-card gap-2'>

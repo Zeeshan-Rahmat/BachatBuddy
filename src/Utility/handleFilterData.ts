@@ -27,7 +27,7 @@ export const handleFilterData = (filters: FilterType, itemsData: AnyItemType[]):
     if (filters.selectedUser && filters.selectedUser !== 'Select User') {
         filteredResults = filteredResults.filter((item) => {
             // Self-contained User entity checks its own profile name; others inspect created_by nested record
-            const creatorName = ('user_id' in item) ? item.name : item.created_by?.name;
+            const creatorName = (('user_id' in item || 'employee_id' in item) && 'name' in item) ? item.name : item.created_by?.name;
 
             if (!creatorName) return false;
 

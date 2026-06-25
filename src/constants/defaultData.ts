@@ -1,10 +1,25 @@
-import { CustomerType, InvoiceType, ProductType, SupplierType, UserType } from "../types/appTypes";
+import { CustomerType, EmployeeType, InvoiceType, ProductType, SupplierType, UserType } from "../types/appTypes";
 
 // ==========================================
 // 1. DEFAULT BASELINE USER REFERENCE
 // ==========================================
 export const defaultUser: UserType = {
     user_id: "",
+    name: "Unknown User",
+    phone: "",
+    email: "",
+    role: "Employee",
+    username: "",
+    password: "",
+    status: "Active",
+    biometric_enabled: false,
+    address: "",
+    created_at: new Date().toISOString(),
+    last_updated_at: new Date().toISOString()
+};
+
+export const defaultEmployee: EmployeeType = {
+    employee_id: "",
     name: "Unknown User",
     phone: "",
     email: "",
@@ -32,7 +47,7 @@ export const defaultSupplier: SupplierType = {
     status: "Active",
     supplied_products: 0,
     total_supply_value: 0,
-    last_purchase_date: new Date().toISOString(),
+    last_supplied_date: new Date().toISOString(),
     created_at: new Date().toISOString(),
     last_updated_at: new Date().toISOString()
 };

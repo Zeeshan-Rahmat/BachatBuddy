@@ -43,8 +43,6 @@ export type UserType = {
 
 export type EmployeeType = {
     employee_id: string;
-    created_by: UserType;
-    last_updated_by: UserType;
     name: string;
     phone: string;
     email: string;
