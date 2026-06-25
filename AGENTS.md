@@ -1,96 +1,465 @@
-# AGENT.md
+# 1. Project Identity & Technical Foundation {#project-identity-technical-foundation}
 
-## 1. Project Identity & Technical Foundation
-You are an expert mobile software engineer specializing in offline-first enterprise data architectures. You are developing **BachatBuddy**, a high-performance, local-first stock and ledger management application built with performance, security, and absolute structural data safety at its core.
+You are an expert React Native mobile software engineer specializing in offline-first enterprise business applications, local-first data architectures, inventory systems, financial ledgers, and synchronization engines.
 
-### Core Stack Specification
-* **Frontend Framework:** React Native (Expo Managed Workflow / SDK 51+)
-* **Styling Engine:** NativeWind v4 (Tailwind CSS utility engine mapped for Native runtimes)
-* **Local Storage Engine:** Expo SQLite (`expo-sqlite`) + Drizzle ORM for type-safe relational schemas
-* **Cloud Core & Authentication:** Supabase (PostgreSQL engine utilizing Row-Level Security)
-* **State & Cache Optimization:** TanStack Query v5 (`@tanstack/react-query`) for optimistic local UI syncs
-* **Network Ingestion:** `@react-native-community/netinfo` for real-time connection telemetry
+You are developing **BachatBuddy**, a high-performance stock management, invoicing, and ledger management application designed for small and medium businesses operating in environments with unreliable internet connectivity.
 
----
+The system follows a **Local-First Architecture**, where all business-critical operations are performed locally on the device first and synchronized to the cloud in the background.
 
-## 2. App Structure & Tab Routing
-The application layout follows a strict role-based presentation split governed by the initial login payload.
+------------------------------------------------------------------------
 
-### Primary Screen Hierarchy & Index
-* **Authentication Hub:** `1.0 Sign In (Password)`, `1.1 Biometric/Touch ID Binder`, `1.2 Quick Touch Splash`
-* **System Navigation:** Global Sidebar Drawer Menu (`3.1`) + Persistent 5-Tab Footer Bar:
-    1.  **Home / Dashboard (`3.0`):** Operational summaries, KPI grids, Quick Action workflows, and Quick Report entry points.
-    2.  **Stock / Inventory (`4.0`):** Complete stock directory, search indexing, item modals, `4.3 Add Product Option Picker` (Manual form vs. `expo-camera` barcode scanning).
-    3.  **Sale / Invoicing (`5.0`):** Historic sales records, advanced filtering, full transactional checkout constructor (`5.3 Invoice Add`), print/share previews (`5.2.6`).
-    4.  **Reports / Analytics (`6.0`):** Operational business intelligence dashboard. 3-Tab internal navigation tracking *Sales*, *Stock velocity*, and *Parties performance maps*.
-    5.  **Parties Ledger (`7.0`):** Stakeholder directories divided via internal sub-tabs tracking *Customers*, *Suppliers*, and *Employees*.
+# 2. Core Technology Stack {#core-technology-stack}
 
----
+## Frontend Framework
 
-## 3. Strict Security & Role-Based Access Control (RBAC)
-The application enforces strict conditional rendering and structural route protections depending on user roles (`Owner` vs. `Employee`).
+- React Native `0.81.5`
+- Expo SDK `54`
+- Expo Router `6.0.24`
+- React `19.1.0`
 
-### Role Permissions Matrix
+## Navigation
 
-| Feature Module | Owner Permissions | Employee Permissions | Architectural Enforcement Mechanism |
-| :--- | :--- | :--- | :--- |
-| **Dashboard (`3.0`)** | Full Access | **BLOCKED** | Route guarding via Auth State evaluation; hide tab entry. |
-| **Reports Engine (`6.0`)**| Full Access | **BLOCKED** | Block navigation attempts; completely omit UI elements. |
-| **Backup & Restore (`3.1.4`)**| Full Access | **BLOCKED** | Disable interactive components; hide menu item. |
-| **Data Synchronization** | Instant / Direct | **REQUIRES APPROVAL**| Outbox record insertion pattern via local Sync Queue table. |
-| **Stock & Party Mutators**| Direct Save | Direct Local Save | Written locally to SQLite; status flagged based on active profile. |
+- Expo Router `6.0.24`
+- React Navigation `7.x`
+- Bottom Tabs Navigation
+- Drawer Navigation
 
----
+## Styling System
 
-## 4. Offline-First Architecture & Data Sync Blueprint
-To maintain operation in locations with erratic internet connectivity, **BachatBuddy operates completely offline-first**. 
+- NativeWind `5.0.0-preview.4`
+- Tailwind CSS `4.3.0`
 
-### Local Data Modeling (Drizzle Schema Blueprint)
-All core entities require an tracking flag array to safely monitor synchronization cycles across local and remote engines:
-* `id`: Primary key text uuid (generated locally on the device to prevent sequencing collisions online).
-* `sync_status`: String Enum matching `['synced', 'pending_insert', 'pending_update', 'pending_approval']`.
-* `updated_at`: Integer millisecond timestamp marking mutations.
+## State Management
 
-### The Offline Outbox Pattern Lifecycle
-[User Action: Create Invoice]
-│
-▼
-┌───────────┐
-│ Local DB  │ ──► Immediately updates SQLite (App feels instant & lag-free)
-└─────┬─────┘
-│
-▼
-┌───────────┐
-│ NetInfo   │ ──► Evaluates active internet connection state
-└─────┬─────┘
-│
-├─► [OFFLINE] ──► Retains 'pending_X' flags inside local database engine
-│
-└─► [ONLINE]  ──► Triggers background sync via TanStack Query to remote tables
+- Zustand `5.0.14`
 
-### Employee Mutation & Owner Approval Workflow
-1.  When an **Employee** modifies stock or signs a new Invoice, the local row is written with `sync_status = 'pending_approval'`.
-2.  If an active internet connection is detected, the row is copied down to a remote Supabase staging collection named `staging_review_queue`.
-3.  The **Owner** receives an operational alert via the Notifications screen (`3.2`).
-4.  Upon Owner approval, an isolated Postgres remote function updates the production database tables and issues a socket notification pushing the data down to the app's SQLite instance, changing the item state to `synced`.
+### Zustand Responsibilities
 
----
+Use Zustand only for:
 
-## 5. UI & UX Development System Guidelines (NativeWind)
-Maintain high fidelity with the shared visual mockups by consistently utilizing these NativeWind UI rules:
+- Authentication State
+- Current User State
+- Active Business Context
+- UI Preferences
+- Drawer State
+- Search Filters
+- Form Drafts
+- Cached SQLite Data
 
-* **Color Theme Logic:** * Primary Accent (Brand Green): `bg-emerald-500` / `text-emerald-500`
-    * Secondary Deep Tone (Headers/Nav): `bg-slate-900` / `bg-gradient-to-b from-emerald-500 to-slate-950`
-    * System Warnings (Low Stock / Overdue Debt): `text-amber-500` / `bg-rose-100 text-rose-600`
-* **Layout Safety Rules:** Always wrap core views within clean `<SafeAreaView className="flex-1 bg-slate-50">` components to ensure cross-platform layout stability across modern iOS and Android screen notches.
-* **Lists Optimization:** For heavy views (like the 63-screen layout variations containing long item list components), always use `<FlatList>` instead of mapping single `<ScrollView>` wrappers to avoid memory overhead leaks on old mobile devices.
-* **Action Floating Actions:** Keep the floating create actions (`+`) standard: fixed positioning inside the root container element (`absolute right-6 bottom-6 z-50 rounded-full w-14 h-14 bg-emerald-500 items-center justify-center shadow-lg`).
+Do NOT use Zustand as the permanent source of truth.
 
----
+------------------------------------------------------------------------
 
-## 6. AI Agent Execution Directives (Strict Operational Rules)
-When writing code for this repository, you must obey these rules without exception:
-1.  **Never Assume Connection Status:** Every network data request must be wrapped inside an offline fallback check using TanStack Query's `networkMode: 'offlineFirst'`.
-2.  **Enforce Absolute Type Safety:** Always reference types compiled from the local Drizzle schema declarations. Never use arbitrary `any` typings for entities like transactions, stock lists, or user properties.
-3.  **Strict ID Verification Rule:** Never let the local SQLite database create auto-incrementing integer IDs (`1, 2, 3...`). Always generate a safe string UUID via `crypto.randomUUID()` on the device client to guarantee that local IDs do not collide when backing up or uploading to the shared cloud.
-4.  **No Structural Breaks:** When writing deep screen features (such as invoice customization or complex multi-parameter filter arrays), maintain identical variable naming conventions to prevent breaks across screens.
+## Local Database Layer
+
+- Expo SQLite
+- Drizzle ORM
+
+### Source of Truth
+
+SQLite is always the source of truth.
+
+Never treat Zustand as persistent storage.
+
+All business data must be stored in SQLite.
+
+Examples:
+
+- Products
+- Inventory
+- Sales
+- Invoices
+- Customers
+- Suppliers
+- Employees
+- Ledger Entries
+- Payments
+- Reports
+
+------------------------------------------------------------------------
+
+## Cloud Backend
+
+- Supabase
+- PostgreSQL
+- Row Level Security (RLS)
+
+### Supabase Responsibilities
+
+Supabase should only handle:
+
+- Authentication
+- Cloud Backup
+- Multi-device Synchronization
+- Remote Storage
+- Push Notifications
+- Approval Workflows
+
+The application UI should never depend directly on Supabase responses.
+
+------------------------------------------------------------------------
+
+## Device Features
+
+- expo-camera `17.0.10`
+- expo-image-picker `17.0.11`
+- expo-local-authentication `17.0.8`
+- expo-haptics `15.0.8`
+
+------------------------------------------------------------------------
+
+## Data Visualization
+
+- react-native-gifted-charts `1.4.77`
+
+------------------------------------------------------------------------
+
+# 3. Local-First Data Architecture {#local-first-data-architecture}
+
+## Architectural Rule
+
+Always follow:
+
+User Action ↓ SQLite ↓ Zustand Refresh ↓ UI Updates Instantly ↓ Background Sync ↓ Supabase
+
+Never:
+
+User Action ↓ Supabase ↓ Wait For Response ↓ Update UI
+
+------------------------------------------------------------------------
+
+## SQLite Source of Truth Rule
+
+Every screen must load data from SQLite.
+
+Example:
+
+Dashboard ↓ SQLite
+
+Inventory ↓ SQLite
+
+Reports ↓ SQLite
+
+Ledger ↓ SQLite
+
+Never query Supabase directly from screens.
+
+------------------------------------------------------------------------
+
+# 4. Data Synchronization Architecture {#data-synchronization-architecture}
+
+## Sync Status Schema
+
+Every syncable table must contain:
+
+    id: string
+    sync_status:
+      | 'synced'
+      | 'pending_insert'
+      | 'pending_update'
+      | 'pending_delete'
+      | 'pending_approval'
+    updated_at: number
+    created_at: number
+
+## UUID Rule
+
+Never use auto-increment IDs.
+
+Always use:
+
+    crypto.randomUUID()
+
+for every:
+
+- Product
+- Sale
+- Invoice
+- Customer
+- Supplier
+- Employee
+- Ledger Entry
+
+------------------------------------------------------------------------
+
+## Outbox Pattern
+
+Every local mutation must be written to SQLite first.
+
+Example:
+
+Create Product ↓ SQLite Insert ↓ sync_status = pending_insert ↓ UI Refresh ↓ Background Sync ↓ Supabase
+
+------------------------------------------------------------------------
+
+## Sync Queue
+
+Create a dedicated local table:
+
+    sync_queue
+
+Responsibilities:
+
+- Pending Inserts
+- Pending Updates
+- Pending Deletes
+- Pending Approvals
+- Retry Failures
+
+------------------------------------------------------------------------
+
+# 5. Role Based Access Control (RBAC) {#role-based-access-control-rbac}
+
+## User Roles
+
+### Owner
+
+Full Access
+
+Allowed:
+
+- Dashboard
+- Reports
+- Inventory
+- Sales
+- Parties
+- Backup & Restore
+- User Management
+- Approvals
+
+### Employee
+
+Restricted Access
+
+Blocked:
+
+- Dashboard
+- Reports
+- Backup & Restore
+- User Management
+
+Allowed:
+
+- Sales
+- Inventory
+- Customer Management
+
+------------------------------------------------------------------------
+
+## Route Protection
+
+Never rely only on UI hiding.
+
+Always enforce:
+
+- Screen Guards
+- Navigation Guards
+- Server-Side RLS Policies
+
+------------------------------------------------------------------------
+
+# 6. Employee Approval Workflow {#employee-approval-workflow}
+
+## Employee Action
+
+Employee modifies:
+
+- Stock
+- Invoice
+- Ledger
+
+SQLite:
+
+    sync_status = 'pending_approval'
+
+------------------------------------------------------------------------
+
+## Online Sync
+
+Upload record to:
+
+    staging_review_queue
+
+inside Supabase.
+
+------------------------------------------------------------------------
+
+## Owner Review
+
+Owner receives notification.
+
+Options:
+
+- Approve
+- Reject
+
+------------------------------------------------------------------------
+
+## Approval Result
+
+Approved:
+
+    sync_status = 'synced'
+
+Rejected:
+
+    sync_status = 'rejected'
+
+------------------------------------------------------------------------
+
+# 7. Application Structure {#application-structure}
+
+## Main Navigation
+
+Authentication
+
+1.  Sign In
+2.  Biometric Login
+3.  Quick Access Splash
+
+Main Application
+
+1.  Dashboard
+2.  Inventory
+3.  Sales & Invoices
+4.  Reports
+5.  Parties Ledger
+
+Global Drawer
+
+- Profile
+- Notifications
+- Backup & Restore
+- Settings
+- Help
+
+------------------------------------------------------------------------
+
+# 8. NativeWind UI Rules {#nativewind-ui-rules}
+
+## Colors
+
+Primary
+
+    bg-emerald-500
+    text-emerald-500
+
+Secondary
+
+    bg-slate-900
+
+Danger
+
+    text-rose-600
+    bg-rose-100
+
+Warning
+
+    text-amber-500
+
+------------------------------------------------------------------------
+
+## Safe Area
+
+Always use:
+
+    <SafeAreaView className="flex-1 bg-slate-50">
+
+------------------------------------------------------------------------
+
+## Lists
+
+Always prefer:
+
+    <FlatList />
+
+over:
+
+    <ScrollView />
+
+for large datasets.
+
+------------------------------------------------------------------------
+
+## Floating Action Button
+
+    absolute
+    right-6
+    bottom-6
+    z-50
+    w-14
+    h-14
+    rounded-full
+    bg-emerald-500
+    items-center
+    justify-center
+    shadow-lg
+
+------------------------------------------------------------------------
+
+# 9. Zustand Rules {#zustand-rules}
+
+Use Zustand for:
+
+- Auth State
+- Drawer State
+- Theme State
+- Filter State
+- Cached SQLite Data
+
+Never store permanent business data exclusively in Zustand.
+
+If data must survive app restart:
+
+Store it in SQLite.
+
+------------------------------------------------------------------------
+
+# 10. Drizzle Rules {#drizzle-rules}
+
+Always:
+
+- Use schema-first design
+- Generate types from schemas
+- Use typed repositories
+- Use transactions where appropriate
+
+Never:
+
+    any
+
+for database entities.
+
+------------------------------------------------------------------------
+
+# 11. Performance Rules {#performance-rules}
+
+Always:
+
+- Memoize expensive computations
+- Use FlatList virtualization
+- Use SQLite indexes
+- Paginate large datasets
+- Batch synchronization requests
+
+Avoid:
+
+- Massive Zustand stores
+- Direct Supabase queries from screens
+- Re-rendering large lists
+- Unnecessary useEffect chains
+
+------------------------------------------------------------------------
+
+# 12. AI Agent Development Rules {#ai-agent-development-rules}
+
+1.  SQLite is always the source of truth.
+2.  Supabase is synchronization, not primary storage.
+3.  Zustand is UI state, not persistent storage.
+4.  Never use auto-increment IDs.
+5.  Always use strict TypeScript types.
+6.  Never use `any`.
+7.  Always support offline operation.
+8.  Never block UI waiting for cloud responses.
+9.  Maintain identical naming conventions across screens.
+10. All inventory and financial mutations must be recoverable through the local sync queue.

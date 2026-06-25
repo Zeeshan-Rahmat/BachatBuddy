@@ -56,7 +56,7 @@ export const defaultSupplier: SupplierType = {
 // 3. DEFAULT BASELINE PRODUCT
 // ==========================================
 export const defaultProduct: ProductType = {
-    product_id: 0,
+    product_id: "",
     created_by: defaultUser,
     last_updated_by: defaultUser,
     supplier: defaultSupplier,

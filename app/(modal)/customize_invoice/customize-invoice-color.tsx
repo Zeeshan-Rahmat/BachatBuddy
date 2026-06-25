@@ -128,7 +128,7 @@ export default function CustomizeInvoiceColorsScreen() {
                     {INVOICE_COLORS.map((color) => {
                         const isSelected = selectedColor === color.hex;
                         return (
-                            <ColorCard color={color} setSelectedColor={setSelectedColor} isSelected={isSelected} />
+                            <ColorCard key={color.id} color={color} setSelectedColor={setSelectedColor} isSelected={isSelected} />
                         );
                     })}
 
@@ -149,7 +149,6 @@ export default function CustomizeInvoiceColorsScreen() {
 function ColorCard({ color, isSelected, setSelectedColor }: { color: Color, isSelected: boolean, setSelectedColor: React.Dispatch<React.SetStateAction<string>> }) {
     return (
         <TouchableOpacity
-            key={color.id}
             onPress={() => setSelectedColor(color.hex)}
             activeOpacity={0.8}
             style={{ backgroundColor: color.hex }}

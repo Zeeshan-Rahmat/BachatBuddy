@@ -377,7 +377,7 @@ export const mockCustomers: CustomerType[] = [
 // ==========================================
 export const mockProducts: ProductType[] = [
     {
-        product_id: 1001,
+        product_id: "prd_1001",
         created_by: mockUsers[0],
         last_updated_by: mockUsers[3], // Updated by inventory clerk Emily
         supplier: mockSuppliers[0], // Supplied by Apex Tech
@@ -395,7 +395,7 @@ export const mockProducts: ProductType[] = [
         last_updated_at: "2026-06-18T15:40:00Z"
     },
     {
-        product_id: 1002,
+        product_id: "prd_1002",
         created_by: mockUsers[1],
         last_updated_by: mockUsers[3],
         supplier: mockSuppliers[0],
@@ -413,7 +413,7 @@ export const mockProducts: ProductType[] = [
         last_updated_at: "2026-06-19T09:12:00Z"
     },
     {
-        product_id: 1003,
+        product_id: "prd_1003",
         created_by: mockUsers[0],
         last_updated_by: mockUsers[1],
         supplier: mockSuppliers[2], // Supplied by Elite Ergonomics
@@ -431,7 +431,7 @@ export const mockProducts: ProductType[] = [
         last_updated_at: "2026-06-12T16:45:00Z"
     },
     {
-        product_id: 1004,
+        product_id: "prd_1004",
         created_by: mockUsers[1],
         last_updated_by: mockUsers[1],
         supplier: mockSuppliers[1], // Supplied by Global Office Solutions
@@ -449,7 +449,7 @@ export const mockProducts: ProductType[] = [
         last_updated_at: "2026-05-14T11:00:00Z"
     },
     {
-        product_id: 1005,
+        product_id: "prd_1005",
         created_by: mockUsers[0],
         last_updated_by: mockUsers[3],
         supplier: mockSuppliers[3], // Supplied by Nexus Freight

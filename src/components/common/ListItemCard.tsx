@@ -36,7 +36,7 @@ const ListItemCard = ({
     const title = 'name' in item ? item.name : ('invoice_number' in item ? `Invoice #${item.invoice_number}` : 'N/A');
 
     // Safely extract creator/updater info depending on object hierarchy
-    const updatedBy = 'user_id' in item ? 'System' : (item.last_updated_by?.name || 'Unknown');
+    const updatedBy = 'last_updated_by' in item ? item.last_updated_by.name : 'System';
 
     // Format timestamp string safely
     const formattedTime = getRelativeTimeShort(item.last_updated_at);

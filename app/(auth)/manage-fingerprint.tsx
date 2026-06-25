@@ -80,9 +80,9 @@ export default function ManageFingerprintScreen() {
 
                 <View className="flex-row justify-center mt-5">
                     <Text className="text-gray-700 text-base">
-                        Don't have an account?{' '}
+                        Don&apos;t have an account?{' '}
                     </Text>
-                    <TextButton text="Create account" textstyle='underline' onPress={() => router.push('/(auth)/sign-up')} />
+                    <TextButton text="Create account" textstyle='underline' onPress={() => router.push(ROUTES.AUTH.SIGN_UP)} />
                 </View>
 
             </Wrapper>

@@ -24,6 +24,13 @@ export type StockStatusType = 'In Stock' | 'Low Stock' | 'Out of Stock';
 export type PartyStatusType = 'Active' | 'Inactive';
 export type InvoiceStatusType = 'Paid' | 'Pending' | 'Unpaid';
 export type RoleType = 'Owner' | 'Employee';
+export type SyncStatusType =
+    | 'synced'
+    | 'pending_insert'
+    | 'pending_update'
+    | 'pending_delete'
+    | 'pending_approval'
+    | 'rejected';
 
 export type UserType = {
     user_id: string;
@@ -93,7 +100,7 @@ export type SupplierType = {
 }
 
 export type ProductType = {
-    product_id: number;
+    product_id: string;
     created_by: UserType;
     last_updated_by: UserType;
     supplier: SupplierType;

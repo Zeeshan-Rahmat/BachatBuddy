@@ -60,8 +60,9 @@ export default function SignaturePadScreen() {
                             activeIcon={<MaterialCommunityIcons name="tag" size={24} color={COLORS.primaryGreen} />}
                             value={signatureLabel}
                             onChangeText={setSignatureLabel}
-                            placeholder="Enter signature label (e.g., Authorized Sign)"
+                            placeholder="Enter signature label (e.g. Owner Sign)"
                             placeholderTextColor={COLORS.placeholder}
+                            bgColor={COLORS.white}
                         />
 
                         {/* SIGNATURE CANVAS CONTAINER */}
