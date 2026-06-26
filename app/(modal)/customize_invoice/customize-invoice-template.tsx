@@ -1,5 +1,8 @@
 import SectionHeader from '@/src/components/dashboard/SectionHeader';
 import { COLORS } from '@/src/constants/theme';
+import InvoiceViewer from '@/src/services/invoice/invoiceViewer';
+import { MOCK_INVOICE_DATA } from '@/src/templates/mockInvoiceData';
+import { InvoiceCustomization } from '@/src/types/invoice';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React from 'react';
 import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
@@ -14,17 +17,24 @@ interface CustomizeInvoiceTemplateScreenProps {
 
 const CustomizeInvoiceTemplateScreen = ({ selectedTamplateImage, selectedTemplateId, mockData, setSelectedTemplateId }: CustomizeInvoiceTemplateScreenProps) => {
 
+    const invoiceData = MOCK_INVOICE_DATA;
+
+    const customization: InvoiceCustomization =
+    {
+        templateId: 'bold',
+        fontFamily: "Arial",
+        fontSize: 'medium',
+        primaryColor: COLORS.navy400,
+        signature: null
+    }
+
     return (
 
         <View className="flex-1">
 
 
             <View className='bg-white p-1 mb-5 rounded-button w-full h-120'>
-                <Image
-                    source={{ uri: selectedTamplateImage }}
-                    className="w-full h-full opacity-60"
-                    resizeMode="cover"
-                />
+                <InvoiceViewer invoiceData={invoiceData} customization={customization} />
             </View>
 
 
