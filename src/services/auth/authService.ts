@@ -83,45 +83,111 @@ function buildUserProfile(
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. SIGN UP — auth.md §2
 // ─────────────────────────────────────────────────────────────────────────────
-export async function signUp(input: SignUpInput): Promise<AuthResult<{ userId: string }>> {
+export async function signUp(
+  input: SignUpInput
+): Promise<AuthResult<{ userId: string }>> {
   try {
-    // Step 1 — register with Supabase Auth
+    // Validate required fields
+    if (
+      !input.username.trim() ||
+      !input.email.trim() ||
+      !input.password.trim() ||
+      !input.name.trim()
+    ) {
+      return {
+        success: false,
+        error: 'Please fill in all required fields.',
+        code: 'validation_error',
+      };
+    }
+
+    // Register user with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
-      email: input.email,
+      email: input.email.trim(),
       password: input.password,
     });
 
     if (error) {
       const { error: msg, code } = mapSupabaseError(error.message);
-      return { success: false, error: msg, code };
-    }
-    if (!data.user) {
-      return { success: false, error: 'Sign up failed. Please try again.', code: 'unknown_error' };
+      return {
+        success: false,
+        error: msg,
+        code,
+      };
     }
 
-    // Step 2 — insert profile row (auth.md: profiles table)
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: data.user.id,
-      username: input.username,
-      email: input.email,
-      role: 'owner',   // first-time signup is always an owner account
-      created_at: new Date().toISOString(),
-    });
+    if (!data.user) {
+      return {
+        success: false,
+        error: 'Sign up failed.',
+        code: 'unknown_error',
+      };
+    }
+
+    const now = new Date().toISOString();
+
+    // Create profile
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: data.user.id,
+
+        // Business
+        business_id: '',
+        business_name: '',
+
+        // User
+        name: input.name.trim(),
+        username: input.username.trim(),
+        email: input.email.trim(),
+        role: 'owner',
+
+        // Optional
+        phone: input.phone?.trim() ?? '',
+        business_phone: '',
+        business_email: '',
+        password_hash: '',
+        address: '',
+        business_address: '',
+        img: '',
+
+        // Defaults
+        status: 'Active',
+        biometric_enabled: false,
+        sync_status: 'pending_insert',
+
+        created_at: now,
+        updated_at: now,
+      });
 
     if (profileError) {
-      // Username might already be taken (unique constraint)
-      if (profileError.message.toLowerCase().includes('duplicate')) {
-        return { success: false, error: 'Username is already taken.', code: 'username_exists' };
+      // PostgreSQL unique violation
+      if (profileError.code === '23505') {
+        return {
+          success: false,
+          error: 'Username is already taken.',
+          code: 'username_exists',
+        };
       }
-      return { success: false, error: profileError.message, code: 'unknown_error' };
+
+      return {
+        success: false,
+        error: profileError.message,
+        code: 'unknown_error',
+      };
     }
 
-    // Supabase automatically sends OTP email on signup (auth.md confirms this)
-    return { success: true, data: { userId: data.user.id } };
+    return {
+      success: true,
+      data: {
+        userId: data.user.id,
+      },
+    };
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Sign up failed.',
+      error:
+        err instanceof Error ? err.message : 'Sign up failed.',
       code: 'unknown_error',
     };
   }
@@ -186,7 +252,7 @@ export async function signIn(input: SignInInput): Promise<AuthResult<AuthSession
 
     // Step 3 — fetch profile row to confirm role matches what was selected
     const { data: profileRow, error: profileError } = await supabase
-      .from('profiles')
+      .from('users')
       .select('username, role, business_id')
       .eq('id', data.user.id)
       .single();

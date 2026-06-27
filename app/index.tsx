@@ -6,6 +6,7 @@ import { Dimensions, Image, Text, View } from 'react-native';
 
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import { ROUTES } from '@/src/constants/routes';
+import { useBiometricStore } from '@/src/store/biometricStore';
 
 NativeSplashScreen.preventAutoHideAsync().catch(() => { });
 
@@ -13,26 +14,38 @@ NativeSplashScreen.preventAutoHideAsync().catch(() => { });
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function SplashScreen() {
-  const isBoimetricEnable = true;
+  const { enabled, isChecking, checkEnabled } = useBiometricStore();
 
-
-  const [assets, error] = useAssets([
+  // 1. Load assets
+  const [assets] = useAssets([
     require('../assets/images/splash-illustration.png'),
   ]);
 
+  // 2. Run the biometric check once when the app mounts
   useEffect(() => {
-    if (assets) {
-      NativeSplashScreen.hideAsync().catch(() => { });
+    checkEnabled();
+  }, [checkEnabled]);
 
-      const timer = setTimeout(() => {
-        router.replace(isBoimetricEnable ? ROUTES.AUTH.FINGERPRINT : ROUTES.AUTH.SIGN_IN);
-      }, 2500);
-
-      return () => clearTimeout(timer);
+  // 3. Handle routing and hiding the splash screen ONLY when everything is ready
+  useEffect(() => {
+    // Wait until both assets are loaded AND the biometric check is done
+    if (!assets || isChecking) {
+      return;
     }
-  }, [assets]);
 
-  if (!assets) {
+    // Safely hide the splash screen now that we are ready to route
+    NativeSplashScreen.hideAsync().catch(() => { });
+
+    // Route based on biometric status
+    if (enabled) {
+      router.replace(ROUTES.AUTH.FINGERPRINT);
+    } else {
+      router.replace(ROUTES.AUTH.SIGN_IN);
+    }
+  }, [assets, isChecking, enabled, router]);
+
+  // Keep returning null while loading so nothing renders underneath the native splash screen
+  if (!assets || isChecking) {
     return null;
   }
 

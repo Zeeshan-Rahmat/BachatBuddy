@@ -95,9 +95,11 @@ export interface SignInInput {
 }
 
 export interface SignUpInput {
+    name: string;
     username: string;
     email: string;
     password: string;
+    phone?: string;
 }
 
 export interface VerifyOtpInput {
@@ -135,6 +137,7 @@ export type AuthResult<T> =
 
 export type AuthErrorCode =
     | 'invalid_credentials'
+    | 'validation_error'
     | 'email_exists'
     | 'username_exists'
     | 'weak_password'

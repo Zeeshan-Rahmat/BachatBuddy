@@ -8,6 +8,7 @@
 // handlers to your existing buttons/inputs.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { ROUTES } from '@/src/constants/routes';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import * as authService from '../../services/auth/authService';
@@ -45,7 +46,7 @@ export function useSignIn() {
       await sessionService.saveSession(result.data);
       setSession(result.data);
 
-      const dest = result.data.user.role === 'owner' ? '/(app)/dashboard' : '/(app)/stock';
+      const dest = result.data.user.role === 'owner' ? ROUTES.DASHBOARD : ROUTES.STOCK;
       router.replace(dest as any);
       setLoading(false);
     },
@@ -62,7 +63,7 @@ export function useSignUp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const signUp = useCallback(async (username: string, email: string, password: string, confirmPassword: string) => {
+  const signUp = useCallback(async (name: string, username: string, email: string, password: string, confirmPassword: string) => {
     if (!username.trim()) { setError('Username is required.'); return; }
     if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email address.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
@@ -71,7 +72,7 @@ export function useSignUp() {
     setLoading(true);
     setError(null);
 
-    const result = await authService.signUp({ username, email, password });
+    const result = await authService.signUp({ name, username, email, password });
 
     if (!result.success) {
       setError(result.error);
@@ -79,7 +80,7 @@ export function useSignUp() {
       return;
     }
 
-    router.push({ pathname: '/(auth)/sign-up-otp', params: { email } });
+    router.push({ pathname: ROUTES.AUTH.SIGN_UP_OTP, params: { email } });
     setLoading(false);
   }, []);
 
@@ -95,8 +96,8 @@ export function useVerifyOtp(type: 'signup' | 'recovery') {
 
   const verify = useCallback(
     async (email: string, otp: string) => {
-      if (!otp || otp.length < 4) {
-        setError('Please enter the 4-digit OTP.');
+      if (!otp || otp.length < 6) {
+        setError('Please enter the 6-digit OTP.');
         return;
       }
       setLoading(true);
@@ -111,9 +112,9 @@ export function useVerifyOtp(type: 'signup' | 'recovery') {
       }
 
       if (type === 'signup') {
-        router.push({ pathname: '/(auth)/sign-up-verified', params: { email } });
+        router.push({ pathname: ROUTES.AUTH.SIGN_UP_VERIFIED, params: { email } });
       } else {
-        router.push({ pathname: '/(auth)/email-verified', params: { email, flow: 'reset' } });
+        router.push({ pathname: ROUTES.AUTH.EMAIL_VERIFIED, params: { email, flow: 'reset' } });
       }
       setLoading(false);
     },
@@ -146,7 +147,7 @@ export function useForgotPassword() {
       return;
     }
 
-    router.push({ pathname: '/(auth)/verify-otp', params: { email, flow: 'reset' } });
+    router.push({ pathname: ROUTES.AUTH.VERIFY_OTP, params: { email, flow: 'reset' } });
     setLoading(false);
   }, []);
 
@@ -175,7 +176,7 @@ export function useResetPassword() {
       return;
     }
 
-    router.push('/(auth)/password-updated');
+    router.push(ROUTES.AUTH.PASSWORD_UPDATED);
     setLoading(false);
   }, []);
 
@@ -202,7 +203,7 @@ export function useBiometricSignIn() {
       setLoading(false);
       // auth.md §10: "If credentials missing → Navigate Sign In"
       if (!result.credentials) {
-        router.replace('/(auth)/sign-in');
+        router.replace(ROUTES.AUTH.SIGN_IN);
       }
       return;
     }
@@ -212,13 +213,13 @@ export function useBiometricSignIn() {
 
     if (!restoreResult.success || !restoreResult.data) {
       setError('Session expired. Please sign in with your password.');
-      router.replace('/(auth)/sign-in');
+      router.replace(ROUTES.AUTH.SIGN_IN);
       setLoading(false);
       return;
     }
 
     setSession(restoreResult.data);
-    const dest = restoreResult.data.user.role === 'owner' ? '/(app)/dashboard' : '/(app)/stock';
+    const dest = restoreResult.data.user.role === 'owner' ? ROUTES.DASHBOARD : ROUTES.STOCK;
     router.replace(dest as any);
     setLoading(false);
   }, [authenticate, setSession]);
@@ -265,7 +266,7 @@ export function useManageBiometric() {
         refresh_token: result.data.refresh_token,
       });
 
-      router.replace('/(auth)/fingerprint');
+      router.replace(ROUTES.AUTH.FINGERPRINT);
       setLoading(false);
     },
     [enable]
@@ -290,7 +291,7 @@ export function useSignOut() {
     await authService.signOut();
     clearSession();
 
-    router.replace('/(auth)/sign-in');
+    router.replace(ROUTES.AUTH.SIGN_IN);
     setLoading(false);
   }, [user, clearSession]);
 
