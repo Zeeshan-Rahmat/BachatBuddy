@@ -7,15 +7,19 @@ PRAGMA journal_mode = WAL;
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY NOT NULL,
     business_id TEXT,
+    business_name TEXT,
     name TEXT NOT NULL,
     phone TEXT,
+    business_phone TEXT,
     email TEXT NOT NULL,
+    business_email TEXT,
     role TEXT NOT NULL CHECK (role IN ('owner', 'employee')),
     username TEXT NOT NULL,
     password_hash TEXT,
     status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive')),
     biometric_enabled INTEGER NOT NULL DEFAULT 0,
     address TEXT,
+    business_address TEXT,
     img TEXT,
     sync_status TEXT NOT NULL DEFAULT 'pending_insert',
     updated_at INTEGER NOT NULL,
@@ -114,11 +118,23 @@ CREATE TABLE IF NOT EXISTS invoice_items (
     created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS auth_sessions (
+        id TEXT PRIMARY KEY NOT NULL,
+        user_id TEXT NOT NULL,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        updated_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      );
+
 CREATE TABLE IF NOT EXISTS sync_queue (
     id TEXT PRIMARY KEY NOT NULL,
     table_name TEXT NOT NULL,
     record_id TEXT NOT NULL,
-    operation TEXT NOT NULL CHECK (operation IN ('insert', 'update', 'delete', 'approval')),
+    operation TEXT NOT NULL CHECK (operation IN ('insert', 'update', 'delete', 'approval_request')),
     payload TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'processing', 'failed')),
     attempts INTEGER NOT NULL DEFAULT 0,
@@ -151,6 +167,9 @@ CREATE INDEX IF NOT EXISTS idx_invoice_items_sync_status ON invoice_items(sync_s
 CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status);
 CREATE INDEX IF NOT EXISTS idx_sync_queue_record ON sync_queue(table_name, record_id);
 CREATE INDEX IF NOT EXISTS idx_sync_queue_next_retry_at ON sync_queue(next_retry_at);
+
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_active ON auth_sessions(is_active);
 `;
 
 export const migrateLocalDatabase = async (sqlite: SQLiteDatabase): Promise<void> => {

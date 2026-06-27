@@ -3,6 +3,7 @@
 // Strict types compiled from Drizzle schema. Never use `any` for these.
 // ─────────────────────────────────────────────────────────────────────────────
 
+
 // RBAC roles — matches AGENTS.md Role Permissions Matrix
 export type UserRole = 'owner' | 'employee';
 
@@ -17,17 +18,35 @@ export type SyncStatus =
 
 // ─── Core User Entity ────────────────────────────────────────────────────────
 // Mirrors the local SQLite `users` table via Drizzle schema
+export type PartyStatus = 'Active' | 'Inactive';
+
 export interface User {
-    id: string;             // UUID — generated on device via crypto.randomUUID()
-    username: string;
+    id: string;
+    businessId: string | null;
+    businessName: string | null;
+    name: string;
+    phone: string | null;
+    businessPhone: string | null;
     email: string;
+    businessEmail: string | null;
     role: UserRole;
-    business_name: string | null;
-    avatar_url: string | null;
-    biometric_enabled: boolean;
-    sync_status: SyncStatus;
-    updated_at: number;     // Unix ms timestamp
-    created_at: number;
+    username: string;
+    passwordHash: string | null;
+    status: PartyStatus;
+    biometricEnabled: boolean;
+    address: string | null;
+    businessAddress: string | null;
+    img: string | null;
+    syncStatus: SyncStatus;
+    updatedAt: number; // Stored as integer timestamp
+    createdAt: number; // Stored as integer timestamp
+}
+
+// Optional: If you also need a type for inserting new records (where defaults are optional)
+export interface NewUser extends Omit<User, 'status' | 'biometricEnabled' | 'syncStatus'> {
+    status?: PartyStatus;
+    biometricEnabled?: boolean;
+    syncStatus?: SyncStatus;
 }
 
 // ─── Auth Session ─────────────────────────────────────────────────────────────
@@ -64,7 +83,6 @@ export interface AuthActions {
     isOwner: () => boolean;
     canAccessDashboard: () => boolean;
     canAccessReports: () => boolean;
-    canAccessBackup: () => boolean;
     requiresApproval: () => boolean;
 }
 
@@ -82,9 +100,10 @@ export interface SignUpInput {
     password: string;
 }
 
-export interface OtpVerifyInput {
+export interface VerifyOtpInput {
     email: string;
-    otp: string;
+    token: string;
+    type: 'signup' | 'recovery';
 }
 
 export interface ResetPasswordInput {
@@ -93,14 +112,38 @@ export interface ResetPasswordInput {
     new_password: string;
 }
 
-export interface BiometricBindInput {
-    username: string;
-    role: UserRole;
+export interface UpdatePasswordInput {
     password: string;
 }
 
-// ─── Service Result Wrapper ───────────────────────────────────────────────────
-// Every service function returns this — no raw throws leaked to UI layer
+
+export interface BiometricCredentials {
+    user_id: string;
+    email: string;
+    username: string;
+    role: UserRole;
+    access_token: string;
+    refresh_token: string;
+}
+
+// ─── Result Wrapper ───────────────────────────────────────────────────────────
+// Every service function returns this shape — never throws raw errors to UI
+
 export type AuthResult<T> =
     | { success: true; data: T }
-    | { success: false; error: string };
+    | { success: false; error: string; code?: AuthErrorCode };
+
+export type AuthErrorCode =
+    | 'invalid_credentials'
+    | 'email_exists'
+    | 'username_exists'
+    | 'weak_password'
+    | 'otp_expired'
+    | 'otp_invalid'
+    | 'network_unavailable'
+    | 'user_not_found'
+    | 'role_mismatch'
+    | 'session_expired'
+    | 'biometric_unavailable'
+    | 'biometric_not_enrolled'
+    | 'unknown_error';

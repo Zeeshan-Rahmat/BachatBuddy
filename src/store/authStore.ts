@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { create } from 'zustand';
-import type { AuthActions, AuthSession, AuthState } from '../types/auth';
+import type { AuthActions, AuthSession, AuthState, User } from '../types/auth';
 
 type AuthStore = AuthState & AuthActions;
 
@@ -49,6 +49,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         set({ biometricEnabled: enabled });
     },
 
+
+    updateUser: (partial: Partial<User>) => {
+        const current = get().user;
+        if (!current) return;
+        const updatedUser = { ...current, ...partial };
+        set({
+            user: updatedUser,
+            session: get().session ? { ...get().session!, user: updatedUser } : null,
+        });
+    },
+
     // ─── RBAC Helpers ──────────────────────────────────────────────────────────
     // AGENTS.md Role Permissions Matrix — enforced here and in route guards
 
@@ -59,9 +70,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     // Reports: Owner only — AGENTS.md: "Employee → BLOCKED"
     canAccessReports: () => get().role === 'owner',
-
-    // Backup & Restore: Owner only — AGENTS.md: "Employee → BLOCKED"
-    canAccessBackup: () => get().role === 'owner',
 
     // Employee mutations require approval — AGENTS.md Offline Outbox Pattern
     requiresApproval: () => get().role === 'employee',

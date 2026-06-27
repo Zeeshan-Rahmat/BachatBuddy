@@ -1,5 +1,5 @@
-import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
+import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const syncStatusValues = [
     'synced',
@@ -15,7 +15,7 @@ export const userRoleValues = ['owner', 'employee'] as const;
 export const stockStatusValues = ['In Stock', 'Low Stock', 'Out of Stock'] as const;
 export const partyStatusValues = ['Active', 'Inactive'] as const;
 export const invoiceStatusValues = ['Paid', 'Pending', 'Unpaid'] as const;
-export const syncOperationValues = ['insert', 'update', 'delete', 'approval'] as const;
+export const syncOperationValues = ['insert', 'update', 'delete', 'approval_request'] as const;
 export const syncQueueStatusValues = ['queued', 'processing', 'failed'] as const;
 
 export const authSessions = sqliteTable(
@@ -41,15 +41,19 @@ export const users = sqliteTable(
     {
         id: text('id').primaryKey(),
         businessId: text('business_id'),
+        businessName: text('business_name'),
         name: text('name').notNull(),
         phone: text('phone'),
+        businessPhone: text('business_phone'),
         email: text('email').notNull(),
+        businessEmail: text('business_email'),
         role: text('role', { enum: userRoleValues }).notNull(),
         username: text('username').notNull(),
         passwordHash: text('password_hash'),
         status: text('status', { enum: partyStatusValues }).notNull().default('Active'),
         biometricEnabled: integer('biometric_enabled', { mode: 'boolean' }).notNull().default(false),
         address: text('address'),
+        businessAddress: text('business_address'),
         img: text('img'),
         syncStatus: text('sync_status', { enum: syncStatusValues }).notNull().default('pending_insert'),
         updatedAt: integer('updated_at').notNull(),
