@@ -1,3 +1,4 @@
+import "@/src/lib/crypto";
 import { Stack } from "expo-router";
 
 import "@/global.css";

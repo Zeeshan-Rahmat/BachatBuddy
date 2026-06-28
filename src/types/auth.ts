@@ -126,6 +126,7 @@ export interface BiometricCredentials {
     role: UserRole;
     access_token: string;
     refresh_token: string;
+    expires_at?: number;
 }
 
 // ─── Result Wrapper ───────────────────────────────────────────────────────────

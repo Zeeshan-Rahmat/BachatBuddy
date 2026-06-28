@@ -1,23 +1,39 @@
 import { useAssets } from 'expo-asset';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as NativeSplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { Dimensions, Image, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, Text, useWindowDimensions, View } from 'react-native';
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import GradientBackground from '@/src/components/auth/GradientBackground';
 import { ROUTES } from '@/src/constants/routes';
+import { COLORS } from '@/src/constants/theme';
 import { useBiometricStore } from '@/src/store/biometricStore';
 
 NativeSplashScreen.preventAutoHideAsync().catch(() => { });
 
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const MIN_SPLASH_DURATION_MS = 2500;
 
 export default function SplashScreen() {
   const { enabled, isChecking, checkEnabled } = useBiometricStore();
+  const [canNavigate, setCanNavigate] = useState(false);
+  const { width, height } = useWindowDimensions();
+  const logoScale = useSharedValue(0.94);
+  const illustrationHeight = Math.min(250, Math.max(180, height * 0.26));
 
   // 1. Load assets
   const [assets] = useAssets([
+    require('../assets/images/logo.png'),
     require('../assets/images/splash-illustration.png'),
   ]);
 
@@ -26,48 +42,133 @@ export default function SplashScreen() {
     checkEnabled();
   }, [checkEnabled]);
 
-  // 3. Handle routing and hiding the splash screen ONLY when everything is ready
   useEffect(() => {
-    // Wait until both assets are loaded AND the biometric check is done
-    if (!assets || isChecking) {
+    logoScale.value = withRepeat(
+      withSequence(
+        withTiming(1.03, { duration: 700, easing: Easing.out(Easing.quad) }),
+        withTiming(0.97, { duration: 700, easing: Easing.inOut(Easing.quad) })
+      ),
+      -1,
+      true
+    );
+  }, [logoScale]);
+
+  const logoAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoScale.value }],
+  }));
+
+  const isReady = Boolean(assets) && !isChecking;
+
+  // 3. Hide the native splash only when our custom splash is ready to render.
+  useEffect(() => {
+    if (!isReady) {
       return;
     }
 
-    // Safely hide the splash screen now that we are ready to route
     NativeSplashScreen.hideAsync().catch(() => { });
 
-    // Route based on biometric status
+    const timer = setTimeout(() => {
+      setCanNavigate(true);
+    }, MIN_SPLASH_DURATION_MS);
+
+    return () => clearTimeout(timer);
+  }, [isReady]);
+
+  // 4. Route only after the custom splash has had time to display.
+  useEffect(() => {
+    if (!isReady || !canNavigate) {
+      return;
+    }
+
     if (enabled) {
       router.replace(ROUTES.AUTH.FINGERPRINT);
     } else {
       router.replace(ROUTES.AUTH.SIGN_IN);
     }
-  }, [assets, isChecking, enabled, router]);
+  }, [isReady, canNavigate, enabled]);
 
   // Keep returning null while loading so nothing renders underneath the native splash screen
-  if (!assets || isChecking) {
+  if (!isReady) {
     return null;
   }
 
   return (
-    <GradientBackground>
-      <View className="flex-1 justify-center items-center">
-        <Text
-          className="text-white text-5xl text-center"
-          style={{ fontWeight: '700', letterSpacing: 2.5, lineHeight: 50 }}
+    <LinearGradient
+      colors={[COLORS.primaryNavy, COLORS.primaryTeal, COLORS.primaryGreen]}
+      locations={[0, 0.52, 1]}
+      start={{ x: 0, y: 1 }}
+      end={{ x: 1, y: 0 }}
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={{ flex: 1 }}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 20,
+            paddingBottom: illustrationHeight * 0.35,
+            zIndex: 1,
+          }}
         >
-          Bachat{'\n'}Buddy
-        </Text>
-      </View>
+          <Animated.View
+            entering={FadeInDown.duration(550).springify().damping(14)}
+            style={[
+              {
+                width: 152,
+                height: 152,
+                borderRadius: 76,
+                backgroundColor: 'rgba(255,255,255,0.96)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+              logoAnimatedStyle,
+            ]}
+          >
+            <Image
+              source={require('../assets/images/logo.png')}
+              style={{ width: 118, height: 118 }}
+              resizeMode="contain"
+            />
+          </Animated.View>
 
+          <Animated.View entering={FadeInUp.duration(500).delay(180)}>
+            <Text
+              className="text-white text-5xl text-center mt-8"
+              style={{ fontWeight: '700', letterSpacing: 2.5, lineHeight: 50 }}
+            >
+              BachatBuddy
+            </Text>
+          </Animated.View>
 
-      <View style={{ position: 'absolute', bottom: 0, right: 0, width: SCREEN_WIDTH }}>
-        <Image
-          source={require('../assets/images/splash-illustration.png')}
-          style={{ width: '100%', height: 250 }}
-          resizeMode="cover"
-        />
-      </View>
-    </GradientBackground>
+          <Animated.View entering={FadeInUp.duration(500).delay(320)}>
+            <Text
+              className="text-white/85 text-base text-center mt-2"
+              style={{ fontWeight: '600' }}
+            >
+              Digital Business Tracking System
+            </Text>
+          </Animated.View>
+        </View>
+
+        <Animated.View
+          entering={FadeInUp.duration(650).delay(220)}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width,
+            height: illustrationHeight,
+            zIndex: 0,
+          }}
+        >
+          <Image
+            source={require('../assets/images/splash-illustration.png')}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+          />
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }

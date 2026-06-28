@@ -50,7 +50,8 @@ export async function clearBiometricCredentials(): Promise<void> {
 // ─── Update only the tokens (after a refresh) without touching other fields ──
 export async function updateBiometricTokens(
   accessToken: string,
-  refreshToken: string
+  refreshToken: string,
+  expiresAt: number
 ): Promise<void> {
   const existing = await loadBiometricCredentials();
   if (!existing) return;
@@ -59,5 +60,6 @@ export async function updateBiometricTokens(
     ...existing,
     access_token: accessToken,
     refresh_token: refreshToken,
+    expires_at: expiresAt,
   });
 }

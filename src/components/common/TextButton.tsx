@@ -5,9 +5,10 @@ interface TextButtonProps {
     align?: 'self-start' | 'self-center' | 'self-end';
     textstyle?: 'normal' | 'underline';
     onPress: () => void;
+    disabled?: boolean;
 }
 
-const TextButton = ({ text, align = 'self-start', textstyle, onPress }: TextButtonProps) => {
+const TextButton = ({ text, align = 'self-start', textstyle, onPress, disabled = false }: TextButtonProps) => {
 
 
 
@@ -15,8 +16,10 @@ const TextButton = ({ text, align = 'self-start', textstyle, onPress }: TextButt
         <TouchableOpacity
             className={`${align} mb-5 self`}
             onPress={onPress}
+            disabled={disabled}
+            activeOpacity={disabled ? 1 : 0.7}
         >
-            <Text className={`text-blue-700 text-textButton font-medium ${textstyle}`}>
+            <Text className={`${disabled ? 'text-gray-400' : 'text-blue-700'} text-textButton font-medium ${textstyle}`}>
                 {text}
             </Text>
         </TouchableOpacity>

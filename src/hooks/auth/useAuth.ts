@@ -26,7 +26,12 @@ export function useSignIn() {
   const [error, setError] = useState<string | null>(null);
 
   const signIn = useCallback(
-    async (username: string, role: UserRole, password: string) => {
+    async (
+      username: string,
+      role: UserRole,
+      password: string,
+      options: { redirectToFingerprint?: boolean } = {}
+    ) => {
       if (!username.trim() || !role || !password) {
         setError('All fields are required.');
         return;
@@ -80,6 +85,12 @@ export function useSignUp() {
       return;
     }
 
+    if (result.data.recoveredExistingAccount) {
+      router.replace(ROUTES.AUTH.SIGN_IN);
+      setLoading(false);
+      return;
+    }
+
     router.push({ pathname: ROUTES.AUTH.SIGN_UP_OTP, params: { email } });
     setLoading(false);
   }, []);
@@ -91,6 +102,7 @@ export function useSignUp() {
 // useVerifyOtp — wire into sign-up-otp.tsx AND verify-otp.tsx (shared)
 // ─────────────────────────────────────────────────────────────────────────────
 export function useVerifyOtp(type: 'signup' | 'recovery') {
+  const { setSession } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,6 +123,11 @@ export function useVerifyOtp(type: 'signup' | 'recovery') {
         return;
       }
 
+      if (result.data) {
+        await sessionService.saveSession(result.data);
+        setSession(result.data);
+      }
+
       if (type === 'signup') {
         router.push({ pathname: ROUTES.AUTH.SIGN_UP_VERIFIED, params: { email } });
       } else {
@@ -118,7 +135,7 @@ export function useVerifyOtp(type: 'signup' | 'recovery') {
       }
       setLoading(false);
     },
-    [type]
+    [setSession, type]
   );
 
   return { verify, loading, error, clearError: () => setError(null) };
@@ -127,6 +144,29 @@ export function useVerifyOtp(type: 'signup' | 'recovery') {
 // ─────────────────────────────────────────────────────────────────────────────
 // useForgotPassword — wire into forgot-password.tsx
 // ─────────────────────────────────────────────────────────────────────────────
+export function useResendSignupOtp() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resend = useCallback(async (email: string) => {
+    setLoading(true);
+    setError(null);
+
+    const result = await authService.resendSignupOtp(email);
+
+    if (!result.success) {
+      setError(result.error);
+      setLoading(false);
+      return false;
+    }
+
+    setLoading(false);
+    return true;
+  }, []);
+
+  return { resend, loading, error, clearError: () => setError(null) };
+}
+
 export function useForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -209,10 +249,14 @@ export function useBiometricSignIn() {
     }
 
     // Restore session using saved tokens — validates/refreshes with Supabase
-    const restoreResult = await sessionService.restoreSession();
+    let restoreResult = await sessionService.restoreSession();
+
+    if (restoreResult.success && !restoreResult.data) {
+      restoreResult = await sessionService.restoreSessionFromBiometricCredentials(result.credentials);
+    }
 
     if (!restoreResult.success || !restoreResult.data) {
-      setError('Session expired. Please sign in with your password.');
+      setError(restoreResult.success ? 'Session expired. Please sign in with your password.' : restoreResult.error);
       router.replace(ROUTES.AUTH.SIGN_IN);
       setLoading(false);
       return;
@@ -233,43 +277,66 @@ export function useBiometricSignIn() {
 // ─────────────────────────────────────────────────────────────────────────────
 export function useManageBiometric() {
   const { enable } = useBiometricStore();
+  const { setSession, setBiometricEnabled } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const enableBiometric = useCallback(
-    async (username: string, role: UserRole, password: string) => {
+    async (
+      username: string,
+      role: UserRole,
+      password: string,
+      options: { redirectToFingerprint?: boolean } = {}
+    ) => {
       if (!username || !role || !password) {
         setError('All fields are required.');
-        return;
+        return false;
       }
       setLoading(true);
       setError(null);
 
-      const result = await authService.signIn({ username, role, password });
+      try {
+        const normalizedRole = role.toLowerCase() as UserRole;
+        const result = await authService.signIn({ username, role: normalizedRole, password });
 
-      if (!result.success) {
-        setError(result.error);
+        if (!result.success) {
+          setError(result.error);
+          return false;
+        }
+
+        await sessionService.saveSession(result.data);
+
+        await enable({
+          user_id: result.data.user.id,
+          email: result.data.user.email,
+          username: result.data.user.username,
+          role: result.data.user.role,
+          access_token: result.data.access_token,
+          refresh_token: result.data.refresh_token,
+          expires_at: result.data.expires_at,
+        });
+        await sessionService.setLocalBiometricEnabled(result.data.user.id, true);
+        setSession({
+          ...result.data,
+          user: {
+            ...result.data.user,
+            biometricEnabled: true,
+          },
+        });
+        setBiometricEnabled(true);
+
+        if (options.redirectToFingerprint !== false) {
+          router.replace(ROUTES.AUTH.FINGERPRINT);
+        }
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to enable biometric sign in.');
+        return false;
+      } finally {
         setLoading(false);
-        return;
       }
-
-      // Save session to SQLite as usual
-      await sessionService.saveSession(result.data);
-
-      // Store credentials for biometric re-auth (never the password itself)
-      await enable({
-        user_id: result.data.user.id,
-        email: result.data.user.email,
-        username: result.data.user.username,
-        role: result.data.user.role,
-        access_token: result.data.access_token,
-        refresh_token: result.data.refresh_token,
-      });
-
-      router.replace(ROUTES.AUTH.FINGERPRINT);
-      setLoading(false);
     },
-    [enable]
+    [enable, setBiometricEnabled, setSession]
   );
 
   return { enableBiometric, loading, error, clearError: () => setError(null) };

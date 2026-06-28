@@ -26,7 +26,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             role: session.user.role,
             isAuthenticated: true,
             isLoading: false,
-            biometricEnabled: session.user.biometric_enabled,
+            biometricEnabled: session.user.biometricEnabled,
         });
     },
 

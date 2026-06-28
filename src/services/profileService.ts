@@ -5,14 +5,19 @@
 
 import { usersRepository } from '../db/repositories/usersRepository';
 import { supabase } from '../lib/supabase';
-import type { AuthResult, PartyStatus, User, UserRole } from '../types/auth';
+import type { AuthResult, User } from '../types/auth';
+import {
+  mapLocalUserToRemoteUpdate,
+  mapRemoteUserToLocal,
+  type RemoteUserRow,
+} from './userProfileMapper';
 
 // ─── Fetch profile from Supabase (cloud) ─────────────────────────────────────
 export async function fetchRemoteUser(userId: string): Promise<AuthResult<User>> {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, username, email, role, businessId, businessName, name, phone, businessPhone, businessEmail, passwordHash, status, biometricEnabled, address, businessAddress, img, syncStatus, updatedAt, createdAt')
+      .select('id, business_id, business_name, name, phone, business_phone, email, business_email, role, username, password_hash, status, biometric_enabled, address, business_address, img, sync_status, updated_at, created_at')
       .eq('id', userId)
       .single();
 
@@ -20,27 +25,8 @@ export async function fetchRemoteUser(userId: string): Promise<AuthResult<User>>
       return { success: false, error: 'Profile not found.', code: 'user_not_found' };
     }
 
-    const profile: User = {
-      id: data.id,
-      username: data.username,
-      email: data.email,
-      role: data.role as UserRole,
-      businessId: data.businessId ?? null,
-      businessName: data.businessName ?? null,
-      name: data.name, // Fallback to username if name is missing
-      phone: data.phone ?? null,
-      businessPhone: data.businessPhone ?? null,
-      businessEmail: data.businessEmail ?? null,
-      passwordHash: data.passwordHash ?? null,
-      status: (data.status as PartyStatus) ?? 'Active',
-      biometricEnabled: false, // Biometric flag is local-only, never synced to cloud
-      address: data.address ?? null,
-      businessAddress: data.businessAddress ?? null,
-      img: data.img ?? null,
-      syncStatus: 'synced', // Assuming this runs after a successful cloud fetch
-      updatedAt: data.updatedAt ?? Date.now(),
-      createdAt: data.createdAt ?? Date.now(),
-    };
+    const existingLocal = await usersRepository.findById(userId);
+    const profile = mapRemoteUserToLocal(data as RemoteUserRow, existingLocal?.biometricEnabled ?? false);
 
     return { success: true, data: profile };
   } catch (err) {
@@ -58,15 +44,8 @@ export async function syncProfileToLocal(userId: string): Promise<AuthResult<Use
   const remoteResult = await fetchRemoteUser(userId);
   if (!remoteResult.success) return remoteResult;
 
-  // Preserve the local biometric_enabled flag (it's device-specific, not cloud data)
-  const existingLocal = await usersRepository.findById(userId);
-  const merged: User = {
-    ...remoteResult.data,
-    biometricEnabled: existingLocal?.biometricEnabled ?? false,
-  };
-
-  await usersRepository.upsertUser(merged);
-  return { success: true, data: merged };
+  await usersRepository.upsertUser(remoteResult.data);
+  return { success: true, data: remoteResult.data };
 }
 
 // ─── Update profile (business name, avatar, etc.) ────────────────────────────
@@ -75,17 +54,17 @@ export async function updateUser(
   updates: Partial<Pick<User, 'businessName' | 'img'>>
 ): Promise<AuthResult<true>> {
   try {
-    const { error } = await supabase
+    const updatedUser = await usersRepository.updateProfile(userId, updates);
+
+    void supabase
       .from('users')
-      .update(updates)
-      .eq('id', userId);
-
-    if (error) {
-      return { success: false, error: error.message, code: 'unknown_error' };
-    }
-
-    // Re-sync local copy after cloud update succeeds
-    await syncProfileToLocal(userId);
+      .update(mapLocalUserToRemoteUpdate(updatedUser))
+      .eq('id', userId)
+      .then(({ error }) => {
+        if (error) {
+          console.warn('[Profile] Queued profile update for later sync:', error.message);
+        }
+      });
 
     return { success: true, data: true };
   } catch (err) {

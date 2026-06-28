@@ -7,60 +7,52 @@ import TextButton from '@/src/components/common/TextButton';
 import Title from '@/src/components/common/Title';
 import Wrapper from '@/src/components/common/Wrapper';
 import { ROUTES } from '@/src/constants/routes';
-import * as LocalAuthentication from 'expo-local-authentication';
+import { useBiometricSignIn } from '@/src/hooks/auth/useAuth';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, TouchableOpacity } from 'react-native';
 
 export default function FingerprintScreen() {
     const [authenticating, setAuthenticating] = useState(false);
+    const { signInWithBiometric, loading, error, clearError } = useBiometricSignIn();
+    const hasPrompted = useRef(false);
 
-    const handleBiometricAuth = async () => {
+    const handleBiometricAuth = useCallback(async () => {
 
-        if (authenticating) return;
+        if (authenticating || loading) return;
 
         try {
             setAuthenticating(true);
-
-            const hasHardware = await LocalAuthentication.hasHardwareAsync();
-            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-            if (!hasHardware || !isEnrolled) {
-                Alert.alert(
-                    'Not Available',
-                    'Biometric authentication is not set up on this device.',
-                );
-                return;
-            }
-
-            const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Sign in to BachatBuddy',
-                fallbackLabel: 'Use Password',
-                cancelLabel: 'Cancel',
-            });
-
-            if (result.success) {
-                // TODO: retrieve stored credentials from expo-secure-store and call API
-                router.replace(ROUTES.DASHBOARD);
-            } else {
-                // Notice: result.error can be checked here if user cancelled explicitly
-                Alert.alert('Failed', 'Biometric authentication failed. Please try again.');
-            }
-        } catch (error) {
+            await signInWithBiometric();
+        } catch {
             Alert.alert('Error', 'Something went wrong. Please try again.');
         } finally {
             setAuthenticating(false);
         }
-    };
+    }, [authenticating, loading, signInWithBiometric]);
 
 
     useEffect(() => {
+        if (hasPrompted.current) return;
+        hasPrompted.current = true;
+
         const timer = setTimeout(() => {
             handleBiometricAuth();
         }, 500);
 
         return () => clearTimeout(timer);
-    }, []);
+    }, [handleBiometricAuth]);
+
+    useEffect(() => {
+        if (!error) return;
+
+        Alert.alert('Sign In Failed', error, [
+            {
+                text: 'OK',
+                onPress: clearError,
+            },
+        ]);
+    }, [error, clearError]);
 
     return (
         <GradientBackground>
@@ -70,7 +62,7 @@ export default function FingerprintScreen() {
 
                 <TouchableOpacity
                     onPress={handleBiometricAuth}
-                    disabled={authenticating}
+                    disabled={authenticating || loading}
                     className="items-center mb-8"
                     activeOpacity={0.7}
                 >

@@ -15,6 +15,7 @@ import { useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
 
 const EMPLOYEE_BLOCKED_SEGMENTS = ['dashboard', 'reports'];
+const AUTH_SUCCESS_SEGMENTS = ['sign-up-verified', 'email-verified', 'password-updated'];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   useSession(); // bootstraps DB + restores session on mount
@@ -34,7 +35,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (isAuthenticated && inAuthGroup) {
+    if (isAuthenticated && inAuthGroup && !AUTH_SUCCESS_SEGMENTS.includes(segments[1] ?? '')) {
       const dest = user?.role === 'owner' ? '/(app)/dashboard' : '/(app)/stock';
       router.replace(dest as any);
       return;

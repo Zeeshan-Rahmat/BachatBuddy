@@ -10,8 +10,9 @@
 
 import { sessionRepository } from '../db/repositories/sessionRepository';
 import { usersRepository } from '../db/repositories/usersRepository';
+import { updateBiometricTokens } from '../lib/secureStorage';
 import { getCurrentSupabaseSession, supabase } from '../lib/supabase';
-import type { AuthResult, AuthSession } from '../types/auth';
+import type { AuthResult, AuthSession, BiometricCredentials } from '../types/auth';
 import { syncProfileToLocal } from './profileService';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,6 +76,11 @@ export async function restoreSession(): Promise<AuthResult<AuthSession | null>> 
           data.session.refresh_token,
           refreshedExpiresAt
         );
+        await updateBiometricTokens(
+          data.session.access_token,
+          data.session.refresh_token,
+          refreshedExpiresAt
+        );
 
         // Pull latest profile data from cloud, merge into local SQLite
         const syncResult = await syncProfileToLocal(localSession.user_id);
@@ -100,6 +106,49 @@ export async function restoreSession(): Promise<AuthResult<AuthSession | null>> 
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Failed to restore session.',
+      code: 'unknown_error',
+    };
+  }
+}
+
+export async function restoreSessionFromBiometricCredentials(
+  credentials: BiometricCredentials
+): Promise<AuthResult<AuthSession>> {
+  try {
+    const localProfile = await usersRepository.findById(credentials.user_id);
+
+    if (!localProfile) {
+      return { success: false, error: 'Profile not found. Please sign in with your password.', code: 'user_not_found' };
+    }
+
+    const { data, error } = await supabase.auth.setSession({
+      access_token: credentials.access_token,
+      refresh_token: credentials.refresh_token,
+    });
+
+    if (error || !data.session) {
+      return { success: false, error: 'Session expired. Please sign in with your password.', code: 'session_expired' };
+    }
+
+    const expiresAt = data.session.expires_at
+      ? data.session.expires_at * 1000
+      : credentials.expires_at || Date.now() + 3600_000;
+
+    const session: AuthSession = {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: expiresAt,
+      user: localProfile,
+    };
+
+    await saveSession(session);
+    await updateBiometricTokens(session.access_token, session.refresh_token, session.expires_at);
+
+    return { success: true, data: session };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Biometric session restore failed.',
       code: 'unknown_error',
     };
   }
@@ -132,6 +181,7 @@ export async function refreshSession(userId: string): Promise<AuthResult<AuthSes
       data.session.refresh_token,
       expiresAt
     );
+    await updateBiometricTokens(data.session.access_token, data.session.refresh_token, expiresAt);
 
     return {
       success: true,
@@ -156,4 +206,8 @@ export async function refreshSession(userId: string): Promise<AuthResult<AuthSes
 // ─────────────────────────────────────────────────────────────────────────────
 export async function clearSession(userId: string): Promise<void> {
   await sessionRepository.clearActiveSessions(userId);
+}
+
+export async function setLocalBiometricEnabled(userId: string, enabled: boolean): Promise<void> {
+  await usersRepository.setBiometricEnabled(userId, enabled);
 }

@@ -10,12 +10,16 @@ import ScreenWrapper from '@/src/components/layout/ScreenWrapper'
 import { ICONS } from '@/src/constants/icons'
 import { ROUTES } from '@/src/constants/routes'
 import { COLORS } from '@/src/constants/theme'
+import { useManageBiometric } from '@/src/hooks/auth/useAuth'
+import type { UserRole } from '@/src/types/auth'
 import { router } from 'expo-router'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { Alert } from 'react-native'
 import TouchEnabledModal from './touch-enabled'
 
 
 const SmartLoginScreen = () => {
+    const { enableBiometric, loading, error, clearError } = useManageBiometric();
 
     const [isOpen, setIsOpen] = useState(false)
 
@@ -23,7 +27,6 @@ const SmartLoginScreen = () => {
     const [role, setRole] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
 
     const [errors, setErrors] = useState({
         username: '', role: '', password: '',
@@ -44,16 +47,24 @@ const SmartLoginScreen = () => {
 
     const handleSignIn = async () => {
         if (!validate()) return;
-        setLoading(true);
-        // TODO: connect to your Node.js/Express API
-        // const response = await authService.signIn({ username, role, password });
-        setTimeout(() => {
-            setLoading(false);
-
+        const enabled = await enableBiometric(username, role.toLowerCase() as UserRole, password, {
+            redirectToFingerprint: false,
+        });
+        if (enabled) {
             setIsOpen(true);
-
-        }, 1000);
+        }
     };
+
+    useEffect(() => {
+        if (!error) return;
+
+        Alert.alert('Smart Login Setup Failed', error, [
+            {
+                text: 'OK',
+                onPress: clearError,
+            },
+        ]);
+    }, [error, clearError]);
 
     return (
         <ScreenWrapper

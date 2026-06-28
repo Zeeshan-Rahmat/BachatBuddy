@@ -172,6 +172,47 @@ CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_active ON auth_sessions(is_active);
 `;
 
+const usersColumns: Record<string, string> = {
+    business_id: 'ALTER TABLE users ADD COLUMN business_id TEXT;',
+    business_name: 'ALTER TABLE users ADD COLUMN business_name TEXT;',
+    name: "ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT '';",
+    phone: 'ALTER TABLE users ADD COLUMN phone TEXT;',
+    business_phone: 'ALTER TABLE users ADD COLUMN business_phone TEXT;',
+    email: "ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT '';",
+    business_email: 'ALTER TABLE users ADD COLUMN business_email TEXT;',
+    role: "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'owner';",
+    username: "ALTER TABLE users ADD COLUMN username TEXT NOT NULL DEFAULT '';",
+    password_hash: 'ALTER TABLE users ADD COLUMN password_hash TEXT;',
+    status: "ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'Active';",
+    biometric_enabled: 'ALTER TABLE users ADD COLUMN biometric_enabled INTEGER NOT NULL DEFAULT 0;',
+    address: 'ALTER TABLE users ADD COLUMN address TEXT;',
+    business_address: 'ALTER TABLE users ADD COLUMN business_address TEXT;',
+    img: 'ALTER TABLE users ADD COLUMN img TEXT;',
+    sync_status: "ALTER TABLE users ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'pending_insert';",
+    updated_at: 'ALTER TABLE users ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;',
+    created_at: 'ALTER TABLE users ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0;',
+};
+
+type TableInfoRow = {
+    name: string;
+};
+
+async function addMissingColumns(
+    sqlite: SQLiteDatabase,
+    tableName: string,
+    columns: Record<string, string>
+): Promise<void> {
+    const tableInfo = await sqlite.getAllAsync<TableInfoRow>(`PRAGMA table_info(${tableName});`);
+    const existingColumns = new Set(tableInfo.map((column) => column.name));
+
+    for (const [columnName, alterSql] of Object.entries(columns)) {
+        if (!existingColumns.has(columnName)) {
+            await sqlite.execAsync(alterSql);
+        }
+    }
+}
+
 export const migrateLocalDatabase = async (sqlite: SQLiteDatabase): Promise<void> => {
     await sqlite.execAsync(createTablesSql);
+    await addMissingColumns(sqlite, 'users', usersColumns);
 };

@@ -2,23 +2,39 @@ import GradientBackground from '@/src/components/auth/GradientBackground';
 import Button from '@/src/components/common/Button';
 import IconWrapper from '@/src/components/common/IconWrapper';
 import InputText from '@/src/components/common/InputText';
+import TextButton from '@/src/components/common/TextButton';
 import Title from '@/src/components/common/Title';
 import Wrapper from '@/src/components/common/Wrapper';
 import { ICONS } from '@/src/constants/icons';
-import { useVerifyOtp } from '@/src/hooks/auth/useAuth';
+import { useResendSignupOtp, useVerifyOtp } from '@/src/hooks/auth/useAuth';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Alert, Text, View } from 'react-native';
+
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function SignUpOtpScreen() {
 
     const { email } = useLocalSearchParams<{ email: string }>();
     const { verify, loading, error, clearError } = useVerifyOtp('signup');
+    const {
+        resend,
+        loading: resendLoading,
+        error: resendError,
+        clearError: clearResendError,
+    } = useResendSignupOtp();
 
     const [otp, setOtp] = useState('');
     const [emptyFieldError, setEmptyFieldError] = useState('');
+    const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN_SECONDS);
 
     const noOfDigits = 6;
+    const resendDisabled = resendLoading || resendCooldown > 0;
+    const resendText = resendLoading
+        ? 'Sending...'
+        : resendCooldown > 0
+            ? `Resend code in ${resendCooldown}s`
+            : "Didn't receive code? Resend";
 
     const maskedEmail = email
         ? email.replace(/^(.{4})(.+)(@.{2})(.+)(\..+)$/, '$1****$3***$5')
@@ -34,20 +50,50 @@ export default function SignUpOtpScreen() {
         await verify(email, otp);
     };
 
+    const handleResend = async () => {
+        if (resendDisabled) {
+            return;
+        }
+
+        const sent = await resend(email);
+
+        if (sent) {
+            setResendCooldown(RESEND_COOLDOWN_SECONDS);
+            Alert.alert('OTP Sent', 'A new verification code has been sent to your email.');
+        }
+    };
+
     useEffect(() => {
-        if (error) {
+        if (resendCooldown <= 0) {
+            return;
+        }
+
+        const timer = setInterval(() => {
+            setResendCooldown((seconds) => Math.max(seconds - 1, 0));
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [resendCooldown]);
+
+    useEffect(() => {
+        const message = error ?? resendError;
+
+        if (message) {
             Alert.alert(
-                "OTP Verification Faild",
-                error,
+                "OTP Failed",
+                message,
                 [
                     {
                         text: "OK",
-                        onPress: () => clearError()
+                        onPress: () => {
+                            clearError();
+                            clearResendError();
+                        }
                     }
                 ]
             );
         }
-    }, [error, clearError]);
+    }, [error, resendError, clearError, clearResendError]);
 
     return (
         <GradientBackground>
@@ -77,6 +123,16 @@ export default function SignUpOtpScreen() {
                     label="Confirm"
                     onPress={handleConfirm}
                     loading={loading}
+                />
+
+                <View className='h-4' />
+
+                <TextButton
+                    text={resendText}
+                    align="self-center"
+                    textstyle="underline"
+                    onPress={handleResend}
+                    disabled={resendDisabled}
                 />
 
             </Wrapper>

@@ -10,28 +10,35 @@ import Subtitle from '@/src/components/common/Subtitle';
 import Title from '@/src/components/common/Title';
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
+import { useManageBiometric } from '@/src/hooks/auth/useAuth';
+import type { UserRole } from '@/src/types/auth';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Text, View } from 'react-native';
 
 export default function ManageFingerprintScreen() {
+    const { enableBiometric, loading, error, clearError } = useManageBiometric();
     const [username, setUsername] = useState('');
     const [role, setRole] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
 
     const ROLES = ['Owner', 'Employee'];
 
     const handleSignIn = async () => {
-        setLoading(true);
-        // TODO: verify credentials then enable biometric via expo-local-authentication
-        // await LocalAuthentication.authenticateAsync(...)
-        setTimeout(() => {
-            setLoading(false);
-            router.replace(ROUTES.AUTH.FINGERPRINT);
-        }, 1000);
+        await enableBiometric(username, role.toLowerCase() as UserRole, password);
     };
+
+    useEffect(() => {
+        if (!error) return;
+
+        Alert.alert('Touch ID Setup Failed', error, [
+            {
+                text: 'OK',
+                onPress: clearError,
+            },
+        ]);
+    }, [error, clearError]);
 
     return (
         <GradientBackground>
