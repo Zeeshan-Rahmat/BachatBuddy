@@ -4,6 +4,9 @@ import InputText from '@/src/components/common/InputText';
 import Title from '@/src/components/common/Title';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
+import { updateUser } from '@/src/services/profileService';
+import { useAuthStore } from '@/src/store/authStore';
+import type { User } from '@/src/types/auth';
 import ProfilePicker from '@components/form/ProfilePicker';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
@@ -11,71 +14,84 @@ import { Alert, View } from 'react-native';
 
 interface EditBusinessProfileProps {
     visible: boolean;
+    user: User;
     onClose: () => void;
 }
 
-const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => {
-    const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [address, setAddress] = useState('');
-    const [phone, setPhone] = useState('');
+const EditBusinessProfile = ({ visible, user, onClose }: EditBusinessProfileProps) => {
+    const updateStoreUser = useAuthStore((state) => state.updateUser);
+    const [name, setName] = useState(user.businessName ?? '');
+    const [email, setEmail] = useState(user.businessEmail ?? '');
+    const [address, setAddress] = useState(user.businessAddress ?? '');
+    const [phone, setPhone] = useState(user.businessPhone ?? '');
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({
-        name: '', username: '', email: '',
+        name: '',
+        email: '',
     });
 
-    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [logoUri, setLogoUri] = useState<string | null>(user.businessLogo);
     const [imageError, setImageError] = useState<string | undefined>(undefined);
 
     const validate = () => {
-        const e = { name: '', username: '', email: '', };
+        const nextErrors = { name: '', email: '' };
         let valid = true;
-        if (!name.trim()) { e.name = 'Name is required'; valid = false; }
-        if (!username.trim()) { e.username = 'Username is required'; valid = false; }
-        if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { e.email = 'Valid email is required'; valid = false; }
-        setErrors(e);
+
+        if (!name.trim()) {
+            nextErrors.name = 'Business name is required';
+            valid = false;
+        }
+
+        if (email.trim() && !/\S+@\S+\.\S+/.test(email)) {
+            nextErrors.email = 'Valid email is required';
+            valid = false;
+        }
+
+        setErrors(nextErrors);
         return valid;
     };
 
-    const handleSignUp = async () => {
+    const handleUpdate = async () => {
         if (!validate()) return;
+
         setLoading(true);
+        const result = await updateUser(user.id, {
+            businessName: name.trim(),
+            businessEmail: email.trim().toLowerCase() || null,
+            businessAddress: address.trim() || null,
+            businessPhone: phone.trim() || null,
+            businessLogo: logoUri,
+        });
+        setLoading(false);
 
-        // TODO: call API → POST /api/auth/register { username, email, password }
-        // API sends OTP to email
-        // setTimeout(() => {
-        //     setLoading(false);
-        //     router.push({
-        //         pathname: ROUTES.AUTH.SIGN_UP_OTP,
-        //         params: { email },
-        //     });
-        // }, 1000);
-    };
-
-    // This function asks for permission and opens the image gallery
-    const handlePickImage = async () => {
-        setImageError(undefined); // Reset errors
-
-        // Request media library permission
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (permissionResult.granted === false) {
-            Alert.alert("Permission Required", "You need to allow access to your photos to upload a profile picture.");
+        if (!result.success) {
+            Alert.alert('Update Failed', result.error);
             return;
         }
 
-        // Launch the photo gallery
+        updateStoreUser(result.data);
+        onClose();
+    };
+
+    const handlePickImage = async () => {
+        setImageError(undefined);
+
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (!permissionResult.granted) {
+            Alert.alert('Permission Required', 'You need to allow access to your photos to upload a profile picture.');
+            return;
+        }
+
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true, // Shows standard cropping square box
-            aspect: [1, 1],      // Forces a 1:1 square crop ratio
-            quality: 0.8,        // Compresses image slightly for faster uploads
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
         });
 
-        // Save image URI if user did not cancel
         if (!result.canceled) {
-            setImageUri(result.assets[0].uri);
+            setLogoUri(result.assets[0].uri);
         }
     };
 
@@ -86,51 +102,51 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
             <InputText
                 icon={<IconWrapper name={ICONS.AUTH.user} />}
                 activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
-                placeholder="Name"
+                placeholder='Business Name'
                 value={name}
-                onChangeText={(t) => { setName(t); setErrors(e => ({ ...e, name: '' })); }}
+                onChangeText={(text) => {
+                    setName(text);
+                    setErrors((current) => ({ ...current, name: '' }));
+                }}
                 error={errors.name}
-            />
-
-            <InputText
-                icon={<IconWrapper name={ICONS.AUTH.user} />}
-                activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
-                placeholder="Username"
-                value={username}
-                onChangeText={(t) => { setUsername(t); setErrors(e => ({ ...e, username: '' })); }}
-                error={errors.username}
             />
 
             <InputText
                 icon={<IconWrapper name={ICONS.COMMON.address} />}
                 activeIcon={<IconWrapper name={ICONS.COMMON.activeAddress} />}
-                placeholder="Home Address"
+                placeholder='Business Address'
                 value={address}
-                onChangeText={(t) => setAddress(t)}
+                onChangeText={(text) => setAddress(text)}
             />
 
             <InputText
                 icon={<IconWrapper name={ICONS.COMMON.phone} />}
                 activeIcon={<IconWrapper name={ICONS.COMMON.activePhone} />}
-                placeholder="Phone Number"
+                placeholder='Business Phone'
                 value={phone}
-                onChangeText={(t) => setPhone(t)}
-                keyboardType='numeric'
+                onChangeText={(text) => setPhone(text)}
+                keyboardType='phone-pad'
             />
 
             <InputText
                 icon={<IconWrapper name={ICONS.AUTH.email} />}
                 activeIcon={<IconWrapper name={ICONS.AUTH.activeEmail} />}
-                placeholder="Email Address"
+                placeholder='Business Email'
                 value={email}
-                onChangeText={(t) => { setEmail(t); setErrors(e => ({ ...e, email: '' })); }}
+                onChangeText={(text) => {
+                    setEmail(text);
+                    setErrors((current) => ({ ...current, email: '' }));
+                }}
                 error={errors.email}
+                keyboardType='email-address'
             />
 
             <ProfilePicker
-                imageUri={imageUri}
+                imageUri={logoUri}
                 onPickImage={handlePickImage}
                 error={imageError}
+                emptyLabel='Select Business Logo'
+                selectedLabel='Business Logo Selected'
                 icon={<IconWrapper name={ICONS.COMMON.addImage} />}
                 activeIcon={<IconWrapper name={ICONS.COMMON.activeAddImage} />}
                 rightIcon={<IconWrapper name={ICONS.COMMON.camera} />}
@@ -144,16 +160,19 @@ const EditBusinessProfile = ({ visible, onClose }: EditBusinessProfileProps) => 
                     bgColor='gray'
                     width='flex-1'
                     onPress={onClose}
+                    isDisabled={loading}
                 />
 
                 <Button
                     leftIcon={<IconWrapper name={ICONS.COMMON.updateOutline} />}
                     label='UPDATE'
                     width='flex-1'
+                    loading={loading}
+                    onPress={handleUpdate}
                 />
             </View>
         </CustomeModal>
-    )
-}
+    );
+};
 
-export default EditBusinessProfile
+export default EditBusinessProfile;

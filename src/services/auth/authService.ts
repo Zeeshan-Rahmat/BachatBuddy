@@ -167,6 +167,7 @@ function buildUserProfile(
     biometricEnabled: false,       // Fixed property name from biometric_enabled
     address: null,
     businessAddress: null,
+    businessLogo: null,
     img: null,                     // Fixed property name from avatar_url
     syncStatus: 'synced',
     updatedAt: now,

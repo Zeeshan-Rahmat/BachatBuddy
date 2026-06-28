@@ -144,16 +144,19 @@ Main Files:
 
 ## Profile And Business Profile
 
-Status: In Progress
+Status: Completed
 
 Description:
-Profile and business profile modals exist. Profile updates now write to SQLite first and enqueue sync work, with a best-effort Supabase update.
+Profile and business profile modals are integrated with the local auth profile. Screens, drawer profile card, and app top bar render the current SQLite-backed user from the Zustand session cache instead of hardcoded values. Profile and business profile edits initialize from the saved local user, write updates to SQLite through `usersRepository.updateProfile`, enqueue a `sync_queue` update row, refresh the auth store immediately, and attempt a best-effort Supabase profile update while the full sync engine is still pending. Business profile now stores a dedicated `businessLogo`/`business_logo` image separate from the personal profile image so invoices can later use the business logo without overwriting the user avatar.
 
 Main Files:
 - `app/(modal)/profile`
 - `app/(modal)/business_profile`
 - `src/services/profileService.ts`
 - `src/db/repositories/usersRepository.ts`
+- `src/store/authStore.ts`
+- `src/components/layout/AppHeader.tsx`
+- `src/components/menu/ProfileCard.tsx`
 
 ## Backup And Restore
 
@@ -207,6 +210,7 @@ Main Files:
 - ORM: Drizzle ORM with schema in `src/db/schema.ts`.
 - Cloud database: Supabase PostgreSQL, intended for auth, backup, sync, remote storage, notifications, and approvals.
 - Existing local tables: `users`, `auth_sessions`, `customers`, `suppliers`, `products`, `invoices`, `invoice_items`, `sync_queue`.
+- The `users` table includes `business_logo` for invoice-ready business branding, separate from the personal/profile `img` field.
 - Existing sync statuses: `synced`, `pending_insert`, `pending_update`, `pending_delete`, `pending_approval`, `rejected`.
 - Existing queue operations: `insert`, `update`, `delete`, `approval_request`.
 - Relationships:
@@ -360,7 +364,7 @@ Main Files:
 - ✅ Product repository with local-first queue writes
 - ✅ User profile mapper for Supabase/local naming
 - ✅ Session management and biometric flow integration
-- ⏳ Profile/business profile backend integration
+- ✅ Profile/business profile backend integration
 - ⏳ Sync queue processor
 - ⏳ Inventory screens backed fully by SQLite
 - ⏳ Invoice repositories and stock mutation transactions
@@ -391,7 +395,7 @@ Main Files:
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
 - No sync engine exists yet, so queued records are not automatically pushed or marked `synced`.
 - Product repository has local-first writes, but most other business modules do not.
-- Supabase profile writes are currently best-effort in auth/profile services; durable syncing should move into the future sync engine.
+- Supabase profile writes are currently best-effort in auth/profile services after SQLite and `sync_queue` writes; durable retry/mark-synced behavior should move into the future sync engine.
 - `syncQueueRepository.listPending` orders by descending `createdAt`, despite queue comments mentioning FIFO/LIFO ambiguity.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
 - Supabase migrations/RLS policies are not committed.
@@ -411,6 +415,8 @@ Main Files:
 - IDs should be UUID strings generated with `crypto.randomUUID()`.
 - User profile rows now use explicit mapping between Supabase `snake_case` and local Drizzle camelCase fields.
 - Profile creation/update now writes to SQLite first and attempts remote writes as best-effort until the sync engine exists.
+- Profile, business profile, drawer profile card, and app top bar now read from the local auth profile cache; successful saves refresh the Zustand session cache from the saved SQLite row.
+- Business logos are stored as a dedicated local user/business profile field (`businessLogo` locally, `business_logo` in SQLite/Supabase payloads) so invoice generation can reference the logo independently from the user avatar.
 - Biometric login stores tokens and expiry in SecureStore, never passwords, and uses those tokens only after device biometric authentication succeeds.
 - Biometric preference is treated as device-local and does not mark the user profile as a pending cloud sync mutation.
 

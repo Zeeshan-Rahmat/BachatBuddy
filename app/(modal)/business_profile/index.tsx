@@ -1,27 +1,20 @@
-import Avatar from '@/src/components/common/Avatar'
-import Button from '@/src/components/common/Button'
-import IconWrapper from '@/src/components/common/IconWrapper'
-import PaddingWrapper from '@/src/components/common/PaddingWrapper'
-import ScreenWrapper from '@/src/components/layout/ScreenWrapper'
-import InfoField from '@/src/components/ui/InfoField'
-import { ICONS } from '@/src/constants/icons'
-import React, { useState } from 'react'
-import { Text, View } from 'react-native'
-import EditBusinessProfile from './edit-business-profile'
-
+import Avatar from '@/src/components/common/Avatar';
+import Button from '@/src/components/common/Button';
+import IconWrapper from '@/src/components/common/IconWrapper';
+import PaddingWrapper from '@/src/components/common/PaddingWrapper';
+import ScreenWrapper from '@/src/components/layout/ScreenWrapper';
+import InfoField from '@/src/components/ui/InfoField';
+import { ICONS } from '@/src/constants/icons';
+import { useAuthStore } from '@/src/store/authStore';
+import React, { useState } from 'react';
+import { Text, View } from 'react-native';
+import EditBusinessProfile from './edit-business-profile';
 
 const BusinessProfileScreen = () => {
-
-    const [isOpen, setIsOpen] = useState(false)
-
-    const defaultBusinessDetails = {
-        username: "@zeeshanullah",
-        name: "Zeeshan Electronics",
-        email: "zeeshanelectronics@email.com",
-        phone: "+92 123 1234567",
-        address: "Togh Sarai, Hangu, KPK",
-        avatar_url: null,
-    }
+    const [isOpen, setIsOpen] = useState(false);
+    const user = useAuthStore((state) => state.user);
+    const businessName = user?.businessName ?? 'Business Profile';
+    const businessEmail = user?.businessEmail ?? 'Not Added';
 
     return (
         <ScreenWrapper
@@ -33,14 +26,18 @@ const BusinessProfileScreen = () => {
             isMenuIncluded={false}
         >
             <PaddingWrapper>
-
                 <View className='items-center mt-2'>
-
-                    <Avatar size={100} color='dark' textSize='extraLarge' />
+                    <Avatar
+                        name={businessName}
+                        img={user?.businessLogo ?? undefined}
+                        size={100}
+                        color='dark'
+                        textSize='extraLarge'
+                    />
 
                     <View className='items-center mt-4 mb-5 gap-1'>
-                        <Text className='text-2xl font-semibold'>{defaultBusinessDetails.name}</Text>
-                        <Text className='text-dark-50'>{defaultBusinessDetails.email}</Text>
+                        <Text className='text-2xl font-semibold'>{businessName}</Text>
+                        <Text className='text-dark-50'>{businessEmail}</Text>
                     </View>
 
                     <Button
@@ -48,27 +45,27 @@ const BusinessProfileScreen = () => {
                         label='Edit Profile'
                         width='w-fit'
                         onPress={() => setIsOpen(true)}
+                        isDisabled={!user}
                     />
-
                 </View>
 
                 <View className='flex-1 mt-8 gap-5'>
                     <View className='bg-white p-4 rounded-card gap-2'>
-                        <InfoField label='User Name' value={defaultBusinessDetails.username} />
-                        <InfoField label='Name' value={defaultBusinessDetails.name} />
-                        <InfoField label='Address' value={defaultBusinessDetails.address ?? "Not Added"} />
+                        <InfoField label='Owner' value={user?.name ?? 'Not Added'} />
+                        <InfoField label='Name' value={user?.businessName ?? 'Not Added'} />
+                        <InfoField label='Address' value={user?.businessAddress ?? 'Not Added'} />
+                        <InfoField label='Logo' value={user?.businessLogo ? 'Added' : 'Not Added'} />
                     </View>
                     <View className='bg-white p-4 rounded-card gap-2'>
-                        <InfoField label='Phone' value={defaultBusinessDetails.phone} />
-                        <InfoField label='Email' value={defaultBusinessDetails.email} />
+                        <InfoField label='Phone' value={user?.businessPhone ?? 'Not Added'} />
+                        <InfoField label='Email' value={user?.businessEmail ?? 'Not Added'} />
                     </View>
                 </View>
-
             </PaddingWrapper>
 
-            <EditBusinessProfile visible={isOpen} onClose={() => setIsOpen(false)} />
+            {user && <EditBusinessProfile visible={isOpen} user={user} onClose={() => setIsOpen(false)} />}
         </ScreenWrapper>
-    )
-}
+    );
+};
 
-export default BusinessProfileScreen
+export default BusinessProfileScreen;

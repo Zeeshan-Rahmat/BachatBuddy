@@ -10,6 +10,7 @@ import LogoutModal from '@/app/(modal)/logout';
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
 import { COLORS } from '@/src/constants/theme';
+import { useAuthStore } from '@/src/store/authStore';
 import { router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -48,18 +49,14 @@ interface DrawerMenuProps {
 
 export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
   const insets = useSafeAreaInsets();
-  // const { user, role, canAccessDashboard, /* not to add */ canAccessBackup } = useAuthStore();
   // const { handleSignOut } = useSignOut();
+  const canAccessDashboard = useAuthStore((state) => state.canAccessDashboard);
   const segments = useSegments();
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const overlayOpacity = useSharedValue(0);
 
   const [isLogoutModelOpen, setIsLogoutModelOpen] = useState(false);
-
-  function canAccessDashboard() {
-    return true
-  }
 
   // ── Animation + Status Bar style ─────────────────────────────────────────
   useEffect(() => {

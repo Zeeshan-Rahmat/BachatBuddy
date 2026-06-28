@@ -36,6 +36,7 @@ export interface User {
     biometricEnabled: boolean;
     address: string | null;
     businessAddress: string | null;
+    businessLogo: string | null;
     img: string | null;
     syncStatus: SyncStatus;
     updatedAt: number; // Stored as integer timestamp
@@ -79,6 +80,7 @@ export interface AuthActions {
     clearSession: () => void;
     setLoading: (loading: boolean) => void;
     setBiometricEnabled: (enabled: boolean) => void;
+    updateUser: (partial: Partial<User>) => void;
     // RBAC helpers
     isOwner: () => boolean;
     canAccessDashboard: () => boolean;

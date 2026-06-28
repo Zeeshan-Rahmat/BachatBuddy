@@ -14,6 +14,8 @@ interface ProfilePickerProps {
     activeIcon?: React.ReactNode;        // Icon shown when selected/focused
     rightIcon?: React.ReactNode;         // Action icon (like an edit or camera icon)
     activeRightIcon?: React.ReactNode;   // Action icon when selected
+    emptyLabel?: string;
+    selectedLabel?: string;
     error?: string;
     flex?: number | undefined;
     bgColor?: ColorValue | undefined;
@@ -26,6 +28,8 @@ export default function ProfilePicker({
     rightIcon,
     activeIcon,
     activeRightIcon,
+    emptyLabel = 'Select Profile Picture',
+    selectedLabel = 'Image Selected',
     error,
     flex,
     bgColor,
@@ -58,11 +62,11 @@ export default function ProfilePicker({
                                 source={{ uri: imageUri }}
                                 className="w-14 h-14 rounded-full mr-3 bg-gray-200"
                             />
-                            <Text className="text-black text-base">Image Selected</Text>
+                            <Text className="text-black text-base">{selectedLabel}</Text>
                         </View>
                     ) : (
                         <Text style={{ color: COLORS.placeholder }} className="text-base">
-                            Select Profile Picture
+                            {emptyLabel}
                         </Text>
                     )}
                 </TouchableOpacity>

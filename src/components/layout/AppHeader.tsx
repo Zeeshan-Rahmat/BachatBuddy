@@ -7,6 +7,7 @@
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
 import { COLORS } from '@/src/constants/theme';
+import { useAuthStore } from '@/src/store/authStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
@@ -14,7 +15,6 @@ import { Text, TouchableOpacity, View, type ImageSourcePropType } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Avatar from '../common/Avatar';
 import IconWrapper from '../common/IconWrapper';
-// import { useAuthStore } from '../../store/authStore';
 
 interface AppHeaderProps {
     title?: string;
@@ -35,9 +35,11 @@ export function AppHeader(
     }: AppHeaderProps
 
 ) {
-    //   const { user } = useAuthStore();
-
+    const user = useAuthStore((state) => state.user);
     const insets = useSafeAreaInsets();
+    const displayTitle = title === 'BachatBuddy'
+        ? user?.businessName ?? title
+        : title;
 
     return (
         <LinearGradient
@@ -50,32 +52,38 @@ export function AppHeader(
 
                 {/* Hamburger menu */}
                 {
-                    leftIcon == "menu"
+                    leftIcon === "menu"
                         ? <AppBarIcons icon={ICONS.TOP_BAR.menu} onPress={onMenuPress} />
                         : <AppBarIcons icon={ICONS.COMMON.back} onPress={() => router.back()} />
                 }
 
                 {/* App title */}
                 <Text className="flex-1 text-white text-xl font-bold tracking-wide">
-                    {title}
+                    {displayTitle}
                 </Text>
 
                 {/* Bell */}
                 {
-                    rightIcons == "avatarNotification"
+                    rightIcons === "avatarNotification"
                     && <AppBarIcons icon={ICONS.TOP_BAR.notificationOutline} onPress={() => router.push(ROUTES.MODAL.NOTIFICATION)} />
                 }
 
                 {/* More Icon */}
                 {
-                    rightIcons == "more"
+                    rightIcons === "more"
                     && <AppBarIcons icon={ICONS.COMMON.more} onPress={onMorePress} />
                 }
 
                 {/* Avatar */}
                 {
-                    rightIcons == "avatarNotification"
-                    && <Avatar onPress={() => router.push(ROUTES.MODAL.PROFILE)} />
+                    rightIcons === "avatarNotification"
+                    && (
+                        <Avatar
+                            name={user?.name ?? user?.username ?? 'Profile'}
+                            img={user?.img ?? undefined}
+                            onPress={() => router.push(ROUTES.MODAL.PROFILE)}
+                        />
+                    )
                 }
 
             </View>

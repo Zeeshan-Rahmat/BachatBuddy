@@ -1,48 +1,42 @@
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
-import { navigate } from 'expo-router/build/global-state/routing';
+import { useAuthStore } from '@/src/store/authStore';
+import { router } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Avatar from '../common/Avatar';
 import IconWrapper from '../common/IconWrapper';
 
 interface ProfileCardProps {
-    user?: {
-        id: string;
-        username: string;
-        email: string;
-        role: string;
-        business_name: string | null;
-        avatar_url: string | null
-    };
     onPress?: () => void;
 }
 
-const defaultUser = {
-    id: "ZU1100",
-    username: "Zeeshan Ullah",
-    email: "zeeshanullah@email.com",
-    role: "owner",
-    business_name: "Zeeshan Electronics",
-    avatar_url: null,
-}
-
 const ProfileCard = ({
-    user = defaultUser,
-    onPress = () => navigate(ROUTES.MODAL.PROFILE)
+    onPress = () => router.push(ROUTES.MODAL.PROFILE)
 
 }: ProfileCardProps) => {
+    const user = useAuthStore((state) => state.user);
+    const displayName = user?.name || user?.username || 'Profile';
+    const displaySubtitle = user?.businessName || user?.email || 'Not signed in';
+
     return (
         <View className="flex-row items-center gap-3">
 
-            <Avatar color='dark' size={48} textSize='large' onPress={() => navigate(ROUTES.MODAL.PROFILE)} />
+            <Avatar
+                name={displayName}
+                img={user?.img ?? undefined}
+                color='dark'
+                size={48}
+                textSize='large'
+                onPress={onPress}
+            />
 
             <View className="flex-1">
                 <Text className="text-dark-300 font-bold text-base" numberOfLines={1}>
-                    {user?.username}
+                    {displayName}
                 </Text>
                 <Text className="text-dark-50 text-xs" numberOfLines={1}>
-                    {user?.email}
+                    {displaySubtitle}
                 </Text>
             </View>
 

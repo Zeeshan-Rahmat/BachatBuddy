@@ -83,6 +83,7 @@ export const usersRepository = {
                     biometricEnabled: user.biometricEnabled,
                     address: user.address,
                     businessAddress: user.businessAddress,
+                    businessLogo: user.businessLogo,
                     img: user.img,
                     syncStatus: user.syncStatus,
                     updatedAt: user.updatedAt,
@@ -127,6 +128,7 @@ export const usersRepository = {
                     biometricEnabled: localUser.biometricEnabled,
                     address: localUser.address,
                     businessAddress: localUser.businessAddress,
+                    businessLogo: localUser.businessLogo,
                     img: localUser.img,
                     syncStatus: localUser.syncStatus,
                     updatedAt: localUser.updatedAt,
@@ -176,7 +178,7 @@ export const usersRepository = {
 
     async updateProfile(
         userId: string,
-        updates: Partial<Pick<User, 'businessName' | 'businessPhone' | 'businessEmail' | 'businessAddress' | 'name' | 'phone' | 'address' | 'img'>>
+        updates: Partial<Pick<User, 'businessName' | 'businessPhone' | 'businessEmail' | 'businessAddress' | 'businessLogo' | 'name' | 'username' | 'phone' | 'email' | 'address' | 'img'>>
     ): Promise<UserRow> {
         const existing = await this.findById(userId);
 

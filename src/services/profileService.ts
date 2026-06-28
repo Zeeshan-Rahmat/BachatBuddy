@@ -51,8 +51,8 @@ export async function syncProfileToLocal(userId: string): Promise<AuthResult<Use
 // ─── Update profile (business name, avatar, etc.) ────────────────────────────
 export async function updateUser(
   userId: string,
-  updates: Partial<Pick<User, 'businessName' | 'img'>>
-): Promise<AuthResult<true>> {
+  updates: Partial<Pick<User, 'businessName' | 'businessPhone' | 'businessEmail' | 'businessAddress' | 'businessLogo' | 'name' | 'username' | 'phone' | 'email' | 'address' | 'img'>>
+): Promise<AuthResult<User>> {
   try {
     const updatedUser = await usersRepository.updateProfile(userId, updates);
 
@@ -66,7 +66,7 @@ export async function updateUser(
         }
       });
 
-    return { success: true, data: true };
+    return { success: true, data: updatedUser };
   } catch (err) {
     return {
       success: false,

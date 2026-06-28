@@ -16,6 +16,7 @@ export type RemoteUserRow = {
   biometric_enabled: boolean | null;
   address: string | null;
   business_address: string | null;
+  business_logo?: string | null;
   img: string | null;
   sync_status: SyncStatus;
   updated_at: number | string;
@@ -38,6 +39,7 @@ export type RemoteUserInsert = {
   biometric_enabled: boolean;
   address: string | null;
   business_address: string | null;
+  business_logo: string | null;
   img: string | null;
   sync_status: SyncStatus;
   updated_at: number;
@@ -74,6 +76,7 @@ export const mapRemoteUserToLocal = (
   biometricEnabled: localBiometricEnabled,
   address: row.address,
   businessAddress: row.business_address,
+  businessLogo: row.business_logo ?? null,
   img: row.img,
   syncStatus: 'synced',
   updatedAt: toTimestamp(row.updated_at),
@@ -96,6 +99,7 @@ export const mapLocalUserToRemoteInsert = (user: User): RemoteUserInsert => ({
   biometric_enabled: user.biometricEnabled,
   address: user.address,
   business_address: user.businessAddress,
+  business_logo: user.businessLogo,
   img: user.img,
   sync_status: user.syncStatus,
   updated_at: user.updatedAt,

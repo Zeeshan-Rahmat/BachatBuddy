@@ -54,6 +54,7 @@ export const users = sqliteTable(
         biometricEnabled: integer('biometric_enabled', { mode: 'boolean' }).notNull().default(false),
         address: text('address'),
         businessAddress: text('business_address'),
+        businessLogo: text('business_logo'),
         img: text('img'),
         syncStatus: text('sync_status', { enum: syncStatusValues }).notNull().default('pending_insert'),
         updatedAt: integer('updated_at').notNull(),
