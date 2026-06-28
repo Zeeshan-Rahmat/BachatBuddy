@@ -152,7 +152,380 @@ using (
   and public.current_user_business_id() = coalesce(business_id, id)
 );
 
--- 2. Username lookup RPC used before sign-in.
+create or replace function public.is_business_member(p_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.users current_profile
+    join public.users target_profile
+      on coalesce(target_profile.business_id, target_profile.id) = coalesce(current_profile.business_id, current_profile.id)
+    where current_profile.id = auth.uid()
+      and target_profile.id = p_user_id
+  );
+$$;
+
+grant execute on function public.is_business_member(uuid) to authenticated;
+
+-- 2. Local-first business sync tables.
+create table if not exists public.customers (
+  id uuid primary key,
+  created_by_id uuid references public.users(id) on delete set null,
+  last_updated_by_id uuid references public.users(id) on delete set null,
+  name text not null,
+  phone text,
+  email text,
+  address text,
+  status text not null default 'Active' check (status in ('Active', 'Inactive')),
+  total_purchases double precision not null default 0,
+  pending_dues double precision not null default 0,
+  total_orders integer not null default 0,
+  img text,
+  last_purchase_date bigint,
+  sync_status text not null default 'synced' check (
+    sync_status in (
+      'synced',
+      'pending_insert',
+      'pending_update',
+      'pending_delete',
+      'pending_approval',
+      'rejected'
+    )
+  ),
+  updated_at bigint not null default ((extract(epoch from now()) * 1000)::bigint),
+  created_at bigint not null default ((extract(epoch from now()) * 1000)::bigint)
+);
+
+create table if not exists public.suppliers (
+  id uuid primary key,
+  created_by_id uuid references public.users(id) on delete set null,
+  last_updated_by_id uuid references public.users(id) on delete set null,
+  name text not null,
+  phone text,
+  email text,
+  address text,
+  status text not null default 'Active' check (status in ('Active', 'Inactive')),
+  supplied_products integer not null default 0,
+  total_supply_value double precision not null default 0,
+  img text,
+  last_supplied_date bigint,
+  sync_status text not null default 'synced' check (
+    sync_status in (
+      'synced',
+      'pending_insert',
+      'pending_update',
+      'pending_delete',
+      'pending_approval',
+      'rejected'
+    )
+  ),
+  updated_at bigint not null default ((extract(epoch from now()) * 1000)::bigint),
+  created_at bigint not null default ((extract(epoch from now()) * 1000)::bigint)
+);
+
+create table if not exists public.products (
+  id uuid primary key,
+  created_by_id uuid references public.users(id) on delete set null,
+  last_updated_by_id uuid references public.users(id) on delete set null,
+  supplier_id uuid references public.suppliers(id) on delete set null,
+  name text not null,
+  purchase_price double precision not null default 0,
+  min_selling_price double precision not null default 0,
+  max_selling_price double precision not null default 0,
+  quantity integer not null default 0,
+  minimum_quantity integer not null default 0,
+  status text not null default 'Out of Stock' check (status in ('In Stock', 'Low Stock', 'Out of Stock')),
+  added_stock integer not null default 0,
+  sold_stock integer not null default 0,
+  img text,
+  sync_status text not null default 'synced' check (
+    sync_status in (
+      'synced',
+      'pending_insert',
+      'pending_update',
+      'pending_delete',
+      'pending_approval',
+      'rejected'
+    )
+  ),
+  updated_at bigint not null default ((extract(epoch from now()) * 1000)::bigint),
+  created_at bigint not null default ((extract(epoch from now()) * 1000)::bigint)
+);
+
+create table if not exists public.invoices (
+  id uuid primary key,
+  created_by_id uuid references public.users(id) on delete set null,
+  last_updated_by_id uuid references public.users(id) on delete set null,
+  customer_id uuid references public.customers(id) on delete set null,
+  invoice_number text not null,
+  subtotal double precision not null default 0,
+  discount double precision not null default 0,
+  discount_amount double precision not null default 0,
+  total_amount double precision not null default 0,
+  paid_amount double precision not null default 0,
+  remaining_amount double precision not null default 0,
+  total_items integer not null default 0,
+  status text not null default 'Unpaid' check (status in ('Paid', 'Pending', 'Unpaid')),
+  due_date bigint,
+  img text,
+  sync_status text not null default 'synced' check (
+    sync_status in (
+      'synced',
+      'pending_insert',
+      'pending_update',
+      'pending_delete',
+      'pending_approval',
+      'rejected'
+    )
+  ),
+  updated_at bigint not null default ((extract(epoch from now()) * 1000)::bigint),
+  created_at bigint not null default ((extract(epoch from now()) * 1000)::bigint)
+);
+
+create table if not exists public.invoice_items (
+  id uuid primary key,
+  invoice_id uuid not null references public.invoices(id) on delete cascade,
+  product_id uuid references public.products(id) on delete set null,
+  quantity integer not null default 0,
+  purchase_price double precision not null default 0,
+  selling_price double precision not null default 0,
+  subtotal double precision not null default 0,
+  profit double precision not null default 0,
+  sync_status text not null default 'synced' check (
+    sync_status in (
+      'synced',
+      'pending_insert',
+      'pending_update',
+      'pending_delete',
+      'pending_approval',
+      'rejected'
+    )
+  ),
+  updated_at bigint not null default ((extract(epoch from now()) * 1000)::bigint),
+  created_at bigint not null default ((extract(epoch from now()) * 1000)::bigint)
+);
+
+create index if not exists idx_customers_name on public.customers(name);
+create index if not exists idx_customers_status on public.customers(status);
+create index if not exists idx_customers_created_by_id on public.customers(created_by_id);
+create index if not exists idx_customers_sync_status on public.customers(sync_status);
+
+create index if not exists idx_suppliers_name on public.suppliers(name);
+create index if not exists idx_suppliers_status on public.suppliers(status);
+create index if not exists idx_suppliers_created_by_id on public.suppliers(created_by_id);
+create index if not exists idx_suppliers_sync_status on public.suppliers(sync_status);
+
+create index if not exists idx_products_name on public.products(name);
+create index if not exists idx_products_supplier_id on public.products(supplier_id);
+create index if not exists idx_products_status on public.products(status);
+create index if not exists idx_products_created_by_id on public.products(created_by_id);
+create index if not exists idx_products_sync_status on public.products(sync_status);
+
+create index if not exists idx_invoices_customer_id on public.invoices(customer_id);
+create index if not exists idx_invoices_invoice_number on public.invoices(invoice_number);
+create index if not exists idx_invoices_status on public.invoices(status);
+create index if not exists idx_invoices_created_by_id on public.invoices(created_by_id);
+create index if not exists idx_invoices_sync_status on public.invoices(sync_status);
+
+create index if not exists idx_invoice_items_invoice_id on public.invoice_items(invoice_id);
+create index if not exists idx_invoice_items_product_id on public.invoice_items(product_id);
+create index if not exists idx_invoice_items_sync_status on public.invoice_items(sync_status);
+
+alter table public.customers enable row level security;
+alter table public.suppliers enable row level security;
+alter table public.products enable row level security;
+alter table public.invoices enable row level security;
+alter table public.invoice_items enable row level security;
+
+drop policy if exists "Business members can read customers" on public.customers;
+drop policy if exists "Business members can insert customers" on public.customers;
+drop policy if exists "Business members can update customers" on public.customers;
+drop policy if exists "Business members can delete customers" on public.customers;
+
+create policy "Business members can read customers"
+on public.customers
+for select
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+create policy "Business members can insert customers"
+on public.customers
+for insert
+to authenticated
+with check (public.is_business_member(created_by_id) or created_by_id = auth.uid());
+
+create policy "Business members can update customers"
+on public.customers
+for update
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id))
+with check (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+create policy "Business members can delete customers"
+on public.customers
+for delete
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+drop policy if exists "Business members can read suppliers" on public.suppliers;
+drop policy if exists "Business members can insert suppliers" on public.suppliers;
+drop policy if exists "Business members can update suppliers" on public.suppliers;
+drop policy if exists "Business members can delete suppliers" on public.suppliers;
+
+create policy "Business members can read suppliers"
+on public.suppliers
+for select
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+create policy "Business members can insert suppliers"
+on public.suppliers
+for insert
+to authenticated
+with check (public.is_business_member(created_by_id) or created_by_id = auth.uid());
+
+create policy "Business members can update suppliers"
+on public.suppliers
+for update
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id))
+with check (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+create policy "Business members can delete suppliers"
+on public.suppliers
+for delete
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+drop policy if exists "Business members can read products" on public.products;
+drop policy if exists "Business members can insert products" on public.products;
+drop policy if exists "Business members can update products" on public.products;
+drop policy if exists "Business members can delete products" on public.products;
+
+create policy "Business members can read products"
+on public.products
+for select
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+create policy "Business members can insert products"
+on public.products
+for insert
+to authenticated
+with check (public.is_business_member(created_by_id) or created_by_id = auth.uid());
+
+create policy "Business members can update products"
+on public.products
+for update
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id))
+with check (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+create policy "Business members can delete products"
+on public.products
+for delete
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+drop policy if exists "Business members can read invoices" on public.invoices;
+drop policy if exists "Business members can insert invoices" on public.invoices;
+drop policy if exists "Business members can update invoices" on public.invoices;
+drop policy if exists "Business members can delete invoices" on public.invoices;
+
+create policy "Business members can read invoices"
+on public.invoices
+for select
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+create policy "Business members can insert invoices"
+on public.invoices
+for insert
+to authenticated
+with check (public.is_business_member(created_by_id) or created_by_id = auth.uid());
+
+create policy "Business members can update invoices"
+on public.invoices
+for update
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id))
+with check (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+create policy "Business members can delete invoices"
+on public.invoices
+for delete
+to authenticated
+using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+drop policy if exists "Business members can read invoice items" on public.invoice_items;
+drop policy if exists "Business members can insert invoice items" on public.invoice_items;
+drop policy if exists "Business members can update invoice items" on public.invoice_items;
+drop policy if exists "Business members can delete invoice items" on public.invoice_items;
+
+create policy "Business members can read invoice items"
+on public.invoice_items
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.invoices invoice
+    where invoice.id = invoice_items.invoice_id
+      and (public.is_business_member(invoice.created_by_id) or public.is_business_member(invoice.last_updated_by_id))
+  )
+);
+
+create policy "Business members can insert invoice items"
+on public.invoice_items
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from public.invoices invoice
+    where invoice.id = invoice_items.invoice_id
+      and (public.is_business_member(invoice.created_by_id) or public.is_business_member(invoice.last_updated_by_id))
+  )
+);
+
+create policy "Business members can update invoice items"
+on public.invoice_items
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from public.invoices invoice
+    where invoice.id = invoice_items.invoice_id
+      and (public.is_business_member(invoice.created_by_id) or public.is_business_member(invoice.last_updated_by_id))
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.invoices invoice
+    where invoice.id = invoice_items.invoice_id
+      and (public.is_business_member(invoice.created_by_id) or public.is_business_member(invoice.last_updated_by_id))
+  )
+);
+
+create policy "Business members can delete invoice items"
+on public.invoice_items
+for delete
+to authenticated
+using (
+  exists (
+    select 1
+    from public.invoices invoice
+    where invoice.id = invoice_items.invoice_id
+      and (public.is_business_member(invoice.created_by_id) or public.is_business_member(invoice.last_updated_by_id))
+  )
+);
+
+-- 3. Username lookup RPC used before sign-in.
 create or replace function public.get_email_by_username(p_username text)
 returns text
 language sql
@@ -167,7 +540,7 @@ $$;
 
 grant execute on function public.get_email_by_username(text) to anon, authenticated;
 
--- 3. Staging review queue for employee approval workflow.
+-- 4. Staging review queue for employee approval workflow.
 -- Column names match src/services/syncQueueProcessor.ts.
 create table if not exists public.staging_review_queue (
   id uuid primary key default gen_random_uuid(),
@@ -331,7 +704,7 @@ with check (
   and public.current_user_business_id() = business_id
 );
 
--- 4. Millisecond updated_at trigger.
+-- 5. Millisecond updated_at trigger.
 create or replace function public.set_updated_at_ms()
 returns trigger
 language plpgsql
@@ -347,6 +720,37 @@ drop trigger if exists trg_users_updated_at_ms on public.users;
 
 create trigger trg_users_updated_at_ms
 before update on public.users
+for each row
+execute function public.set_updated_at_ms();
+
+drop trigger if exists trg_customers_updated_at_ms on public.customers;
+drop trigger if exists trg_suppliers_updated_at_ms on public.suppliers;
+drop trigger if exists trg_products_updated_at_ms on public.products;
+drop trigger if exists trg_invoices_updated_at_ms on public.invoices;
+drop trigger if exists trg_invoice_items_updated_at_ms on public.invoice_items;
+
+create trigger trg_customers_updated_at_ms
+before update on public.customers
+for each row
+execute function public.set_updated_at_ms();
+
+create trigger trg_suppliers_updated_at_ms
+before update on public.suppliers
+for each row
+execute function public.set_updated_at_ms();
+
+create trigger trg_products_updated_at_ms
+before update on public.products
+for each row
+execute function public.set_updated_at_ms();
+
+create trigger trg_invoices_updated_at_ms
+before update on public.invoices
+for each row
+execute function public.set_updated_at_ms();
+
+create trigger trg_invoice_items_updated_at_ms
+before update on public.invoice_items
 for each row
 execute function public.set_updated_at_ms();
 
