@@ -7,15 +7,19 @@ import IconButton from '@/src/components/ui/IconButton';
 import InfoField from '@/src/components/ui/InfoField';
 import { ICONS } from '@/src/constants/icons';
 import { COLORS } from '@/src/constants/theme';
+import { updateInvoiceTotals } from '@/src/db/repositories/invoicesRepository';
+import { useAuthStore } from '@/src/store/authStore';
 import { InvoiceType } from '@/src/types/appTypes';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 interface EditInvoiceSubtotalModalProps {
     visible: boolean;
     invoice: InvoiceType;
     onClose: () => void;
+    onDraftChange?: (values: Pick<InvoiceType, 'discount' | 'discount_amount' | 'total_amount' | 'paid_amount' | 'remaining_amount' | 'status'>) => void;
+    onSaved?: () => void;
 }
 
 const statusColors = {
@@ -24,7 +28,9 @@ const statusColors = {
     'Unpaid': COLORS.danger,
 };
 
-const EditInvoiceSubtotalModal = ({ visible, invoice, onClose }: EditInvoiceSubtotalModalProps) => {
+const EditInvoiceSubtotalModal = ({ visible, invoice, onClose, onDraftChange, onSaved }: EditInvoiceSubtotalModalProps) => {
+    const currentUser = useAuthStore((state) => state.user);
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
     const [loading, setLoading] = useState(false);
     const [isPercent, setIsPercent] = useState(false);
 
@@ -71,18 +77,40 @@ const EditInvoiceSubtotalModal = ({ visible, invoice, onClose }: EditInvoiceSubt
         if (!validate()) return;
         setLoading(true);
 
-        // Pass these cleanly calculated values to your backend API or global state handler
-        const payload = {
+        const status = calculatedTotal <= 0 || parsedPaidAmount >= calculatedTotal
+            ? 'Paid'
+            : parsedPaidAmount > 0
+                ? 'Pending'
+                : 'Unpaid';
+        const payload: Pick<InvoiceType, 'discount' | 'discount_amount' | 'total_amount' | 'paid_amount' | 'remaining_amount' | 'status'> = {
             discount: discountPercent,
             discount_amount: discountAmount,
             total_amount: calculatedTotal,
             paid_amount: parsedPaidAmount,
-            pending_due: pendingDue
+            remaining_amount: pendingDue,
+            status,
         };
 
-        console.log("Saving payload: ", payload);
-        // Add your update dispatch/mutations here
-        setLoading(false);
+        try {
+            if (onDraftChange) {
+                onDraftChange(payload);
+            } else {
+                await updateInvoiceTotals(invoice.invoice_id, {
+                    lastUpdatedById: currentUser?.id ?? null,
+                    paidAmount: parsedPaidAmount,
+                    discount: discountPercent,
+                    discountAmount,
+                    requiresApproval: requiresApproval(),
+                });
+                onSaved?.();
+            }
+
+            onClose();
+        } catch {
+            Alert.alert('Update failed', 'Unable to update this invoice locally. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

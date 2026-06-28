@@ -4,6 +4,8 @@ import Title from '@/src/components/common/Title';
 import DateInput from '@/src/components/form/DateInput';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
+import { updateInvoiceDetail } from '@/src/db/repositories/invoicesRepository';
+import { useAuthStore } from '@/src/store/authStore';
 import { InvoiceType } from '@/src/types/appTypes';
 import ProfilePicker from '@components/form/ProfilePicker';
 import * as ImagePicker from 'expo-image-picker';
@@ -14,9 +16,13 @@ interface EditInvoiceDetailModalProps {
     visible: boolean;
     invoice: InvoiceType;
     onClose: () => void;
+    onSaved?: () => void;
+    onDraftChange?: (values: Pick<InvoiceType, 'due_date' | 'img'>) => void;
 }
 
-const EditInvoiceDetailModal = ({ visible, invoice, onClose }: EditInvoiceDetailModalProps) => {
+const EditInvoiceDetailModal = ({ visible, invoice, onClose, onSaved, onDraftChange }: EditInvoiceDetailModalProps) => {
+    const currentUser = useAuthStore((state) => state.user);
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
 
     const [loading, setLoading] = useState(false);
 
@@ -55,15 +61,36 @@ const EditInvoiceDetailModal = ({ visible, invoice, onClose }: EditInvoiceDetail
 
 
     const handleUpdate = async () => {
-        if (imageError === undefined) return;
+        if (!dueDate) {
+            setDueDateError('Due date is required');
+            return;
+        }
+
         setLoading(true);
 
-        // TODO:
-        // setTimeout(() => {
-        //     setLoading(false);
-        //     update the product
-        //     });
-        // }, 1000);
+        try {
+            if (onDraftChange) {
+                onDraftChange({
+                    due_date: dueDate.toISOString(),
+                    img: imageUri ?? undefined,
+                });
+            } else {
+                await updateInvoiceDetail(invoice.invoice_id, {
+                    lastUpdatedById: currentUser?.id ?? null,
+                    dueDate: dueDate.getTime(),
+                    img: imageUri,
+                    requiresApproval: requiresApproval(),
+                });
+
+                onSaved?.();
+            }
+
+            onClose();
+        } catch {
+            Alert.alert('Update failed', 'Unable to update this invoice locally. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -106,6 +133,8 @@ const EditInvoiceDetailModal = ({ visible, invoice, onClose }: EditInvoiceDetail
                         leftIcon={<IconWrapper name={ICONS.COMMON.updateOutline} />}
                         label='UPDATE'
                         width='flex-1'
+                        loading={loading}
+                        onPress={handleUpdate}
                     />
                 </View>
             </CustomeModal>

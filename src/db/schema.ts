@@ -226,6 +226,8 @@ export const syncQueue = sqliteTable(
 export const userRelations = relations(users, ({ many }) => ({
     createdProducts: many(products, { relationName: 'createdProducts' }),
     updatedProducts: many(products, { relationName: 'updatedProducts' }),
+    createdInvoices: many(invoices, { relationName: 'createdInvoices' }),
+    updatedInvoices: many(invoices, { relationName: 'updatedInvoices' }),
 }));
 
 export const supplierRelations = relations(suppliers, ({ many }) => ({
@@ -254,6 +256,16 @@ export const invoiceRelations = relations(invoices, ({ one, many }) => ({
     customer: one(customers, {
         fields: [invoices.customerId],
         references: [customers.id],
+    }),
+    createdBy: one(users, {
+        fields: [invoices.createdById],
+        references: [users.id],
+        relationName: 'createdInvoices',
+    }),
+    lastUpdatedBy: one(users, {
+        fields: [invoices.lastUpdatedById],
+        references: [users.id],
+        relationName: 'updatedInvoices',
     }),
     invoiceItems: many(invoiceItems),
 }));

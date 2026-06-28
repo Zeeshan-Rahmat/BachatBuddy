@@ -30,10 +30,8 @@ const ListItemCard = ({
 
     const colors = getStatusColor(item.status);
 
-    // ==========================================
     // EXTRACT VALUES DYNAMICALLY BASED ON ENTITY TYPE
-    // ==========================================
-    const title = 'name' in item ? item.name : ('invoice_number' in item ? `Invoice #${item.invoice_number}` : 'N/A');
+    const title = 'name' in item ? item.name : ('invoice_number' in item ? `#${item.invoice_number}` : 'N/A');
 
     // Safely extract creator/updater info depending on object hierarchy
     const updatedBy = 'last_updated_by' in item ? item.last_updated_by.name : 'System';
@@ -90,9 +88,8 @@ const ListItemCard = ({
 
 export default ListItemCard;
 
-// ==========================================
+
 // SUB-COMPONENTS (With matching DB property types)
-// ==========================================
 
 function ProductData({ qty = 0, price = 0 }: { qty?: number; price?: number }) {
     return (

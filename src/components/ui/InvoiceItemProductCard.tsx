@@ -10,6 +10,8 @@ interface InvoiceItemProductCardProps {
     img?: ImageSourcePropType | string;
     stockQuantity?: number;
     sellingPrice: number;
+    maxQuantity?: number;
+    onQuantityChange?: (quantity: number, sellingPrice: number) => void;
 }
 
 const InvoiceItemProductCard = ({
@@ -17,6 +19,8 @@ const InvoiceItemProductCard = ({
     img,
     stockQuantity = 0,
     sellingPrice,
+    maxQuantity,
+    onQuantityChange,
 }: InvoiceItemProductCardProps
 ) => {
 
@@ -29,17 +33,27 @@ const InvoiceItemProductCard = ({
     const [showInput, setShowInput] = useState(false)
 
     const onQuantityAdd = () => {
-        const newQuantity = quantity + 1;
+        const newQuantity = maxQuantity === undefined ? quantity + 1 : Math.min(maxQuantity, quantity + 1);
 
         setQuantity(newQuantity);
-        setTotalAmount(newQuantity * parseFloat(updatedSellingPrice))
+        setTotalAmount(newQuantity * parseFloat(updatedSellingPrice));
+        onQuantityChange?.(newQuantity, parseFloat(updatedSellingPrice) || 0);
     }
 
     const onQuantityMinus = () => {
         const newQuantity = Math.max(0, quantity - 1);
 
         setQuantity(newQuantity);
-        setTotalAmount(newQuantity * parseFloat(updatedSellingPrice))
+        setTotalAmount(newQuantity * parseFloat(updatedSellingPrice));
+        onQuantityChange?.(newQuantity, parseFloat(updatedSellingPrice) || 0);
+    };
+
+    const handleSellingPriceDone = () => {
+        const parsedSellingPrice = parseFloat(updatedSellingPrice) || 0;
+
+        setTotalAmount(quantity * parsedSellingPrice);
+        setShowInput(false);
+        onQuantityChange?.(quantity, parsedSellingPrice);
     };
 
     return (
@@ -67,7 +81,7 @@ const InvoiceItemProductCard = ({
                                     autoCapitalize="none"
                                 />
                                 <TouchableOpacity
-                                    onPress={() => setShowInput(false)}
+                                    onPress={handleSellingPriceDone}
                                     className="w-12 aspect-square rounded-button items-center justify-center bg-primary-400"
                                 >
                                     <MaterialIcons name="done" size={30} color="white" />

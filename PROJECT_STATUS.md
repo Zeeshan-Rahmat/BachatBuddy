@@ -117,10 +117,22 @@ Main Files:
 Status: In Progress
 
 Description:
-Invoice list, add, edit, detail, product/customer/subtotal editing, and filtering screens exist. Invoice PDF and invoice viewer services exist. Local-first invoice repositories are not yet implemented.
+Invoice list, add, detail, product/customer/subtotal editing, filtering, and invoice detail amount/date/image edits are backed by SQLite. Invoice creation writes the invoice, invoice items, product stock decrements, customer purchase/due updates, and sync queue rows inside one local transaction before the UI returns to the invoice list. Invoice deletion marks the invoice/items pending delete and restores product stock in the same local transaction. Add-invoice draft detail edits update local draft state until the full invoice is saved. Invoice PDF and invoice viewer services exist.
+
+Completed Updates:
+- Added `src/db/repositories/invoicesRepository.ts` for relation-backed invoice listing/detail lookup, local-first invoice creation, invoice detail/amount updates, and pending-delete handling.
+- Added atomic stock mutation transactions for invoice creation and deletion, including product quantity/sold-stock/status recalculation.
+- Added sync queue writes for invoices, invoice items, product stock changes, and customer due/order updates, with `pending_approval` support for employee actions.
+- Added SQLite customer listing for invoice customer selection through `customersRepository`.
+- Replaced sales list/detail sample data with SQLite-backed invoice reads and mapped Drizzle rows into the current invoice UI model.
+- Replaced invoice product selection sample data with SQLite products and quantity/price draft updates.
+- Fixed add-invoice due date/image edits so unsaved `INV-PENDING` drafts update local draft state instead of calling SQLite with an empty invoice id.
 
 Main Files:
 - `app/(app)/sale`
+- `src/db/repositories/invoicesRepository.ts`
+- `src/db/repositories/customersRepository.ts`
+- `src/services/invoice/invoiceUiMapper.ts`
 - `src/services/invoice/pdfService.ts`
 - `src/services/invoice/invoiceViewer.tsx`
 - `src/templates/invoiceTemplate.ts`
@@ -367,6 +379,8 @@ Main Files:
   - `sessionRepository`: active auth session persistence.
   - `productsRepository`: relation-backed product listing plus local-first product create/update/pending-delete and employee approval queue writes.
   - `suppliersRepository`: SQLite supplier listing for inventory product forms.
+  - `customersRepository`: SQLite customer listing for invoice customer selection.
+  - `invoicesRepository`: local-first invoice create/update/delete flows with invoice item writes, product stock mutation transactions, customer due updates, and sync queue recovery rows.
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
 - Storage service: `src/lib/secureStorage.ts` stores biometric credentials, token expiry, and flags in Expo SecureStore.
@@ -390,7 +404,7 @@ Main Files:
 - ✅ Profile/business profile backend integration
 - ✅ Sync queue processor
 - ✅ Inventory screens backed fully by SQLite
-- ⏳ Invoice repositories and stock mutation transactions
+- ✅ Invoice repositories and stock mutation transactions
 - ⏳ Customer/supplier/employee repositories
 - ⏳ Reports backed by SQLite queries
 - ⏳ Backup and restore backend
@@ -401,10 +415,10 @@ Main Files:
 - Expand Supabase setup/RLS policies for remaining cloud sync tables beyond `users` and `staging_review_queue`.
 - Implement conflict handling and stale `processing` row recovery for sync.
 - Complete employee approval workflow UI and local approval-state handling around `staging_review_queue`.
-- Add local-first repositories for customers, suppliers, employees, invoices, invoice items, ledger entries, payments, and reports.
+- Add local-first create/update repositories for customers, suppliers, employees, ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
-- Wire sales, parties, dashboard, and reports screens to SQLite repositories.
-- Make invoice creation transactional: invoice, invoice items, stock decrement, customer dues, ledger/payment entries, and sync queue writes.
+- Wire parties, dashboard, and reports screens to SQLite repositories.
+- Extend invoice transactions with ledger/payment entries after ledger and payment schema tables exist.
 - Add backup/restore implementation.
 - Add pagination and indexes where large lists are queried.
 - Add tests for repositories, sync queue processing, auth/session restoration, and financial/inventory transactions.
@@ -416,7 +430,7 @@ Main Files:
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
 - Sync queue processor exists, but conflict resolution, online/offline network detection, stale `processing` row recovery, and Supabase schema/RLS for non-profile business tables still need to be completed.
-- Product repository and inventory screens are local-first, but most other business modules do not yet have completed repositories/screens backed by SQLite.
+- Product and invoice repositories/screens are local-first, but parties, dashboard, reports, ledger, and payment modules do not yet have completed SQLite-backed flows.
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
 - Supabase setup is committed as a SQL setup file, but it is not yet organized as versioned Supabase CLI migrations.

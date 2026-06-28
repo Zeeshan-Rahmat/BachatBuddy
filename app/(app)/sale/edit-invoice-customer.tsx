@@ -5,10 +5,11 @@ import SearchFilter from '@/src/components/common/SearchFilter';
 import Title from '@/src/components/common/Title';
 import CustomModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
-import { mockCustomers } from '@/src/lib/sampleData';
+import { listCustomers } from '@/src/db/repositories/customersRepository';
+import { mapCustomerRowToAppCustomer } from '@/src/services/invoice/invoiceUiMapper';
 import { CustomerType } from '@/src/types/appTypes';
-import React, { useState } from 'react';
-import { FlatList } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Text } from 'react-native';
 
 interface EditInvoiceCustomerModalProps {
     visible: boolean;
@@ -27,11 +28,28 @@ const EditInvoiceCustomerModal = ({
 
 ) => {
 
-    const customer = mockCustomers;
-
+    const [customers, setCustomers] = useState<CustomerType[]>([]);
+    const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
 
-    const filtered = customer.filter(s =>
+    const loadCustomers = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            const rows = await listCustomers();
+            setCustomers(rows.map(mapCustomerRowToAppCustomer));
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (visible) {
+            void loadCustomers();
+        }
+    }, [loadCustomers, visible]);
+
+    const filtered = customers.filter(s =>
         s.name.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -57,6 +75,11 @@ const EditInvoiceCustomerModal = ({
                 keyExtractor={i => i.customer_id}
                 showsVerticalScrollIndicator={false}
                 className='max-h-120'
+                ListEmptyComponent={
+                    loading
+                        ? <ActivityIndicator className='my-6' />
+                        : <Text className='text-center text-dark-50 my-6'>No customers found</Text>
+                }
 
                 renderItem={({ item: customer }) => (
                     <ListItemCard

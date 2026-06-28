@@ -10,12 +10,14 @@ import InvoiceItemCard from '@/src/components/ui/InvoiceItemCard'
 import { defaultInvoice } from '@/src/constants/defaultData'
 import { ICONS } from '@/src/constants/icons'
 import { COLORS } from '@/src/constants/theme'
+import { createInvoice } from '@/src/db/repositories/invoicesRepository'
+import { useAuthStore } from '@/src/store/authStore'
 import { CustomerType, InvoiceItemType, InvoiceType } from '@/src/types/appTypes'
 import { formatDateTime } from '@/src/Utility/DateFunctions'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import { router } from 'expo-router'
-import React, { useState } from 'react'
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import React, { useMemo, useState } from 'react'
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import EditInvoiceProductsModal from './edit-invoce-produts'
 import EditInvoiceCustomerModal from './edit-invoice-customer'
 import EditInvoiceDetailModal from './edit-invoice-detail'
@@ -23,9 +25,17 @@ import EditInvoiceSubtotalModal from './edit-invoice-subtotal'
 
 const AddInvoiceScreen = () => {
     const invoice = defaultInvoice;
+    const currentUser = useAuthStore((state) => state.user);
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
 
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | undefined>(invoice.customer);
     const [selectedProducts, setSelectedProducts] = useState<InvoiceItemType[] | undefined>(invoice.invoice_items);
+    const [discount, setDiscount] = useState(invoice.discount);
+    const [discountAmount, setDiscountAmount] = useState(invoice.discount_amount);
+    const [paidAmount, setPaidAmount] = useState(invoice.paid_amount);
+    const [dueDate, setDueDate] = useState(invoice.due_date);
+    const [invoiceImage, setInvoiceImage] = useState<string | undefined>(invoice.img);
+    const [saving, setSaving] = useState(false);
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isEditInvoiceDetailModalOpen, setIsEditInvoiceDetailModalOpen] = useState(false);
@@ -33,18 +43,75 @@ const AddInvoiceScreen = () => {
     const [isEditInvoiceProductsModalOpen, setIsEditInvoiceProductsModalOpen] = useState(false);
     const [isEditInvoiceSubtotalModalOpen, setIsEditInvoiceSubtotalModalOpen] = useState(false);
 
-    const [isPreviewDisable, setIsPreviewDisable] = useState(false);
-    const [isRemoveDisable, setIsRemoveDisable] = useState(false);
-
     const [showMore, setShowMore] = useState(false);
 
+    const draftInvoice = useMemo<InvoiceType>(() => {
+        const invoiceItems = selectedProducts ?? [];
+        const subtotal = invoiceItems.reduce((total, item) => total + item.quantity * item.selling_price, 0);
+        const totalAmount = Math.max(0, subtotal - discountAmount);
+        const remainingAmount = Math.max(0, totalAmount - paidAmount);
+        const totalItems = invoiceItems.reduce((total, item) => total + item.quantity, 0);
+        const status = totalAmount <= 0 || paidAmount >= totalAmount
+            ? 'Paid'
+            : paidAmount > 0
+                ? 'Pending'
+                : 'Unpaid';
 
+        return {
+            ...invoice,
+            customer: selectedCustomer ?? invoice.customer,
+            invoice_items: invoiceItems,
+            subtotal,
+            discount,
+            discount_amount: discountAmount,
+            total_amount: totalAmount,
+            paid_amount: paidAmount,
+            remaining_amount: remainingAmount,
+            total_items: totalItems,
+            status,
+            due_date: dueDate,
+            img: invoiceImage,
+        };
+    }, [discount, discountAmount, dueDate, invoice, invoiceImage, paidAmount, selectedCustomer, selectedProducts]);
 
 
     const handleDelete = () => {
         setIsDeleteModalOpen(false);
         router.back()
     }
+
+    const handleSaveInvoice = async () => {
+        if (!selectedProducts || selectedProducts.length === 0) {
+            Alert.alert('Select products', 'Add at least one product before saving this invoice.');
+            return;
+        }
+
+        setSaving(true);
+
+        try {
+            await createInvoice({
+                createdById: currentUser?.id ?? null,
+                customerId: selectedCustomer?.customer_id || null,
+                dueDate: new Date(draftInvoice.due_date).getTime(),
+                paidAmount,
+                discount,
+                discountAmount,
+                img: invoiceImage ?? null,
+                items: selectedProducts.map((item) => ({
+                    productId: item.product.product_id,
+                    quantity: item.quantity,
+                    sellingPrice: item.selling_price,
+                })),
+                requiresApproval: requiresApproval(),
+            });
+
+            router.back();
+        } catch (error) {
+            Alert.alert('Save failed', error instanceof Error ? error.message : 'Unable to save this invoice locally.');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <ScreenWrapper
@@ -74,8 +141,8 @@ const AddInvoiceScreen = () => {
 
                     <View className='bg-white p-4 rounded-button gap-2'>
                         {
-                            invoice
-                                ? <InvoiceDetail invoice={invoice} showMore={showMore} setShowMore={setShowMore} />
+                            draftInvoice
+                                ? <InvoiceDetail invoice={draftInvoice} showMore={showMore} setShowMore={setShowMore} />
                                 : <Text className='text-xl text-dark-50 text-center font-semibold'>Not Found</Text>
                         }
                     </View>
@@ -91,7 +158,7 @@ const AddInvoiceScreen = () => {
                     />
 
                     {
-                        invoice
+                        draftInvoice
                             ? <ListItemCard
                                 item={selectedCustomer as CustomerType}
                                 placeholder={ICONS.COMMON.customer}
@@ -118,7 +185,7 @@ const AddInvoiceScreen = () => {
                     />
 
                     {
-                        invoice && selectedProducts
+                        draftInvoice && selectedProducts
                             ? <>
                                 {
                                     selectedProducts.map((invoiceItem) => {
@@ -136,12 +203,14 @@ const AddInvoiceScreen = () => {
 
             <View className='bg-white mt-2 p-4 pb-10 rounded-button gap-2'>
                 {
-                    invoice
+                    draftInvoice
                         ? (
                             <InvoiceTotal
-                                invoice={invoice}
+                                invoice={draftInvoice}
                                 onDelete={() => setIsDeleteModalOpen(true)}
                                 onPress={() => setIsEditInvoiceSubtotalModalOpen(true)}
+                                primaryLabel={saving ? 'SAVING...' : 'SAVE'}
+                                onPrimaryPress={handleSaveInvoice}
                             />
                         )
                         : <Text className='text-xl text-dark-50 text-center font-semibold'>Not Found</Text>
@@ -151,11 +220,11 @@ const AddInvoiceScreen = () => {
 
             {
                 isDeleteModalOpen && (
-                    invoice &&
+                    draftInvoice &&
                     <DeleteModal
                         title='Remove Invoice'
                         subtitle='You are going to remove below invoice'
-                        removeItem={invoice.invoice_number}
+                        removeItem={draftInvoice.invoice_number}
                         isVisible={isDeleteModalOpen}
                         onClose={() => setIsDeleteModalOpen(false)}
                         onDelete={handleDelete}
@@ -165,17 +234,21 @@ const AddInvoiceScreen = () => {
 
             {
                 isEditInvoiceDetailModalOpen &&
-                invoice &&
+                draftInvoice &&
                 <EditInvoiceDetailModal
                     visible={isEditInvoiceDetailModalOpen}
-                    invoice={invoice}
+                    invoice={draftInvoice}
                     onClose={() => setIsEditInvoiceDetailModalOpen(false)}
+                    onDraftChange={(values) => {
+                        setDueDate(values.due_date);
+                        setInvoiceImage(values.img);
+                    }}
                 />
             }
 
             {
                 isEditInvoiceCustomerModalOpen &&
-                invoice &&
+                draftInvoice &&
                 <EditInvoiceCustomerModal
                     visible={isEditInvoiceCustomerModalOpen}
                     selectedCustomer={selectedCustomer}
@@ -186,7 +259,7 @@ const AddInvoiceScreen = () => {
 
             {
                 isEditInvoiceProductsModalOpen &&
-                invoice &&
+                draftInvoice &&
                 <EditInvoiceProductsModal
                     visible={isEditInvoiceProductsModalOpen}
                     selectedProducts={selectedProducts}
@@ -198,11 +271,16 @@ const AddInvoiceScreen = () => {
 
             {
                 isEditInvoiceSubtotalModalOpen &&
-                invoice &&
+                draftInvoice &&
                 <EditInvoiceSubtotalModal
                     visible={isEditInvoiceSubtotalModalOpen}
-                    invoice={invoice}
+                    invoice={draftInvoice}
                     onClose={() => setIsEditInvoiceSubtotalModalOpen(false)}
+                    onDraftChange={(nextSubtotal) => {
+                        setDiscount(nextSubtotal.discount);
+                        setDiscountAmount(nextSubtotal.discount_amount);
+                        setPaidAmount(nextSubtotal.paid_amount);
+                    }}
                 />
             }
 
@@ -264,14 +342,18 @@ function InvoiceDetail({ invoice, showMore, setShowMore }: InvoiceDetailProps): 
 interface InvoiceTotalProps {
     invoice: InvoiceType,
     onDelete: () => void,
-    onPress: () => void
+    onPress: () => void,
+    primaryLabel?: string,
+    onPrimaryPress?: () => void
 }
 
 
 function InvoiceTotal({
     invoice,
     onDelete,
-    onPress
+    onPress,
+    primaryLabel = 'PREVIEW',
+    onPrimaryPress
 }: InvoiceTotalProps
 ): React.JSX.Element {
 
@@ -325,8 +407,9 @@ function InvoiceTotal({
 
                 <Button
                     leftIcon={<MaterialCommunityIcons name="eye" size={24} color="white" />}
-                    label='PREVIEW'
+                    label={primaryLabel}
                     width='flex-1'
+                    onPress={onPrimaryPress}
                 />
             </View>
 

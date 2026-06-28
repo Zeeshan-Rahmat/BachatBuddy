@@ -9,14 +9,16 @@ import InfoField from '@/src/components/ui/InfoField'
 import InvoiceItemCard from '@/src/components/ui/InvoiceItemCard'
 import { ICONS } from '@/src/constants/icons'
 import { COLORS } from '@/src/constants/theme'
-import { mockInvoices } from '@/src/lib/sampleData'
+import { getInvoiceByIdWithRelations, markInvoicePendingDelete } from '@/src/db/repositories/invoicesRepository'
+import { mapInvoiceRowToAppInvoice } from '@/src/services/invoice/invoiceUiMapper'
+import { useAuthStore } from '@/src/store/authStore'
 import { CustomerType, InvoiceType } from '@/src/types/appTypes'
 import { formatDateTime } from '@/src/Utility/DateFunctions'
 import { getStatusRGBColor } from '@/src/Utility/getStatusColor'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
-import { router, useLocalSearchParams } from 'expo-router'
-import React, { useState } from 'react'
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import React, { useCallback, useState } from 'react'
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import EditInvoiceProductsModal from './edit-invoce-produts'
 import EditInvoiceCustomerModal from './edit-invoice-customer'
 import EditInvoiceDetailModal from './edit-invoice-detail'
@@ -25,10 +27,11 @@ import EditInvoiceSubtotalModal from './edit-invoice-subtotal'
 const InvoiceDetailScreen = () => {
 
     const { id } = useLocalSearchParams<{ id: string }>();
-    const invoice = mockInvoices.find(inv => inv.invoice_id === id);
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
+    const [invoice, setInvoice] = useState<InvoiceType | undefined>();
 
-    const [selectedCustomer, setSelectedCustomer] = useState(invoice?.customer);
-    const [selectedProducts, setSelectedProducts] = useState(invoice?.invoice_items);
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | undefined>();
+    const [selectedProducts, setSelectedProducts] = useState<InvoiceType['invoice_items'] | undefined>();
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isEditInvoiceDetailModalOpen, setIsEditInvoiceDetailModalOpen] = useState(false);
@@ -38,8 +41,41 @@ const InvoiceDetailScreen = () => {
 
     const [showMore, setShowMore] = useState(false)
 
+    const loadInvoice = useCallback(async () => {
+        if (!id) {
+            return;
+        }
 
-    const handleDelete = () => {
+        try {
+            const row = await getInvoiceByIdWithRelations(id);
+            const mappedInvoice = row ? mapInvoiceRowToAppInvoice(row) : undefined;
+
+            setInvoice(mappedInvoice);
+            setSelectedCustomer(mappedInvoice?.customer);
+            setSelectedProducts(mappedInvoice?.invoice_items);
+        } catch {
+            Alert.alert('Load failed', 'Unable to load this invoice from local storage.');
+        }
+    }, [id]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadInvoice();
+        }, [loadInvoice])
+    );
+
+    const handleDelete = async () => {
+        if (!invoice) {
+            return;
+        }
+
+        const deleted = await markInvoicePendingDelete(invoice.invoice_id, requiresApproval());
+
+        if (!deleted) {
+            Alert.alert('Remove failed', 'This invoice could not be found in local storage.');
+            return;
+        }
+
         setIsDeleteModalOpen(false);
         router.back()
     }
@@ -168,6 +204,7 @@ const InvoiceDetailScreen = () => {
                     visible={isEditInvoiceDetailModalOpen}
                     invoice={invoice}
                     onClose={() => setIsEditInvoiceDetailModalOpen(false)}
+                    onSaved={loadInvoice}
                 />
             }
 
@@ -201,6 +238,7 @@ const InvoiceDetailScreen = () => {
                     visible={isEditInvoiceSubtotalModalOpen}
                     invoice={invoice}
                     onClose={() => setIsEditInvoiceSubtotalModalOpen(false)}
+                    onSaved={loadInvoice}
                 />
             }
 
