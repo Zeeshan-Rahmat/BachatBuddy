@@ -7,6 +7,8 @@ import CustomeModal from '@/src/components/modal/CustomModal';
 import IconButton from '@/src/components/ui/IconButton';
 import { ICONS } from '@/src/constants/icons';
 import { COLORS } from '@/src/constants/theme';
+import { createProduct } from '@/src/db/repositories/productsRepository';
+import { useAuthStore } from '@/src/store/authStore';
 import { SupplierType } from '@/src/types/appTypes';
 import ProfilePicker from '@components/form/ProfilePicker';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -18,9 +20,12 @@ import AddProductSupplierModal from './add-product-supplier';
 interface AddProductManualModalProps {
     visible: boolean;
     onClose: () => void;
+    onSaved?: () => void;
 }
 
-const AddProductManualModal = ({ visible, onClose }: AddProductManualModalProps) => {
+const AddProductManualModal = ({ visible, onClose, onSaved }: AddProductManualModalProps) => {
+    const currentUser = useAuthStore((state) => state.user);
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
     const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
 
     const [selectedSupplier, setSelectedSupplier] = useState<SupplierType | undefined>();
@@ -42,12 +47,31 @@ const AddProductManualModal = ({ visible, onClose }: AddProductManualModalProps)
     const validate = () => {
         const e = { productName: '', stock: '', minStock: '', purchasePrice: '', maxSellingPrice: '', minSellingPrice: '', };
         let valid = true;
+        const numericFields = [
+            { value: stock, key: 'stock' as const, label: 'Stock' },
+            { value: minStock, key: 'minStock' as const, label: 'Minimum Stock' },
+            { value: purchasePrice, key: 'purchasePrice' as const, label: 'Purchase Price' },
+            { value: maxSellingPrice, key: 'maxSellingPrice' as const, label: 'Maximum Selling Price' },
+            { value: minSellingPrice, key: 'minSellingPrice' as const, label: 'Minimum Selling Price' },
+        ];
+
         if (!productName.trim()) { e.productName = 'Product Name is required'; valid = false; }
-        if (!stock) { e.stock = 'Stock is required'; valid = false; }
-        if (!minStock) { e.minStock = 'Minimum Stock is required'; valid = false; }
-        if (!purchasePrice) { e.purchasePrice = 'Purchase Price is required'; valid = false; }
-        if (!maxSellingPrice) { e.maxSellingPrice = 'Maximum Selling Price is required'; valid = false; }
-        if (!minSellingPrice) { e.minSellingPrice = 'Minimum Selling Price is required'; valid = false; }
+
+        numericFields.forEach(({ value, key, label }) => {
+            const parsedValue = Number(value);
+
+            if (value.trim() === '') {
+                e[key] = `${label} is required`;
+                valid = false;
+                return;
+            }
+
+            if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+                e[key] = `${label} must be a valid number`;
+                valid = false;
+            }
+        });
+
         setErrors(e);
         return valid;
     };
@@ -103,17 +127,32 @@ const AddProductManualModal = ({ visible, onClose }: AddProductManualModalProps)
         if (!validate()) return;
         setLoading(true);
 
-        // TODO:
-        // setTimeout(() => {
-        //     setLoading(false);
-        //     update the product
-        //     });
-        // }, 1000);
+        try {
+            await createProduct({
+                createdById: currentUser?.id ?? null,
+                supplierId: selectedSupplier?.supplier_id || null,
+                name: productName.trim(),
+                purchasePrice: Number(purchasePrice),
+                minSellingPrice: Number(minSellingPrice),
+                maxSellingPrice: Number(maxSellingPrice),
+                quantity: Number(stock),
+                minimumQuantity: Number(minStock),
+                img: imageUri,
+                requiresApproval: requiresApproval(),
+            });
+
+            onSaved?.();
+            onClose();
+        } catch {
+            Alert.alert('Save failed', 'Unable to save this product locally. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
     return (
         <>
             <CustomeModal visible={visible}>
-                <Title text='Edit Profile' />
+                <Title text='Add Product' />
 
                 <ScrollView
                     className="max-h-130 py-4"
@@ -254,8 +293,10 @@ const AddProductManualModal = ({ visible, onClose }: AddProductManualModalProps)
 
                     <Button
                         leftIcon={<IconWrapper name={ICONS.COMMON.updateOutline} />}
-                        label='UPDATE'
+                        label='SAVE'
                         width='flex-1'
+                        loading={loading}
+                        onPress={handleUpdate}
                     />
                 </View>
             </CustomeModal>

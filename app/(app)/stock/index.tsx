@@ -5,20 +5,24 @@ import SearchFilter from '@/src/components/common/SearchFilter';
 import DeleteModal from '@/src/components/modal/DeleteModal';
 import { defaultProduct } from '@/src/constants/defaultData';
 import { ICONS } from '@/src/constants/icons';
-import { mockProducts } from '@/src/lib/sampleData';
+import { listProductsWithRelations, markProductPendingDelete } from '@/src/db/repositories/productsRepository';
+import { mapProductRowToAppProduct } from '@/src/services/inventory/productUiMapper';
+import { useAuthStore } from '@/src/store/authStore';
 import { FilterType, ProductType } from '@/src/types/appTypes';
 import { handleFilterData } from '@/src/Utility/handleFilterData';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
-import React, { useState } from 'react';
-import { FlatList, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import AddProductManualModal from './add-product-manual';
 import EditProductModal from './edit-product';
 import FilterProductModal from './filter-product';
 import ProductDetailModal from './product-detail';
 
 export default function StockScreen() {
-    const products: ProductType[] = mockProducts;
-
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
+    const [products, setProducts] = useState<ProductType[]>([]);
+    const [loading, setLoading] = useState(false);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isProductDetailModalOpen, setIsProductDetailModalOpen] = useState(false);
@@ -26,8 +30,29 @@ export default function StockScreen() {
     const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
     const [selectedItem, setSelectedItem] = useState<ProductType>(defaultProduct);
-    const [displayedStock, setDisplayedStock] = useState<ProductType[]>(products);
+    const [displayedStock, setDisplayedStock] = useState<ProductType[]>([]);
     const [search, setSearch] = useState('');
+
+    const loadProducts = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            const rows = await listProductsWithRelations();
+            const mappedProducts = rows.map(mapProductRowToAppProduct);
+            setProducts(mappedProducts);
+            setDisplayedStock(mappedProducts);
+        } catch {
+            Alert.alert('Load failed', 'Unable to load products from local storage.');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadProducts();
+        }, [loadProducts])
+    );
 
     // Combine stateful multi-category modal filters with local text queries smoothly
     const filtered = displayedStock.filter(item =>
@@ -43,13 +68,23 @@ export default function StockScreen() {
         setIsFilterModalOpen(false);
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
+        const deleted = await markProductPendingDelete(selectedItem.product_id, requiresApproval());
+
+        if (!deleted) {
+            Alert.alert('Remove failed', 'This product could not be found in local storage.');
+            return;
+        }
+
         setIsDeleteModalOpen(false);
         setIsProductDetailModalOpen(false);
+        await loadProducts();
     }
 
-    const handleAddProduct = () => {
-        setIsAddProductModalOpen(true);
+    const handleProductSaved = async () => {
+        setIsEditProductModalOpen(false);
+        setIsProductDetailModalOpen(false);
+        await loadProducts();
     }
 
     return (
@@ -70,6 +105,12 @@ export default function StockScreen() {
                         keyExtractor={(item) => item.product_id.toString()}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingBottom: 80 }}
+                        refreshControl={<RefreshControl refreshing={loading} onRefresh={loadProducts} />}
+                        ListEmptyComponent={
+                            loading
+                                ? <ActivityIndicator className='my-8' />
+                                : <Text className='text-center text-dark-50 my-8'>No products found</Text>
+                        }
                         renderItem={({ item }) => (
                             <ListItemCard
                                 item={item}
@@ -132,6 +173,7 @@ export default function StockScreen() {
                         product={selectedItem}
                         visible={isEditProductModalOpen}
                         onClose={() => setIsEditProductModalOpen(false)}
+                        onSaved={handleProductSaved}
                     />
                 )
             }
@@ -141,6 +183,7 @@ export default function StockScreen() {
                 <AddProductManualModal
                     visible={isAddProductModalOpen}
                     onClose={() => setIsAddProductModalOpen(false)}
+                    onSaved={handleProductSaved}
                 />
             }
         </View>

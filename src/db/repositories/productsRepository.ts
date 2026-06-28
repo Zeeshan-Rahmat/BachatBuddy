@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, ne } from 'drizzle-orm';
 import { db } from '../client';
 import { products, syncQueue, type NewProductRow, type NewSyncQueueRow, type ProductRow } from '../schema';
 
@@ -12,6 +12,7 @@ export type CreateProductInput = {
     quantity: number;
     minimumQuantity: number;
     img?: string | null;
+    requiresApproval?: boolean;
 };
 
 export type UpdateProductInput = Partial<Omit<CreateProductInput, 'createdById'>> & {
@@ -49,7 +50,23 @@ const buildQueueRow = (
 });
 
 export const listProducts = async (): Promise<ProductRow[]> => {
-    return db.select().from(products).orderBy(desc(products.updatedAt));
+    return db
+        .select()
+        .from(products)
+        .where(ne(products.syncStatus, 'pending_delete'))
+        .orderBy(desc(products.updatedAt));
+};
+
+export const listProductsWithRelations = async () => {
+    return db.query.products.findMany({
+        where: ne(products.syncStatus, 'pending_delete'),
+        with: {
+            supplier: true,
+            createdBy: true,
+            lastUpdatedBy: true,
+        },
+        orderBy: desc(products.updatedAt),
+    });
 };
 
 export const getProductById = async (id: string): Promise<ProductRow | undefined> => {
@@ -75,12 +92,18 @@ export const createProduct = async (input: CreateProductInput): Promise<ProductR
         addedStock: input.quantity,
         soldStock: 0,
         img: input.img ?? null,
-        syncStatus: 'pending_insert',
+        syncStatus: input.requiresApproval ? 'pending_approval' : 'pending_insert',
         updatedAt: now,
         createdAt: now,
     };
 
-    const queueRow = buildQueueRow('products', product.id, 'insert', product, now);
+    const queueRow = buildQueueRow(
+        'products',
+        product.id,
+        input.requiresApproval ? 'approval_request' : 'insert',
+        product,
+        now,
+    );
 
     db.transaction((tx) => {
         tx.insert(products).values(product).run();
@@ -112,10 +135,20 @@ export const updateProduct = async (id: string, input: UpdateProductInput): Prom
         minimumQuantity,
         status: getStockStatus(quantity, minimumQuantity),
         img: input.img ?? existing.img,
-        syncStatus: existing.syncStatus === 'pending_insert' ? 'pending_insert' : 'pending_update',
+        syncStatus: input.requiresApproval
+            ? 'pending_approval'
+            : existing.syncStatus === 'pending_insert'
+                ? 'pending_insert'
+                : 'pending_update',
         updatedAt: now,
     };
-    const queueRow = buildQueueRow('products', id, 'update', updatedProduct, now);
+    const queueRow = buildQueueRow(
+        'products',
+        id,
+        input.requiresApproval ? 'approval_request' : 'update',
+        updatedProduct,
+        now,
+    );
 
     db.transaction((tx) => {
         tx.update(products).set(updatedProduct).where(eq(products.id, id)).run();
@@ -125,7 +158,7 @@ export const updateProduct = async (id: string, input: UpdateProductInput): Prom
     return updatedProduct;
 };
 
-export const markProductPendingDelete = async (id: string): Promise<boolean> => {
+export const markProductPendingDelete = async (id: string, requiresApproval = false): Promise<boolean> => {
     const existing = await getProductById(id);
 
     if (!existing) {
@@ -135,10 +168,16 @@ export const markProductPendingDelete = async (id: string): Promise<boolean> => 
     const now = Date.now();
     const deletedProduct: ProductRow = {
         ...existing,
-        syncStatus: 'pending_delete',
+        syncStatus: requiresApproval ? 'pending_approval' : 'pending_delete',
         updatedAt: now,
     };
-    const queueRow = buildQueueRow('products', id, 'delete', deletedProduct, now);
+    const queueRow = buildQueueRow(
+        'products',
+        id,
+        requiresApproval ? 'approval_request' : 'delete',
+        deletedProduct,
+        now,
+    );
 
     db.transaction((tx) => {
         tx.update(products).set(deletedProduct).where(eq(products.id, id)).run();

@@ -91,14 +91,24 @@ Main Files:
 
 ## Inventory / Stock
 
-Status: In Progress
+Status: Completed
 
 Description:
-Stock list, details, add, edit, supplier add, and filter screens exist. Product repository supports local-first create/update/pending-delete with sync queue writes.
+Stock list, details, add, edit, supplier selection, filtering, pull-to-refresh, and delete flows are backed by SQLite. Product create/update/delete actions write to the local `products` table first, enqueue recoverable `sync_queue` rows, refresh the stock UI from SQLite immediately, and use `pending_approval` plus `approval_request` queue rows for employee inventory changes.
+
+Completed Updates:
+- Replaced stock list sample data with `listProductsWithRelations()` from SQLite and mapped Drizzle rows into the existing stock UI shape.
+- Wired add product, edit product, and remove product modals to `productsRepository` local-first mutations.
+- Added SQLite supplier selection for product forms through `suppliersRepository.listSuppliers()`.
+- Added `src/services/inventory/productUiMapper.ts` to keep the current UI model compatible with Drizzle/local rows without broad type churn.
+- Updated product repository list queries to hide `pending_delete` rows and support relation-backed inventory screens.
+- Fixed edit-product saves for products without suppliers by treating the UI placeholder supplier as `null`, preventing SQLite foreign key failures when updating images or other fields.
 
 Main Files:
 - `app/(app)/stock`
 - `src/db/repositories/productsRepository.ts`
+- `src/db/repositories/suppliersRepository.ts`
+- `src/services/inventory/productUiMapper.ts`
 - `src/components/common/ListItemCard.tsx`
 - `src/components/modal/FilterModal.tsx`
 
@@ -355,7 +365,8 @@ Main Files:
 - Database services/repositories:
   - `usersRepository`: user lookup, upsert, local profile creation/update, biometric flag, mark synced.
   - `sessionRepository`: active auth session persistence.
-  - `productsRepository`: local-first product create/update/pending-delete.
+  - `productsRepository`: relation-backed product listing plus local-first product create/update/pending-delete and employee approval queue writes.
+  - `suppliersRepository`: SQLite supplier listing for inventory product forms.
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
 - Storage service: `src/lib/secureStorage.ts` stores biometric credentials, token expiry, and flags in Expo SecureStore.
@@ -378,7 +389,7 @@ Main Files:
 - ✅ Session management and biometric flow integration
 - ✅ Profile/business profile backend integration
 - ✅ Sync queue processor
-- ⏳ Inventory screens backed fully by SQLite
+- ✅ Inventory screens backed fully by SQLite
 - ⏳ Invoice repositories and stock mutation transactions
 - ⏳ Customer/supplier/employee repositories
 - ⏳ Reports backed by SQLite queries
@@ -392,7 +403,7 @@ Main Files:
 - Complete employee approval workflow UI and local approval-state handling around `staging_review_queue`.
 - Add local-first repositories for customers, suppliers, employees, invoices, invoice items, ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
-- Wire stock, sales, parties, dashboard, and reports screens to SQLite repositories.
+- Wire sales, parties, dashboard, and reports screens to SQLite repositories.
 - Make invoice creation transactional: invoice, invoice items, stock decrement, customer dues, ledger/payment entries, and sync queue writes.
 - Add backup/restore implementation.
 - Add pagination and indexes where large lists are queried.
@@ -405,7 +416,7 @@ Main Files:
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
 - Sync queue processor exists, but conflict resolution, online/offline network detection, stale `processing` row recovery, and Supabase schema/RLS for non-profile business tables still need to be completed.
-- Product repository has local-first writes, but most other business modules do not.
+- Product repository and inventory screens are local-first, but most other business modules do not yet have completed repositories/screens backed by SQLite.
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
 - Supabase setup is committed as a SQL setup file, but it is not yet organized as versioned Supabase CLI migrations.
