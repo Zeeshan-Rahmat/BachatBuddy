@@ -1,4 +1,5 @@
 import { initializeLocalDatabase } from '@/src/db/client';
+import { startSyncQueueProcessor, stopSyncQueueProcessor } from '@/src/services/syncQueueProcessor';
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -10,6 +11,7 @@ export default function AppDataProvider({ children }: PropsWithChildren) {
 
         initializeLocalDatabase()
             .then(() => {
+                startSyncQueueProcessor();
                 if (isMounted) {
                     setIsReady(true);
                 }
@@ -23,6 +25,7 @@ export default function AppDataProvider({ children }: PropsWithChildren) {
 
         return () => {
             isMounted = false;
+            stopSyncQueueProcessor();
         };
     }, []);
 

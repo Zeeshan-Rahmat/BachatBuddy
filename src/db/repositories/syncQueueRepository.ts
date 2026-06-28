@@ -5,7 +5,7 @@
 // AGENTS.md 4 Outbox Pattern.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, or } from 'drizzle-orm';
 import { db } from '../client';
 import { syncQueue, type NewSyncQueueRow, type SyncQueueRow } from '../schema';
 
@@ -54,7 +54,21 @@ export const syncQueueRepository = {
             .select()
             .from(syncQueue)
             .where(eq(syncQueue.status, 'queued'))
-            .orderBy(desc(syncQueue.createdAt)) // FIFO or LIFO queue processing order
+            .orderBy(asc(syncQueue.createdAt))
+            .limit(limit);
+    },
+
+    async listReady(limit = 50, now = nowMs()): Promise<SyncQueueRow[]> {
+        return db
+            .select()
+            .from(syncQueue)
+            .where(
+                and(
+                    inArray(syncQueue.status, ['queued', 'failed']),
+                    or(isNull(syncQueue.nextRetryAt), lte(syncQueue.nextRetryAt, now))
+                )
+            )
+            .orderBy(asc(syncQueue.createdAt))
             .limit(limit);
     },
 
@@ -69,8 +83,28 @@ export const syncQueueRepository = {
                     eq(syncQueue.status, 'queued')
                 )
             )
-            .orderBy(desc(syncQueue.createdAt))
+            .orderBy(asc(syncQueue.createdAt))
             .limit(limit);
+    },
+
+    async markProcessing(id: string): Promise<void> {
+        await db
+            .update(syncQueue)
+            .set({
+                status: 'processing',
+                updatedAt: nowMs(),
+            })
+            .where(eq(syncQueue.id, id));
+    },
+
+    async markQueued(id: string): Promise<void> {
+        await db
+            .update(syncQueue)
+            .set({
+                status: 'queued',
+                updatedAt: nowMs(),
+            })
+            .where(eq(syncQueue.id, id));
     },
 
     // ── Remove entry after successful sync ────────────────────────────────────
@@ -83,11 +117,16 @@ export const syncQueueRepository = {
         const rows = await db.select().from(syncQueue).where(eq(syncQueue.id, id)).limit(1);
         if (rows.length === 0) return;
 
+        const attempts = rows[0].attempts + 1;
+        const retryDelayMs = Math.min(60_000 * 2 ** Math.max(attempts - 1, 0), 30 * 60_000);
+
         await db
             .update(syncQueue)
             .set({
-                attempts: rows[0].attempts + 1,
+                status: 'failed',
+                attempts,
                 lastError: errorMessage,
+                nextRetryAt: nowMs() + retryDelayMs,
                 updatedAt: nowMs() // Always update the timestamp on change!
             })
             .where(eq(syncQueue.id, id));

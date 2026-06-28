@@ -195,13 +195,20 @@ Main Files:
 
 ## Sync Engine
 
-Status: Planned
+Status: In Progress
 
 Description:
-The `sync_queue` table and repository exist. A background processor that pushes queued mutations, handles retries, approvals, deletes, and marks records synced is not yet implemented.
+The `sync_queue` table, repository, and app-start background processor exist. The processor reads ready queued/failed rows FIFO, marks each row as `processing`, pushes insert/update/delete mutations to Supabase, sends approval requests to `staging_review_queue`, marks successfully pushed local rows as `synced`, removes locally deleted rows after remote delete succeeds, dequeues successful sync items, and records failed attempts with exponential retry backoff.
+
+Completed Updates:
+- Added `src/services/syncQueueProcessor.ts` for queue processing, Supabase mutation dispatch, approval request upload, local sync status reconciliation, and interval start/stop control.
+- Updated `src/db/repositories/syncQueueRepository.ts` to process FIFO, list retry-ready failed rows, mark rows as `processing`, requeue rows when needed, and store retry backoff metadata on failures.
+- Updated `src/components/providers/AppDataProvider.tsx` to start the sync queue processor after SQLite initialization and stop it on provider cleanup.
 
 Main Files:
 - `src/db/repositories/syncQueueRepository.ts`
+- `src/services/syncQueueProcessor.ts`
+- `src/components/providers/AppDataProvider.tsx`
 - `src/db/schema.ts`
 
 # Database
@@ -345,7 +352,7 @@ Main Files:
   - `sessionRepository`: active auth session persistence.
   - `productsRepository`: local-first product create/update/pending-delete.
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
-- Sync service: Not implemented yet; only queue repository exists.
+- Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
 - Storage service: `src/lib/secureStorage.ts` stores biometric credentials, token expiry, and flags in Expo SecureStore.
 - Invoice services: `src/services/invoice/pdfService.ts`, `src/services/invoice/invoiceViewer.tsx`.
 - Utilities: `src/Utility` contains chart scaling, report conversion, date, ranking, filtering, and status color helpers.
@@ -365,7 +372,7 @@ Main Files:
 - ✅ User profile mapper for Supabase/local naming
 - ✅ Session management and biometric flow integration
 - ✅ Profile/business profile backend integration
-- ⏳ Sync queue processor
+- ✅ Sync queue processor
 - ⏳ Inventory screens backed fully by SQLite
 - ⏳ Invoice repositories and stock mutation transactions
 - ⏳ Customer/supplier/employee repositories
@@ -375,9 +382,8 @@ Main Files:
 
 # Pending Work
 
-- Implement sync engine to process `sync_queue`.
 - Add Supabase migrations/RLS policies for all cloud tables.
-- Implement conflict handling and retry backoff for sync.
+- Implement conflict handling and stale `processing` row recovery for sync.
 - Add employee approval workflow and `staging_review_queue` integration.
 - Add local-first repositories for customers, suppliers, employees, invoices, invoice items, ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
@@ -393,10 +399,9 @@ Main Files:
 # Known Issues
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
-- No sync engine exists yet, so queued records are not automatically pushed or marked `synced`.
+- Sync queue processor exists, but conflict resolution, online/offline network detection, stale `processing` row recovery, and Supabase schema/RLS migrations still need to be completed.
 - Product repository has local-first writes, but most other business modules do not.
-- Supabase profile writes are currently best-effort in auth/profile services after SQLite and `sync_queue` writes; durable retry/mark-synced behavior should move into the future sync engine.
-- `syncQueueRepository.listPending` orders by descending `createdAt`, despite queue comments mentioning FIFO/LIFO ambiguity.
+- Supabase profile writes are still attempted best-effort in auth/profile services after SQLite and `sync_queue` writes; queued retry/mark-synced behavior now also exists in the sync queue processor.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
 - Supabase migrations/RLS policies are not committed.
 - Some sample/default data and legacy types still use snake_case names that differ from Drizzle camelCase fields.
@@ -419,6 +424,7 @@ Main Files:
 - Business logos are stored as a dedicated local user/business profile field (`businessLogo` locally, `business_logo` in SQLite/Supabase payloads) so invoice generation can reference the logo independently from the user avatar.
 - Biometric login stores tokens and expiry in SecureStore, never passwords, and uses those tokens only after device biometric authentication succeeds.
 - Biometric preference is treated as device-local and does not mark the user profile as a pending cloud sync mutation.
+- Sync queue processing is app-started from `AppDataProvider`, processes FIFO, retries failed rows with exponential backoff, and only marks local records `synced` after Supabase confirms the queued mutation.
 
 # Coding Standards
 
