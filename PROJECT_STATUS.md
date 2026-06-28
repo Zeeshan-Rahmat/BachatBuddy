@@ -23,7 +23,7 @@
 - `src/Utility/`: Report, chart, filtering, date, and ranking helpers.
 - `assets/`: Images, icons, and fonts.
 - `design/`: Reference UI screenshots.
-- `supabase/`: Supabase project folder placeholder; no committed migrations currently present.
+- `supabase/`: Supabase SQL setup scripts, including the current profile/RLS setup in `supabase/bachatbuddy_setup.sql`.
 
 # Features
 
@@ -32,7 +32,7 @@
 Status: In Progress
 
 Description:
-Auth screens are implemented. Supabase Auth is used for sign-up, sign-in, OTP, password reset, sign-out, and session refresh. Local session/profile persistence exists through SQLite. Profile creation now writes to SQLite and `sync_queue` first, then attempts Supabase profile insertion.
+Auth screens are implemented. Supabase Auth is used for sign-up, sign-in, OTP, password reset, sign-out, and session refresh. Local session/profile persistence exists through SQLite. Profile creation writes to SQLite and `sync_queue` first, then inserts/updates the matching Supabase `public.users` profile row. Supabase profile rows are now confirmed working with the committed setup SQL. Owner profiles use `business_id = user id`, avoiding a separate business id while still allowing future employee grouping.
 
 Main Files:
 - `app/(auth)`
@@ -43,6 +43,7 @@ Main Files:
 - `src/store/authStore.ts`
 - `src/db/repositories/sessionRepository.ts`
 - `src/db/repositories/usersRepository.ts`
+- `supabase/bachatbuddy_setup.sql`
 
 ## Biometric Login
 
@@ -204,6 +205,7 @@ Completed Updates:
 - Added `src/services/syncQueueProcessor.ts` for queue processing, Supabase mutation dispatch, approval request upload, local sync status reconciliation, and interval start/stop control.
 - Updated `src/db/repositories/syncQueueRepository.ts` to process FIFO, list retry-ready failed rows, mark rows as `processing`, requeue rows when needed, and store retry backoff metadata on failures.
 - Updated `src/components/providers/AppDataProvider.tsx` to start the sync queue processor after SQLite initialization and stop it on provider cleanup.
+- Added `supabase/bachatbuddy_setup.sql` with `public.users`, `staging_review_queue`, helper RPCs, and RLS policies aligned with the app payloads.
 
 Main Files:
 - `src/db/repositories/syncQueueRepository.ts`
@@ -216,8 +218,10 @@ Main Files:
 - Local database: Expo SQLite database named `bachatbuddy.db`.
 - ORM: Drizzle ORM with schema in `src/db/schema.ts`.
 - Cloud database: Supabase PostgreSQL, intended for auth, backup, sync, remote storage, notifications, and approvals.
+- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.staging_review_queue`, username lookup RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, and RLS policies.
 - Existing local tables: `users`, `auth_sessions`, `customers`, `suppliers`, `products`, `invoices`, `invoice_items`, `sync_queue`.
 - The `users` table includes `business_logo` for invoice-ready business branding, separate from the personal/profile `img` field.
+- Owner user rows use `business_id = id`; employee rows should use the owner's user id as `business_id` when employee management is implemented.
 - Existing sync statuses: `synced`, `pending_insert`, `pending_update`, `pending_delete`, `pending_approval`, `rejected`.
 - Existing queue operations: `insert`, `update`, `delete`, `approval_request`.
 - Relationships:
@@ -229,7 +233,7 @@ Main Files:
   - `invoices.customer_id -> customers.id`
   - `invoice_items.invoice_id -> invoices.id`
   - `invoice_items.product_id -> products.id`
-- Migration status: Manual SQL migration exists in `src/db/migrations.ts`; no generated Drizzle migration files are committed for the current schema.
+- Migration status: Manual local SQLite migration exists in `src/db/migrations.ts`; Supabase setup SQL exists in `supabase/bachatbuddy_setup.sql`; no generated Drizzle migration files are committed for the current schema.
 - Missing local tables: employees, ledger entries, payments, staging approval mirror, backup metadata, and sync conflict metadata.
 
 # State Management
@@ -249,7 +253,7 @@ Main Files:
 - Modals: `app/(modal)` contains backup/restore, business profile, change password, customize invoice, export, invite friend, logout, notification, profile, and smart login flows.
 - Drawer: `src/components/layout/DrawerMenu.tsx`.
 - Bottom tabs: `src/components/layout/BottomNav.tsx`.
-- RBAC: `AuthGuard` blocks employee access to dashboard and reports at navigation level; server-side RLS is not represented in committed Supabase migrations.
+- RBAC: `AuthGuard` blocks employee access to dashboard and reports at navigation level; initial Supabase RLS exists for profile and approval tables, but full business-table RLS is not complete.
 
 # UI Components
 
@@ -343,6 +347,7 @@ Main Files:
 # Services
 
 - Supabase service: `src/lib/supabase.ts` creates the Supabase client with SecureStore-backed auth persistence.
+- Supabase setup: `supabase/bachatbuddy_setup.sql` configures profile/approval cloud tables, RLS policies, helper RPCs, and timestamp triggers.
 - Auth service: `src/services/auth/authService.ts` handles Supabase Auth and local-first profile creation.
 - Session service: `src/services/sessionService.ts` saves, restores, refreshes, clears local sessions, restores sessions from biometric credentials, and keeps biometric tokens fresh after refresh.
 - Profile service: `src/services/profileService.ts` fetches remote profile data, maps it to local shape, and performs local-first profile updates.
@@ -382,9 +387,9 @@ Main Files:
 
 # Pending Work
 
-- Add Supabase migrations/RLS policies for all cloud tables.
+- Expand Supabase setup/RLS policies for remaining cloud sync tables beyond `users` and `staging_review_queue`.
 - Implement conflict handling and stale `processing` row recovery for sync.
-- Add employee approval workflow and `staging_review_queue` integration.
+- Complete employee approval workflow UI and local approval-state handling around `staging_review_queue`.
 - Add local-first repositories for customers, suppliers, employees, invoices, invoice items, ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
 - Wire stock, sales, parties, dashboard, and reports screens to SQLite repositories.
@@ -399,13 +404,13 @@ Main Files:
 # Known Issues
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
-- Sync queue processor exists, but conflict resolution, online/offline network detection, stale `processing` row recovery, and Supabase schema/RLS migrations still need to be completed.
+- Sync queue processor exists, but conflict resolution, online/offline network detection, stale `processing` row recovery, and Supabase schema/RLS for non-profile business tables still need to be completed.
 - Product repository has local-first writes, but most other business modules do not.
-- Supabase profile writes are still attempted best-effort in auth/profile services after SQLite and `sync_queue` writes; queued retry/mark-synced behavior now also exists in the sync queue processor.
+- Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
-- Supabase migrations/RLS policies are not committed.
+- Supabase setup is committed as a SQL setup file, but it is not yet organized as versioned Supabase CLI migrations.
 - Some sample/default data and legacy types still use snake_case names that differ from Drizzle camelCase fields.
-- Employee RBAC exists in navigation helpers but not in local mutation authorization or Supabase RLS migrations.
+- Employee RBAC exists in navigation helpers; Supabase RLS has initial owner/business helper policies for profile and approval tables, but local mutation authorization and full table-level RLS are still incomplete.
 - Biometric enable/sign-in is integrated, but there is no completed settings flow to disable biometrics and clear saved credentials.
 
 # Recent Architectural Decisions
@@ -419,7 +424,8 @@ Main Files:
 - Local mutations should write a sync queue entry in the same transaction.
 - IDs should be UUID strings generated with `crypto.randomUUID()`.
 - User profile rows now use explicit mapping between Supabase `snake_case` and local Drizzle camelCase fields.
-- Profile creation/update now writes to SQLite first and attempts remote writes as best-effort until the sync engine exists.
+- Profile creation/update now writes to SQLite first, queues the mutation, and also attempts remote writes against the configured Supabase `public.users` table.
+- Owner profiles use the owner's Supabase Auth user id as `business_id`; employee profiles should share that owner id later. No separate business table is required yet.
 - Profile, business profile, drawer profile card, and app top bar now read from the local auth profile cache; successful saves refresh the Zustand session cache from the saved SQLite row.
 - Business logos are stored as a dedicated local user/business profile field (`businessLogo` locally, `business_logo` in SQLite/Supabase payloads) so invoice generation can reference the logo independently from the user avatar.
 - Biometric login stores tokens and expiry in SecureStore, never passwords, and uses those tokens only after device biometric authentication succeeds.

@@ -153,7 +153,7 @@ function buildUserProfile(
 
   return {
     id: supaUserId,
-    businessId: businessId,
+    businessId: businessId ?? supaUserId,
     businessName: null,
     name,
     phone,
