@@ -241,18 +241,23 @@ Main Files:
 Status: In Progress
 
 Description:
-The `sync_queue` table, repository, and app-start background processor exist. The processor reads ready queued/failed rows FIFO, marks each row as `processing`, uploads local image URIs in queued payloads to Supabase Storage, pushes insert/update/delete mutations to Supabase, sends approval requests to `staging_review_queue`, marks successfully pushed local rows as `synced`, removes locally deleted rows after remote delete succeeds, dequeues successful sync items, and records failed attempts with exponential retry backoff.
+The `sync_queue` table, repository, and app-start background processor exist. The processor reads ready queued/failed rows FIFO, marks each row as `processing`, uploads local image URIs in queued payloads to Supabase Storage, pushes insert/update/delete mutations to Supabase, sends approval requests to `staging_review_queue`, marks successfully pushed local rows as `synced`, removes locally deleted rows after remote delete succeeds, dequeues successful sync items, and records failed attempts with exponential retry backoff. Local mutations now wake the sync processor immediately after SQLite commits instead of waiting for the next interval tick.
 
 Completed Updates:
 - Added `src/services/syncQueueProcessor.ts` for queue processing, Supabase mutation dispatch, approval request upload, local sync status reconciliation, and interval start/stop control.
-- Updated `src/db/repositories/syncQueueRepository.ts` to process FIFO, list retry-ready failed rows, mark rows as `processing`, requeue rows when needed, and store retry backoff metadata on failures.
-- Updated `src/components/providers/AppDataProvider.tsx` to start the sync queue processor after SQLite initialization and stop it on provider cleanup.
+- Added `src/services/syncQueueNotifier.ts` so repositories can request immediate background sync after enqueueing local mutations.
+- Updated product, customer, supplier, employee, user/profile, invoice, and generic sync queue enqueue paths to request sync immediately after the local transaction succeeds.
+- Updated `src/db/repositories/syncQueueRepository.ts` to process FIFO, list retry-ready failed rows, mark rows as `processing`, requeue rows when needed, store retry backoff metadata on failures, and reset failed local-media sync rows for prompt retry.
+- Updated `src/components/providers/AppDataProvider.tsx` to initialize SQLite, enqueue existing local media uploads, retry failed media uploads, start the sync queue processor, and stop it on provider cleanup.
 - Added `supabase/bachatbuddy_setup.sql` with `public.users`, `staging_review_queue`, helper RPCs, and RLS policies aligned with the app payloads.
 - Added `src/services/mediaStorageService.ts` and sync-processor integration so `img` and `business_logo` local URIs are uploaded to Supabase Storage before remote row upserts or approval payload uploads.
+- Fixed React Native image sync by reading local file URIs through Expo FileSystem `File(...).arrayBuffer()` instead of relying on `fetch(uri).blob()` for device files.
+- Normalized image MIME types before upload and expanded the `bachatbuddy-media` bucket setup to allow `image/heic` and `image/heif`.
 
 Main Files:
 - `src/db/repositories/syncQueueRepository.ts`
 - `src/services/syncQueueProcessor.ts`
+- `src/services/syncQueueNotifier.ts`
 - `src/services/mediaStorageService.ts`
 - `src/services/mediaBackfillService.ts`
 - `src/components/providers/AppDataProvider.tsx`
@@ -438,6 +443,8 @@ Main Files:
 - ✅ Customer/supplier/employee backed fully by SQLite
 - ✅ Supabase Storage image upload integration for synced media payloads
 - ✅ Startup backfill for existing local image URIs
+- ✅ Immediate sync wake-up after local queue writes
+- ✅ React Native local image upload fix for Supabase Storage sync
 - ⏳ Reports backed by SQLite queries
 - ⏳ Backup and restore backend
 - ⏳ Approval workflow
@@ -462,10 +469,10 @@ Main Files:
 # Known Issues
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
-- Sync queue processor exists, but conflict resolution, online/offline network detection, stale `processing` row recovery, and stricter business-scoped Supabase Storage access still need to be completed.
+- Sync queue processor exists and now wakes immediately after local queue writes, but conflict resolution, online/offline network detection, stale `processing` row recovery, and stricter business-scoped Supabase Storage access still need to be completed.
 - Product, invoice, and party screens are local-first, but dashboard, reports, ledger, and payment modules do not yet have completed SQLite-backed flows.
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
-- Supabase media upload sync depends on the `bachatbuddy-media` bucket and policies from `supabase/bachatbuddy_setup.sql`; remote image upload will fail and retry if that SQL has not been applied.
+- Supabase media upload sync depends on the `bachatbuddy-media` bucket and policies from `supabase/bachatbuddy_setup.sql`; remote image upload will fail and retry if that SQL has not been applied, including the current MIME list for JPEG/PNG/WebP/GIF/HEIC/HEIF.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
 - Supabase setup is committed as a SQL setup file, but it is not yet organized as versioned Supabase CLI migrations.
 - Some sample/default data and legacy types still use snake_case names that differ from Drizzle camelCase fields.

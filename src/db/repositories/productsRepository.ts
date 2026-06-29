@@ -1,4 +1,5 @@
 import { desc, eq, ne } from 'drizzle-orm';
+import { requestSyncQueueProcessing } from '@/src/services/syncQueueNotifier';
 import { db } from '../client';
 import { products, syncQueue, type NewProductRow, type NewSyncQueueRow, type ProductRow } from '../schema';
 
@@ -109,6 +110,7 @@ export const createProduct = async (input: CreateProductInput): Promise<ProductR
         tx.insert(products).values(product).run();
         tx.insert(syncQueue).values(queueRow).run();
     });
+    requestSyncQueueProcessing();
 
     return product as ProductRow;
 };
@@ -154,6 +156,7 @@ export const updateProduct = async (id: string, input: UpdateProductInput): Prom
         tx.update(products).set(updatedProduct).where(eq(products.id, id)).run();
         tx.insert(syncQueue).values(queueRow).run();
     });
+    requestSyncQueueProcessing();
 
     return updatedProduct;
 };
@@ -183,6 +186,7 @@ export const markProductPendingDelete = async (id: string, requiresApproval = fa
         tx.update(products).set(deletedProduct).where(eq(products.id, id)).run();
         tx.insert(syncQueue).values(queueRow).run();
     });
+    requestSyncQueueProcessing();
 
     return true;
 };

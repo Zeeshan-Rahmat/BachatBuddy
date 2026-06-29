@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { and, asc, eq, inArray, isNull, lte, or } from 'drizzle-orm';
+import { requestSyncQueueProcessing } from '@/src/services/syncQueueNotifier';
 import { db } from '../client';
 import { syncQueue, type NewSyncQueueRow, type SyncQueueRow } from '../schema';
 
@@ -15,6 +16,34 @@ function nowMs(): number {
 
 function newUUID(): string {
     return crypto.randomUUID();
+}
+
+function isUploadableLocalMediaUri(value: unknown): value is string {
+    if (typeof value !== 'string') {
+        return false;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (!normalized || normalized.startsWith('http://') || normalized.startsWith('https://')) {
+        return false;
+    }
+
+    return normalized.startsWith('file://')
+        || normalized.startsWith('content://')
+        || normalized.startsWith('ph://')
+        || normalized.startsWith('assets-library://')
+        || normalized.startsWith('data:image/');
+}
+
+function hasUploadableMediaPayload(payload: unknown): boolean {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return false;
+    }
+
+    const values = payload as Record<string, unknown>;
+    return isUploadableLocalMediaUri(values.img)
+        || isUploadableLocalMediaUri(values.businessLogo)
+        || isUploadableLocalMediaUri(values.business_logo);
 }
 
 export interface EnqueuePayload {
@@ -45,6 +74,7 @@ export const syncQueueRepository = {
         };
 
         await db.insert(syncQueue).values(newRow);
+        requestSyncQueueProcessing();
         return newRow as SyncQueueRow; // Returning the row makes it easier to work with instantly
     },
 
@@ -73,6 +103,34 @@ export const syncQueueRepository = {
     },
 
     // ── List pending entries for a specific table ─────────────────────────────
+    async retryFailedMediaUploads(): Promise<number> {
+        const failedEntries = await db
+            .select()
+            .from(syncQueue)
+            .where(eq(syncQueue.status, 'failed'));
+        const mediaEntries = failedEntries.filter((entry) => hasUploadableMediaPayload(entry.payload));
+        const now = nowMs();
+
+        for (const entry of mediaEntries) {
+            await db
+                .update(syncQueue)
+                .set({
+                    status: 'queued',
+                    attempts: 0,
+                    lastError: null,
+                    nextRetryAt: null,
+                    updatedAt: now,
+                })
+                .where(eq(syncQueue.id, entry.id));
+        }
+
+        if (mediaEntries.length > 0) {
+            requestSyncQueueProcessing();
+        }
+
+        return mediaEntries.length;
+    },
+
     async listPendingForTable(tableName: string, limit = 50): Promise<SyncQueueRow[]> {
         return db
             .select()

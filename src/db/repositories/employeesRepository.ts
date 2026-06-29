@@ -1,4 +1,5 @@
 import { and, desc, eq, ne } from 'drizzle-orm';
+import { requestSyncQueueProcessing } from '@/src/services/syncQueueNotifier';
 import { db } from '../client';
 import { syncQueue, users, type NewSyncQueueRow, type NewUserRow, type UserRow } from '../schema';
 
@@ -93,6 +94,7 @@ export const createEmployee = async (input: CreateEmployeeInput): Promise<UserRo
         tx.insert(users).values(employee).run();
         tx.insert(syncQueue).values(queueRow).run();
     });
+    requestSyncQueueProcessing();
 
     return employee as UserRow;
 };
@@ -136,6 +138,7 @@ export const updateEmployee = async (id: string, input: UpdateEmployeeInput): Pr
         tx.update(users).set(updatedEmployee).where(eq(users.id, id)).run();
         tx.insert(syncQueue).values(queueRow).run();
     });
+    requestSyncQueueProcessing();
 
     return updatedEmployee;
 };
@@ -164,6 +167,7 @@ export const markEmployeePendingDelete = async (id: string, requiresApproval = f
         tx.update(users).set(deletedEmployee).where(eq(users.id, id)).run();
         tx.insert(syncQueue).values(queueRow).run();
     });
+    requestSyncQueueProcessing();
 
     return true;
 };

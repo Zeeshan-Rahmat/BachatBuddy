@@ -1,4 +1,5 @@
 import { desc, eq, inArray, ne } from 'drizzle-orm';
+import { requestSyncQueueProcessing } from '@/src/services/syncQueueNotifier';
 import { db } from '../client';
 import {
     customers,
@@ -336,6 +337,7 @@ export const createInvoice = async (input: CreateInvoiceInput): Promise<CreateIn
             }
         }
     });
+    requestSyncQueueProcessing();
 
     return {
         invoiceId,
@@ -381,6 +383,7 @@ export const updateInvoiceTotals = async (id: string, input: UpdateInvoiceTotals
         tx.update(invoices).set(updatedInvoice).where(eq(invoices.id, id)).run();
         tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, updatedInvoice, now)).run();
     });
+    requestSyncQueueProcessing();
 
     return updatedInvoice;
 };
@@ -413,6 +416,7 @@ export const updateInvoiceDetail = async (id: string, input: UpdateInvoiceDetail
         tx.update(invoices).set(updatedInvoice).where(eq(invoices.id, id)).run();
         tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, updatedInvoice, now)).run();
     });
+    requestSyncQueueProcessing();
 
     return updatedInvoice;
 };
@@ -469,6 +473,7 @@ export const markInvoicePendingDelete = async (id: string, requiresApproval = fa
             tx.insert(syncQueue).values(buildQueueRow('products', item.product.id, updateOperation, updatedProduct, now)).run();
         });
     });
+    requestSyncQueueProcessing();
 
     return true;
 };

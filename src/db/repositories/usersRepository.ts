@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { User } from '@/src/types/auth';
+import { requestSyncQueueProcessing } from '@/src/services/syncQueueNotifier';
 import { eq, or } from 'drizzle-orm';
 import { db } from '../client';
 import { syncQueue, users, type NewSyncQueueRow, type UserRow } from '../schema';
@@ -136,6 +137,7 @@ export const usersRepository = {
             }).run();
             tx.insert(syncQueue).values(queueRow).run();
         });
+        requestSyncQueueProcessing();
 
         const savedUser = await this.findById(localUser.id);
 
@@ -166,6 +168,7 @@ export const usersRepository = {
             tx.update(users).set(localUser).where(eq(users.id, existingUserId)).run();
             tx.insert(syncQueue).values(queueRow).run();
         });
+        requestSyncQueueProcessing();
 
         const savedUser = await this.findById(localUser.id);
 
@@ -199,6 +202,7 @@ export const usersRepository = {
             tx.update(users).set(updatedUser).where(eq(users.id, userId)).run();
             tx.insert(syncQueue).values(queueRow).run();
         });
+        requestSyncQueueProcessing();
 
         return updatedUser;
     },

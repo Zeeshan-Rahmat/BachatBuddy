@@ -860,7 +860,7 @@ values (
   'bachatbuddy-media',
   true,
   5242880,
-  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']
 )
 on conflict (id) do update
 set

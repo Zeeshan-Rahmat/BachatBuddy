@@ -3,6 +3,7 @@ import { sqlite } from '@/src/db/client';
 import { supabase } from '@/src/lib/supabase';
 import type { SyncQueueRow } from '@/src/db/schema';
 import { prepareRemotePayloadMedia } from './mediaStorageService';
+import { setSyncQueueRequestHandler } from './syncQueueNotifier';
 
 const DEFAULT_BATCH_SIZE = 25;
 const DEFAULT_INTERVAL_MS = 60_000;
@@ -257,6 +258,10 @@ export async function processSyncQueue(
 }
 
 export function startSyncQueueProcessor(intervalMs = DEFAULT_INTERVAL_MS): void {
+    setSyncQueueRequestHandler(() => {
+        void processSyncQueue();
+    });
+
     if (intervalId) {
         return;
     }
@@ -268,6 +273,8 @@ export function startSyncQueueProcessor(intervalMs = DEFAULT_INTERVAL_MS): void 
 }
 
 export function stopSyncQueueProcessor(): void {
+    setSyncQueueRequestHandler(null);
+
     if (!intervalId) {
         return;
     }

@@ -1,4 +1,5 @@
 import { initializeLocalDatabase } from '@/src/db/client';
+import { syncQueueRepository } from '@/src/db/repositories/syncQueueRepository';
 import { enqueueExistingLocalMediaUploads } from '@/src/services/mediaBackfillService';
 import { startSyncQueueProcessor, stopSyncQueueProcessor } from '@/src/services/syncQueueProcessor';
 import React, { PropsWithChildren, useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ export default function AppDataProvider({ children }: PropsWithChildren) {
         initializeLocalDatabase()
             .then(async () => {
                 await enqueueExistingLocalMediaUploads();
+                await syncQueueRepository.retryFailedMediaUploads();
                 startSyncQueueProcessor();
                 if (isMounted) {
                     setIsReady(true);
