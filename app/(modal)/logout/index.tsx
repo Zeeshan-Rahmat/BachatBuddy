@@ -4,7 +4,8 @@ import Subtitle from '@/src/components/common/Subtitle';
 import Title from '@/src/components/common/Title';
 import CustomModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
-import React from 'react';
+import { useSignOut } from '@/src/hooks/auth/useAuth';
+import React, { useCallback } from 'react';
 import { View } from 'react-native';
 
 interface LogoutModalProps {
@@ -13,6 +14,12 @@ interface LogoutModalProps {
 }
 
 const LogoutModal = ({ isVisible, onClose }: LogoutModalProps) => {
+    const { signOut, loading } = useSignOut();
+
+    const handleLogout = useCallback(async () => {
+        await signOut();
+        onClose?.();
+    }, [onClose, signOut]);
 
 
     // // ── Logout ──────────────────────────────────────────────────────────────────
@@ -38,6 +45,7 @@ const LogoutModal = ({ isVisible, onClose }: LogoutModalProps) => {
                     bgColor='gray'
                     width='flex-1'
                     onPress={onClose}
+                    isDisabled={loading}
                 />
 
                 <Button
@@ -45,6 +53,8 @@ const LogoutModal = ({ isVisible, onClose }: LogoutModalProps) => {
                     label='LOGOUT'
                     width='flex-1'
                     bgColor='red'
+                    loading={loading}
+                    onPress={handleLogout}
                 />
             </View>
 

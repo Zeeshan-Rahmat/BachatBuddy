@@ -10,6 +10,7 @@ import { useResendSignupOtp, useVerifyOtp } from '@/src/hooks/auth/useAuth';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -97,45 +98,54 @@ export default function SignUpOtpScreen() {
 
     return (
         <GradientBackground>
-            <Wrapper>
+            <KeyboardAwareScrollView
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    justifyContent: 'center',
+                }}
+                enableOnAndroid
+                keyboardShouldPersistTaps="handled"
+            >
+                <Wrapper>
 
-                <Title text='Verify your email' className='mb-4' />
+                    <Title text='Verify your email' className='mb-4' />
 
-                <Text className="text-dark-50 text-base text-center mb-8 leading-5 px-2">
-                    Please enter the {noOfDigits} digits code sent to{'\n'}
-                    <Text className="font-medium text-dark-100">{maskedEmail}</Text>
-                </Text>
+                    <Text className="text-dark-50 text-base text-center mb-8 leading-5 px-2">
+                        Please enter the {noOfDigits} digits code sent to{'\n'}
+                        <Text className="font-medium text-dark-100">{maskedEmail}</Text>
+                    </Text>
 
-                {/* OTP Input */}
-                <InputText
-                    icon={<IconWrapper name={ICONS.AUTH.otp} />}
-                    activeIcon={<IconWrapper name={ICONS.AUTH.activeOTP} />}
-                    placeholder={`Enter ${noOfDigits} digits OTP`}
-                    value={otp}
-                    onChangeText={(text) => { setOtp(text); setEmptyFieldError(''); }}
-                    keyboardType="number-pad"
-                    maxLength={noOfDigits}
-                    error={emptyFieldError}
-                />
+                    {/* OTP Input */}
+                    <InputText
+                        icon={<IconWrapper name={ICONS.AUTH.otp} />}
+                        activeIcon={<IconWrapper name={ICONS.AUTH.activeOTP} />}
+                        placeholder={`Enter ${noOfDigits} digits OTP`}
+                        value={otp}
+                        onChangeText={(text) => { setOtp(text); setEmptyFieldError(''); }}
+                        keyboardType="number-pad"
+                        maxLength={noOfDigits}
+                        error={emptyFieldError}
+                    />
 
-                {/* Confirm Button */}
-                <Button
-                    label="Confirm"
-                    onPress={handleConfirm}
-                    loading={loading}
-                />
+                    {/* Confirm Button */}
+                    <Button
+                        label="Confirm"
+                        onPress={handleConfirm}
+                        loading={loading}
+                    />
 
-                <View className='h-4' />
+                    <View className='h-4' />
 
-                <TextButton
-                    text={resendText}
-                    align="self-center"
-                    textstyle="underline"
-                    onPress={handleResend}
-                    disabled={resendDisabled}
-                />
+                    <TextButton
+                        text={resendText}
+                        align="self-center"
+                        textstyle="underline"
+                        onPress={handleResend}
+                        disabled={resendDisabled}
+                    />
 
-            </Wrapper>
+                </Wrapper>
+            </KeyboardAwareScrollView>
         </GradientBackground>
     );
 }

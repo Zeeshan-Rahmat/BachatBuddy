@@ -12,6 +12,7 @@ import { ROUTES } from '@/src/constants/routes';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 export default function ForgotPasswordScreen() {
     const [email, setEmail] = useState('');
@@ -43,38 +44,47 @@ export default function ForgotPasswordScreen() {
 
     return (
         <GradientBackground>
-            <Wrapper>
+            <KeyboardAwareScrollView
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    justifyContent: 'center',
+                }}
+                enableOnAndroid
+                keyboardShouldPersistTaps="handled"
+            >
+                <Wrapper>
 
-                <Title text="Verify Email Address" className='mb-4' />
+                    <Title text="Verify Email Address" className='mb-4' />
 
-                <Text className="text-placeholder text-base text-center mb-8 leading-5 px-2">
-                    Enter your email address and we will send you an OTP to reset your password
-                </Text>
-
-                <InputText
-                    icon={<IconWrapper name={ICONS.AUTH.email} />}
-                    activeIcon={<IconWrapper name={ICONS.AUTH.activeEmail} />}
-                    placeholder="Email Address"
-                    value={email}
-                    onChangeText={(text) => { setEmail(text); setError(''); }}
-                    keyboardType="email-address"
-                    error={error}
-                />
-
-                <Button
-                    label="Send OTP"
-                    onPress={handleSendOTP}
-                    loading={loading}
-                />
-
-                <View className="flex-row justify-center mt-5">
-                    <Text className="text-gray-700 text-base">
-                        Remembered your password?{' '}
+                    <Text className="text-placeholder text-base text-center mb-8 leading-5 px-2">
+                        Enter your email address and we will send you an OTP to reset your password
                     </Text>
-                    <TextButton text="Sign In" textstyle='underline' onPress={() => router.back()} />
-                </View>
 
-            </Wrapper>
+                    <InputText
+                        icon={<IconWrapper name={ICONS.AUTH.email} />}
+                        activeIcon={<IconWrapper name={ICONS.AUTH.activeEmail} />}
+                        placeholder="Email Address"
+                        value={email}
+                        onChangeText={(text) => { setEmail(text); setError(''); }}
+                        keyboardType="email-address"
+                        error={error}
+                    />
+
+                    <Button
+                        label="Send OTP"
+                        onPress={handleSendOTP}
+                        loading={loading}
+                    />
+
+                    <View className="flex-row justify-center mt-5">
+                        <Text className="text-gray-700 text-base">
+                            Remembered your password?{' '}
+                        </Text>
+                        <TextButton text="Sign In" textstyle='underline' onPress={() => router.back()} />
+                    </View>
+
+                </Wrapper>
+            </KeyboardAwareScrollView>
         </GradientBackground>
     );
 }

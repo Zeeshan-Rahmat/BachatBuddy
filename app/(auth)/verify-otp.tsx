@@ -9,6 +9,7 @@ import { ROUTES } from '@/src/constants/routes';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Text } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 // This screen is shared between two flows:
 // flow === 'reset'   → came from forgot-password → goes to new-password
@@ -52,33 +53,42 @@ export default function VerifyOtpScreen() {
 
     return (
         <GradientBackground>
-            <Wrapper>
+            <KeyboardAwareScrollView
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    justifyContent: 'center',
+                }}
+                enableOnAndroid
+                keyboardShouldPersistTaps="handled"
+            >
+                <Wrapper>
 
-                <Title text='Verify your email' className='mb-4' />
+                    <Title text='Verify your email' className='mb-4' />
 
-                <Text className="text-dark-50 text-base text-center mb-8 leading-5 px-2">
-                    Please enter the 4 digits code sent to{'\n'}
-                    <Text className="font-medium text-dark-100">{maskedEmail}</Text>
-                </Text>
+                    <Text className="text-dark-50 text-base text-center mb-8 leading-5 px-2">
+                        Please enter the 4 digits code sent to{'\n'}
+                        <Text className="font-medium text-dark-100">{maskedEmail}</Text>
+                    </Text>
 
-                <InputText
-                    icon={<IconWrapper name={ICONS.AUTH.otp} />}
-                    activeIcon={<IconWrapper name={ICONS.AUTH.activeOTP} />}
-                    placeholder="Enter 4 digits OTP"
-                    value={otp}
-                    onChangeText={(text) => { setOtp(text); setError(''); }}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    error={error}
-                />
+                    <InputText
+                        icon={<IconWrapper name={ICONS.AUTH.otp} />}
+                        activeIcon={<IconWrapper name={ICONS.AUTH.activeOTP} />}
+                        placeholder="Enter 4 digits OTP"
+                        value={otp}
+                        onChangeText={(text) => { setOtp(text); setError(''); }}
+                        keyboardType="number-pad"
+                        maxLength={4}
+                        error={error}
+                    />
 
-                <Button
-                    label="Confirm"
-                    onPress={handleConfirm}
-                    loading={loading}
-                />
+                    <Button
+                        label="Confirm"
+                        onPress={handleConfirm}
+                        loading={loading}
+                    />
 
-            </Wrapper>
+                </Wrapper>
+            </KeyboardAwareScrollView>
         </GradientBackground>
     );
 }

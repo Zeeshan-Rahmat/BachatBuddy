@@ -32,7 +32,7 @@
 Status: In Progress
 
 Description:
-Auth screens are implemented. Supabase Auth is used for sign-up, sign-in, OTP, password reset, sign-out, and session refresh. Local session/profile persistence exists through SQLite. Profile creation writes to SQLite and `sync_queue` first, then inserts/updates the matching Supabase `public.users` profile row. Supabase profile rows are now confirmed working with the committed setup SQL. Owner profiles use `business_id = user id`, avoiding a separate business id while still allowing future employee grouping.
+Auth screens are implemented. Supabase Auth is used for sign-up, sign-in, OTP, password reset, sign-out, and session refresh. Local session/profile persistence exists through SQLite. App launch now requires a fresh unlock before protected business data is shown: if a valid biometric credential exists the splash routes to fingerprint, otherwise it routes to sign-in. Profile creation writes to SQLite and `sync_queue` first, then inserts/updates the matching Supabase `public.users` profile row. Supabase profile rows are now confirmed working with the committed setup SQL. Owner profiles use `business_id = user id`, avoiding a separate business id while still allowing future employee grouping. Drawer logout is wired to the shared sign-out flow and clears the active local session before returning to sign-in.
 
 Main Files:
 - `app/(auth)`
@@ -50,7 +50,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Biometric credential storage and authentication are implemented through Expo Local Authentication and SecureStore. Tokens and expiry are stored for biometric re-auth; passwords are not stored. Biometric sign-in now restores an active local session first, or rebuilds the Supabase/local SQLite session from saved biometric tokens when needed.
+Biometric credential storage and authentication are implemented through Expo Local Authentication and SecureStore. Tokens and expiry are stored for biometric re-auth; passwords are never stored. The startup/sign-in routing now distinguishes between enabled biometrics and a valid saved biometric credential: app launch opens fingerprint only when a usable credential exists; otherwise it opens sign-in. The sign-in screen's `use Touch ID` action opens fingerprint when a valid credential exists, or `manage-fingerprint` when setup is missing. Expired, malformed, or stale biometric credentials are rejected and cleared so the next Touch ID attempt routes to setup. Biometric unlock restores the local SQLite session immediately and refreshes Supabase tokens/profile in the background to keep login fast and local-first.
 
 Main Files:
 - `app/(auth)/fingerprint.tsx`
@@ -66,7 +66,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Expo Router groups are set up for auth, protected app screens, and modals. `AuthGuard` restores local session state and blocks unauthenticated app access. Employee dashboard/report blocking exists in navigation guard logic.
+Expo Router groups are set up for auth, protected app screens, and modals. `AuthGuard` blocks unauthenticated app access and employee access to owner-only dashboard/report routes. Session bootstrap initializes SQLite and biometric state only; it does not automatically authenticate from a previous saved SQLite session, so protected app screens remain locked until password sign-in or successful fingerprint unlock.
 
 Main Files:
 - `app/_layout.tsx`
@@ -228,7 +228,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Screens exist for export, invite friend, notifications, notification options, and change password. Backend integrations are incomplete or partial.
+Screens exist for export, invite friend, notifications, notification options, logout, and change password. Logout is wired through the drawer confirmation modal. Other backend integrations are incomplete or partial.
 
 Main Files:
 - `app/(modal)/export`
@@ -290,7 +290,7 @@ Main Files:
 # State Management
 
 - `src/store/authStore.ts`: Auth session, current user, role, loading state, biometric flag, and RBAC helper methods. Zustand only; SQLite stores durable session/profile data.
-- `src/store/biometricStore.ts`: Biometric enable/check/authenticate workflow using secure storage and Expo Local Authentication.
+- `src/store/biometricStore.ts`: Biometric enable/check/authenticate workflow using secure storage and Expo Local Authentication. It treats missing, expired, malformed, or stale credentials as disabled and clears stale SecureStore flags.
 - `src/store/invoiceCustomizationStore.ts`: Invoice customization UI/template options.
 - `src/store/secureStorage.ts`: Secure storage key definitions/helper area.
 - Persistence strategy: Durable business/auth data should live in SQLite or SecureStore where appropriate. Zustand is runtime state/cache only.
@@ -400,7 +400,7 @@ Main Files:
 - Supabase service: `src/lib/supabase.ts` creates the Supabase client with SecureStore-backed auth persistence.
 - Supabase setup: `supabase/bachatbuddy_setup.sql` configures profile/approval cloud tables, RLS policies, helper RPCs, and timestamp triggers.
 - Auth service: `src/services/auth/authService.ts` handles Supabase Auth and local-first profile creation.
-- Session service: `src/services/sessionService.ts` saves, restores, refreshes, clears local sessions, restores sessions from biometric credentials, and keeps biometric tokens fresh after refresh.
+- Session service: `src/services/sessionService.ts` saves, restores, refreshes, clears local sessions, restores sessions from biometric credentials, and keeps biometric tokens fresh after refresh. Biometric restore returns from local SQLite immediately when saved credentials are valid, then refreshes Supabase tokens/profile in the background.
 - Profile service: `src/services/profileService.ts` fetches remote profile data, maps it to local shape, and performs local-first profile updates.
 - Media storage service: `src/services/mediaStorageService.ts` uploads local image URIs from sync payloads to the `bachatbuddy-media` Supabase Storage bucket and returns public URLs for remote rows.
 - Media backfill service: `src/services/mediaBackfillService.ts` finds existing SQLite records with local image URIs and enqueues update rows so older saved images can be uploaded through the normal sync queue.
@@ -435,6 +435,10 @@ Main Files:
 - ✅ Product repository with local-first queue writes
 - ✅ User profile mapper for Supabase/local naming
 - ✅ Session management and biometric flow integration
+- ✅ Fresh app launch security gate for password/fingerprint unlock
+- ✅ Fast local-first biometric unlock with background token/profile refresh
+- ✅ Drawer logout confirmation wired to sign-out
+- ✅ Keyboard-aware auth forms
 - ✅ Profile/business profile backend integration
 - ✅ Sync queue processor
 - ✅ Inventory screens backed fully by SQLite
@@ -464,7 +468,7 @@ Main Files:
 - Add tests for repositories, sync queue processing, auth/session restoration, and financial/inventory transactions.
 - Clean existing lint warnings.
 - Normalize old `appTypes.ts` snake_case frontend types with Drizzle/local types where appropriate.
-- Add a user-facing disable biometric flow that clears SecureStore credentials and updates the local user biometric flag.
+- Complete/verify the user-facing disable biometric flow in smart-login/settings so it clears SecureStore credentials and updates the local user biometric flag.
 
 # Known Issues
 
@@ -477,7 +481,7 @@ Main Files:
 - Supabase setup is committed as a SQL setup file, but it is not yet organized as versioned Supabase CLI migrations.
 - Some sample/default data and legacy types still use snake_case names that differ from Drizzle camelCase fields.
 - Employee RBAC exists in navigation helpers; Supabase RLS has initial owner/business helper policies for profile and approval tables, but local mutation authorization and full table-level RLS are still incomplete.
-- Biometric enable/sign-in is integrated, but there is no completed settings flow to disable biometrics and clear saved credentials.
+- Biometric enable/sign-in is integrated and enforces a fresh app-launch unlock. Stale or expired biometric credentials are cleared automatically, but the user-facing settings flow for manually disabling biometrics still needs completion/verification.
 
 # Recent Architectural Decisions
 
@@ -497,6 +501,9 @@ Main Files:
 - Business logos are stored as a dedicated local user/business profile field (`businessLogo` locally, `business_logo` in SQLite/Supabase payloads) so invoice generation can reference the logo independently from the user avatar.
 - Picked images remain local SQLite values for immediate offline use; sync uploads `img` and `business_logo` values to Supabase Storage and sends public Storage URLs in Supabase row/approval payloads.
 - Biometric login stores tokens and expiry in SecureStore, never passwords, and uses those tokens only after device biometric authentication succeeds.
+- App launch does not auto-restore the previous SQLite session into authenticated Zustand state. It initializes SQLite/biometric state, then requires password sign-in or fingerprint unlock before protected routes can be used.
+- Biometric credentials must be valid, non-expired, and structurally complete to count as setup. Stale SecureStore flags are cleared when no usable credential exists.
+- Biometric unlock is local-first: it restores the SQLite session immediately from saved secure credentials, routes into the app, and refreshes Supabase tokens/profile in the background.
 - Biometric preference is treated as device-local and does not mark the user profile as a pending cloud sync mutation.
 - Sync queue processing is app-started from `AppDataProvider`, processes FIFO, retries failed rows with exponential backoff, and only marks local records `synced` after Supabase confirms the queued mutation.
 - Add-invoice screens treat `INV-PENDING` as a draft only: due date, image, customer, products, and totals update screen state until SAVE runs the SQLite invoice transaction and assigns the real UUID/invoice number.

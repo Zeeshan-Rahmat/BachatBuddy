@@ -13,6 +13,24 @@ const KEYS = {
   BIOMETRIC_ENABLED: 'bb_biometric_enabled',
 } as const;
 
+function isBiometricCredentials(value: unknown): value is BiometricCredentials {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const credentials = value as Record<string, unknown>;
+  return (
+    typeof credentials.user_id === 'string' &&
+    typeof credentials.email === 'string' &&
+    typeof credentials.username === 'string' &&
+    (credentials.role === 'owner' || credentials.role === 'employee') &&
+    typeof credentials.access_token === 'string' &&
+    typeof credentials.refresh_token === 'string' &&
+    typeof credentials.expires_at === 'number' &&
+    credentials.expires_at > Date.now()
+  );
+}
+
 // ─── Biometric Credentials ───────────────────────────────────────────────────
 // Stores email + tokens + role so fingerprint login can restore a session
 // WITHOUT ever storing the user's password.
@@ -31,7 +49,8 @@ export async function loadBiometricCredentials(): Promise<BiometricCredentials |
   const raw = await SecureStore.getItemAsync(KEYS.BIOMETRIC_CREDENTIALS);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as BiometricCredentials;
+    const parsed: unknown = JSON.parse(raw);
+    return isBiometricCredentials(parsed) ? parsed : null;
   } catch {
     return null;
   }

@@ -8,6 +8,7 @@ import Title from '@/src/components/common/Title';
 import Wrapper from '@/src/components/common/Wrapper';
 import { ROUTES } from '@/src/constants/routes';
 import { useBiometricSignIn } from '@/src/hooks/auth/useAuth';
+import { loadBiometricCredentials } from '@/src/lib/secureStorage';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, TouchableOpacity } from 'react-native';
@@ -22,6 +23,12 @@ export default function FingerprintScreen() {
         if (authenticating || loading) return;
 
         try {
+            const credentials = await loadBiometricCredentials();
+            if (!credentials) {
+                router.replace(ROUTES.AUTH.SIGN_IN);
+                return;
+            }
+
             setAuthenticating(true);
             await signInWithBiometric();
         } catch {

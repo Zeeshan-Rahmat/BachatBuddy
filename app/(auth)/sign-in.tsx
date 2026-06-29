@@ -13,6 +13,7 @@ import Title from '@/src/components/common/Title';
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
 import { useSignIn } from '@/src/hooks/auth/useAuth';
+import { loadBiometricCredentials } from '@/src/lib/secureStorage';
 import { UserRole } from '@/src/types/auth';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -62,6 +63,11 @@ export default function SignInScreen() {
     const handleSignIn = async () => {
         if (!validate()) return;
         await signIn(username, role as UserRole, password);
+    };
+
+    const handleTouchIdPress = async () => {
+        const credentials = await loadBiometricCredentials();
+        router.push(credentials ? ROUTES.AUTH.FINGERPRINT : ROUTES.AUTH.MANAGE_FINGERPRINT);
     };
 
     return (
@@ -134,7 +140,7 @@ export default function SignInScreen() {
 
                     <TouchableOpacity
                         className="flex-row items-center justify-center gap-2"
-                        onPress={() => router.push(ROUTES.AUTH.FINGERPRINT)}
+                        onPress={handleTouchIdPress}
                     >
                         <IconWrapper name={ICONS.AUTH.fingerprint} size={35} />
                         <Text className="ml-2 text-black text-inputText font-semibold">

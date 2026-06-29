@@ -25,7 +25,7 @@ NativeSplashScreen.preventAutoHideAsync().catch(() => { });
 const MIN_SPLASH_DURATION_MS = 2500;
 
 export default function SplashScreen() {
-  const { enabled, isChecking, checkEnabled } = useBiometricStore();
+  const { enabled, hasSavedCredentials, isChecking, checkEnabled } = useBiometricStore();
   const [canNavigate, setCanNavigate] = useState(false);
   const { width, height } = useWindowDimensions();
   const logoScale = useSharedValue(0.94);
@@ -80,12 +80,12 @@ export default function SplashScreen() {
       return;
     }
 
-    if (enabled) {
+    if (enabled && hasSavedCredentials) {
       router.replace(ROUTES.AUTH.FINGERPRINT);
     } else {
       router.replace(ROUTES.AUTH.SIGN_IN);
     }
-  }, [isReady, canNavigate, enabled]);
+  }, [isReady, canNavigate, enabled, hasSavedCredentials]);
 
   // Keep returning null while loading so nothing renders underneath the native splash screen
   if (!isReady) {

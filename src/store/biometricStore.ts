@@ -15,6 +15,7 @@ import type { BiometricCredentials } from '../types/auth';
 
 interface BiometricState {
   enabled: boolean;
+  hasSavedCredentials: boolean;
   isChecking: boolean;
 }
 
@@ -27,21 +28,33 @@ interface BiometricActions {
 
 export const useBiometricStore = create<BiometricState & BiometricActions>((set) => ({
   enabled: false,
+  hasSavedCredentials: false,
   isChecking: true,
 
   checkEnabled: async () => {
-    const enabled = await isBiometricEnabled();
-    set({ enabled, isChecking: false });
+    const [enabled, credentials] = await Promise.all([
+      isBiometricEnabled(),
+      loadBiometricCredentials(),
+    ]);
+    const hasSavedCredentials = credentials !== null;
+    if (enabled && !hasSavedCredentials) {
+      await clearBiometricCredentials();
+    }
+    set({
+      enabled: enabled && hasSavedCredentials,
+      hasSavedCredentials,
+      isChecking: false,
+    });
   },
 
   enable: async (credentials: BiometricCredentials) => {
     await saveBiometricCredentials(credentials);
-    set({ enabled: true });
+    set({ enabled: true, hasSavedCredentials: true });
   },
 
   disable: async () => {
     await clearBiometricCredentials();
-    set({ enabled: false });
+    set({ enabled: false, hasSavedCredentials: false });
   },
 
   authenticate: async () => {

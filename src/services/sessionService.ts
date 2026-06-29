@@ -115,34 +115,29 @@ export async function restoreSessionFromBiometricCredentials(
   credentials: BiometricCredentials
 ): Promise<AuthResult<AuthSession>> {
   try {
+    if (!credentials.expires_at || credentials.expires_at <= Date.now()) {
+      return { success: false, error: 'Session expired. Please sign in with your password.', code: 'session_expired' };
+    }
+
     const localProfile = await usersRepository.findById(credentials.user_id);
 
     if (!localProfile) {
       return { success: false, error: 'Profile not found. Please sign in with your password.', code: 'user_not_found' };
     }
 
-    const { data, error } = await supabase.auth.setSession({
+    const session: AuthSession = {
       access_token: credentials.access_token,
       refresh_token: credentials.refresh_token,
-    });
-
-    if (error || !data.session) {
-      return { success: false, error: 'Session expired. Please sign in with your password.', code: 'session_expired' };
-    }
-
-    const expiresAt = data.session.expires_at
-      ? data.session.expires_at * 1000
-      : credentials.expires_at || Date.now() + 3600_000;
-
-    const session: AuthSession = {
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-      expires_at: expiresAt,
+      expires_at: credentials.expires_at,
       user: localProfile,
     };
 
     await saveSession(session);
-    await updateBiometricTokens(session.access_token, session.refresh_token, session.expires_at);
+
+    void refreshBiometricSessionInBackground(credentials).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn('[Session] Background biometric refresh failed:', message);
+    });
 
     return { success: true, data: session };
   } catch (err) {
@@ -152,6 +147,35 @@ export async function restoreSessionFromBiometricCredentials(
       code: 'unknown_error',
     };
   }
+}
+
+async function refreshBiometricSessionInBackground(credentials: BiometricCredentials): Promise<void> {
+  const { data, error } = await supabase.auth.setSession({
+    access_token: credentials.access_token,
+    refresh_token: credentials.refresh_token,
+  });
+
+  if (error || !data.session) {
+    return;
+  }
+
+  const expiresAt = data.session.expires_at
+    ? data.session.expires_at * 1000
+    : credentials.expires_at || Date.now() + 3600_000;
+
+  await sessionRepository.refreshTokens(
+    credentials.user_id,
+    data.session.access_token,
+    data.session.refresh_token,
+    expiresAt
+  );
+  await updateBiometricTokens(
+    data.session.access_token,
+    data.session.refresh_token,
+    expiresAt
+  );
+
+  await syncProfileToLocal(credentials.user_id);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

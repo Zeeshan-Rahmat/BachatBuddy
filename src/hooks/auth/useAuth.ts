@@ -227,8 +227,8 @@ export function useResetPassword() {
 // useBiometricSignIn — wire into fingerprint.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 export function useBiometricSignIn() {
-  const { setSession } = useAuthStore();
-  const { authenticate } = useBiometricStore();
+  const { setSession, setBiometricEnabled } = useAuthStore();
+  const { authenticate, disable } = useBiometricStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -249,14 +249,12 @@ export function useBiometricSignIn() {
     }
 
     // Restore session using saved tokens — validates/refreshes with Supabase
-    let restoreResult = await sessionService.restoreSession();
-
-    if (restoreResult.success && !restoreResult.data) {
-      restoreResult = await sessionService.restoreSessionFromBiometricCredentials(result.credentials);
-    }
+    const restoreResult = await sessionService.restoreSessionFromBiometricCredentials(result.credentials);
 
     if (!restoreResult.success || !restoreResult.data) {
-      setError(restoreResult.success ? 'Session expired. Please sign in with your password.' : restoreResult.error);
+      await disable();
+      await sessionService.setLocalBiometricEnabled(result.credentials.user_id, false);
+      setBiometricEnabled(false);
       router.replace(ROUTES.AUTH.SIGN_IN);
       setLoading(false);
       return;
@@ -266,7 +264,7 @@ export function useBiometricSignIn() {
     const dest = restoreResult.data.user.role === 'owner' ? ROUTES.DASHBOARD : ROUTES.STOCK;
     router.replace(dest as any);
     setLoading(false);
-  }, [authenticate, setSession]);
+  }, [authenticate, disable, setBiometricEnabled, setSession]);
 
   return { signInWithBiometric, loading, error, clearError: () => setError(null) };
 }
@@ -326,7 +324,8 @@ export function useManageBiometric() {
         setBiometricEnabled(true);
 
         if (options.redirectToFingerprint !== false) {
-          router.replace(ROUTES.AUTH.FINGERPRINT);
+          const dest = result.data.user.role === 'owner' ? ROUTES.DASHBOARD : ROUTES.STOCK;
+          router.replace(dest as any);
         }
         return true;
       } catch (err) {

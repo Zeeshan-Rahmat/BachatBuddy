@@ -9,6 +9,7 @@ import { ROUTES } from '@/src/constants/routes';
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 export default function NewPasswordScreen() {
     const { email } = useLocalSearchParams<{ email: string }>();
@@ -43,43 +44,52 @@ export default function NewPasswordScreen() {
 
     return (
         <GradientBackground>
-            <Wrapper>
+            <KeyboardAwareScrollView
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    justifyContent: 'center',
+                }}
+                enableOnAndroid
+                keyboardShouldPersistTaps="handled"
+            >
+                <Wrapper>
 
-                <Title text='Create New Password' />
+                    <Title text='Create New Password' />
 
-                <InputText
-                    icon={<IconWrapper name={ICONS.AUTH.password} />}
-                    activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
-                    placeholder="New Password"
-                    value={password}
-                    onChangeText={(text) => { setPassword(text); setErrors(e => ({ ...e, password: '' })); }}
-                    secureTextEntry={!showPassword}
-                    rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
-                    activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
-                    onRightIconPress={() => setShowPassword(!showPassword)}
-                    error={errors.password}
-                />
+                    <InputText
+                        icon={<IconWrapper name={ICONS.AUTH.password} />}
+                        activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
+                        placeholder="New Password"
+                        value={password}
+                        onChangeText={(text) => { setPassword(text); setErrors(e => ({ ...e, password: '' })); }}
+                        secureTextEntry={!showPassword}
+                        rightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                        activeRightIcon={<IconWrapper name={showPassword ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
+                        onRightIconPress={() => setShowPassword(!showPassword)}
+                        error={errors.password}
+                    />
 
-                <InputText
-                    icon={<IconWrapper name={ICONS.AUTH.password} />}
-                    activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
-                    placeholder="Confirm New Password"
-                    value={confirmPassword}
-                    onChangeText={(text) => { setConfirmPassword(text); setErrors(e => ({ ...e, confirm: '' })); }}
-                    secureTextEntry={!showConfirm}
-                    rightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
-                    activeRightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
-                    onRightIconPress={() => setShowConfirm(!showConfirm)}
-                    error={errors.confirm}
-                />
+                    <InputText
+                        icon={<IconWrapper name={ICONS.AUTH.password} />}
+                        activeIcon={<IconWrapper name={ICONS.AUTH.activePassword} />}
+                        placeholder="Confirm New Password"
+                        value={confirmPassword}
+                        onChangeText={(text) => { setConfirmPassword(text); setErrors(e => ({ ...e, confirm: '' })); }}
+                        secureTextEntry={!showConfirm}
+                        rightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.show : ICONS.AUTH.hide} />}
+                        activeRightIcon={<IconWrapper name={showConfirm ? ICONS.AUTH.activeShow : ICONS.AUTH.activeHide} />}
+                        onRightIconPress={() => setShowConfirm(!showConfirm)}
+                        error={errors.confirm}
+                    />
 
-                <Button
-                    label="Update Password"
-                    onPress={handleSubmit}
-                    loading={loading}
-                />
+                    <Button
+                        label="Update Password"
+                        onPress={handleSubmit}
+                        loading={loading}
+                    />
 
-            </Wrapper>
+                </Wrapper>
+            </KeyboardAwareScrollView>
         </GradientBackground>
     );
 }
