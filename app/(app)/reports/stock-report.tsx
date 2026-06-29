@@ -3,16 +3,15 @@ import CustomPieChart from '@/src/components/report/CustomPieChart'
 import MultiLineChart from '@/src/components/report/MultiLineChart'
 import RankItemCard from '@/src/components/report/RankItemCard'
 import ReportCard from '@/src/components/report/ReportCard'
-import { addedStockData, soldStockData, stockStatusDonutData } from '@/src/constants/giftedChart'
 import { ICONS } from '@/src/constants/icons'
 import { COLORS } from '@/src/constants/theme'
-import { mockProducts } from '@/src/lib/sampleData'
+import { getStockReportData, type StockReportData } from '@/src/db/repositories/reportsRepository'
 import { LegendPieChartType, ProductRankingType, ReportFilterType, TimePeriodType } from '@/src/types/appTypes'
 import { calculateChartScale } from '@/src/Utility/calculateChartScale'
-import { convertProductsToBarChartData } from '@/src/Utility/convertProductsToBarChartData'
-import { getTopBottomProducts } from '@/src/Utility/getTopBottomProducts'
-import React, { useMemo, useState } from 'react'
-import { View } from 'react-native'
+import { calculateMultiLineChartScale } from '@/src/Utility/calculateMultiLineChartScale'
+import { useFocusEffect } from 'expo-router'
+import React, { useCallback, useState } from 'react'
+import { ActivityIndicator, Alert, Text, View } from 'react-native'
 
 const StockReport = () => {
 
@@ -21,6 +20,27 @@ const StockReport = () => {
 
     const [stockOverviewTimePeriod, setStockOverviewTimePeriod] = useState<TimePeriodType>('Monthly');
     const [productOverviewRank, setProductOverviewRank] = useState<ProductRankingType>('Top 5');
+    const [reportData, setReportData] = useState<StockReportData | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const loadReportData = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            const data = await getStockReportData(stockOverviewTimePeriod, productOverviewRank);
+            setReportData(data);
+        } catch {
+            Alert.alert('Load failed', 'Unable to load stock reports from local storage.');
+        } finally {
+            setLoading(false);
+        }
+    }, [productOverviewRank, stockOverviewTimePeriod]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadReportData();
+        }, [loadReportData])
+    );
 
     const stockOverviewFilter: ReportFilterType = {
         value: stockOverviewTimePeriod,
@@ -55,34 +75,21 @@ const StockReport = () => {
 
 
     {/* Stock Status Labels */ }
-    const stockStatusLabels: LegendPieChartType[] = [
+    const stockStatusLabels: LegendPieChartType[] = reportData?.stockStatusLabels ?? [
         { color: "bg-success", label: "In Stock", value: "145" },
         { color: "bg-warning", label: "Low Stock", value: "42" },
         { color: "bg-danger", label: "Out of Stock", value: "18" }
     ]
 
-
-    {/* Product Overview Data */ }
-    const rankedProducts = useMemo(() => {
-        return getTopBottomProducts({
-            products: mockProducts,
-            type: productOverviewRank.split(' ')[0] === "Top" ? 'top' : 'bottom',
-            limit: productOverviewRank.split(' ')[1] === "5" ? 5 : 10,
-        });
-
-    }, [mockProducts, productOverviewRank]);
-
-    const productsChartData = useMemo(() => {
-        return convertProductsToBarChartData({
-            products: rankedProducts,
-            metric: 'sold_stock',
-            barColor: COLORS.primaryGreen
-        });
-
-    }, [rankedProducts]);
+    const addedStockData = reportData?.addedStockData ?? [];
+    const soldStockData = reportData?.soldStockData ?? [];
+    const stockStatusDonutData = reportData?.stockStatusPieData ?? [];
+    const rankedProducts = reportData?.rankedProducts ?? [];
+    const productsChartData = reportData?.productsChartData ?? [];
 
     return (
         <View>
+            {loading && !reportData && <ActivityIndicator className='my-8' />}
 
             {/* Stock Overview */}
             <ReportCard title="STOCK OVERVIEW" hasFilter={stockOverviewFilter}>
@@ -90,6 +97,7 @@ const StockReport = () => {
                     firstLineData={addedStockData}
                     secondLineData={soldStockData}
                     legendData={stockOverviewLabels}
+                    chartScale={calculateMultiLineChartScale([addedStockData, soldStockData], 10)}
                 />
             </ReportCard>
 
@@ -108,7 +116,7 @@ const StockReport = () => {
 
             <View>
                 {
-                    rankedProducts &&
+                    rankedProducts.length > 0 ?
                     rankedProducts.map((item) => {
                         return (
                             <RankItemCard
@@ -118,7 +126,8 @@ const StockReport = () => {
                                 isProduct
                             />
                         )
-                    })
+                    }) :
+                        <Text className='text-center text-dark-50 mb-4'>No product report data found</Text>
                 }
             </View>
         </View>

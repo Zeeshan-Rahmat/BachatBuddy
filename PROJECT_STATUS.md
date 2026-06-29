@@ -143,13 +143,23 @@ Main Files:
 
 ## Reports
 
-Status: In Progress
+Status: Completed
 
 Description:
-Report screens and chart components exist for stock, sales, and party reports. Reports currently rely on local utilities/sample data patterns, not a complete SQLite reporting layer.
+Report screens and chart components are backed by SQLite queries for stock, sales, and party analytics. Report tabs load from local SQLite through a typed repository, refresh on focus/filter changes, and no longer depend on sample chart constants or mock product/customer/supplier data.
+
+Completed Updates:
+- Added `src/db/repositories/reportsRepository.ts` for SQLite-backed report data aggregation and typed chart/ranking payloads.
+- Wired sales reports to local invoice and invoice item rows for sales overview, payment status, revenue, and profit charts.
+- Wired stock reports to local product and invoice item rows for added stock, sold stock, stock status, and product ranking charts.
+- Wired party reports to local customer and supplier rows for customer growth, customer purchase/due rankings, and supplier value rankings.
+- Kept report filtering local-first by recalculating SQLite-backed datasets for daily, weekly, monthly, yearly, and ranking dropdown changes.
+- Added report loading/error/empty states so empty local databases show safe UI instead of mock report data.
+- Fixed supplier overview ranking so the supplier rank dropdown controls supplier data instead of reusing the customer rank filter.
 
 Main Files:
 - `app/(app)/reports`
+- `src/db/repositories/reportsRepository.ts`
 - `src/components/report`
 - `src/Utility`
 - `react-native-gifted-charts`
@@ -413,6 +423,7 @@ Main Files:
   - `suppliersRepository`: relation-backed supplier listing plus local-first supplier create/update/pending-delete and employee approval queue writes.
   - `employeesRepository`: business-scoped employee listing/detail plus local-first employee user create/update/pending-delete and sync queue rows targeting Supabase `public.employees`.
   - `invoicesRepository`: local-first invoice create/update/delete flows with invoice item writes, product stock mutation transactions, customer due updates, and sync queue recovery rows.
+  - `reportsRepository`: SQLite-backed stock, sales, and party report aggregation for chart datasets, status pies, and ranked lists.
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
 - App data provider: `src/components/providers/AppDataProvider.tsx` initializes SQLite, enqueues existing local media uploads, and starts/stops the background sync queue processor.
@@ -450,7 +461,7 @@ Main Files:
 - ✅ Startup backfill for existing local image URIs
 - ✅ Immediate sync wake-up after local queue writes
 - ✅ React Native local image upload fix for Supabase Storage sync
-- ⏳ Reports backed by SQLite queries
+- ✅ Reports backed by SQLite queries
 - ⏳ Backup and restore backend
 - ⏳ Approval workflow
 
@@ -461,7 +472,7 @@ Main Files:
 - Complete employee approval workflow UI and local approval-state handling around `staging_review_queue`.
 - Add local-first create/update repositories for ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
-- Wire dashboard and reports screens to SQLite repositories.
+- Wire dashboard screens to SQLite repositories.
 - Extend invoice transactions with ledger/payment entries after ledger and payment schema tables exist.
 - Persist saved-invoice customer/product edits with stock difference reconciliation and sync queue rows.
 - Add backup/restore implementation.
@@ -475,7 +486,7 @@ Main Files:
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
 - Sync queue processor exists and now wakes immediately after local queue writes, but conflict resolution, online/offline network detection, stale `processing` row recovery, and stricter business-scoped Supabase Storage access still need to be completed.
-- Product, invoice, and party screens are local-first, but dashboard, reports, ledger, and payment modules do not yet have completed SQLite-backed flows.
+- Product, invoice, party, and report screens are local-first, but dashboard, ledger, and payment modules do not yet have completed SQLite-backed flows.
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
 - Supabase media upload sync depends on the `bachatbuddy-media` bucket and policies from `supabase/bachatbuddy_setup.sql`; remote image upload will fail and retry if that SQL has not been applied, including the current MIME list for JPEG/PNG/WebP/GIF/HEIC/HEIF.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.

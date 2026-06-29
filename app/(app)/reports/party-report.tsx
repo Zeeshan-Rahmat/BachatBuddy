@@ -2,17 +2,13 @@ import CustomBarChart from '@/src/components/report/CustomBarChart'
 import CustomLineChart from '@/src/components/report/CustomLineChart'
 import RankItemCard from '@/src/components/report/RankItemCard'
 import ReportCard from '@/src/components/report/ReportCard'
-import { newCustomersData } from '@/src/constants/giftedChart'
 import { ICONS } from '@/src/constants/icons'
-import { COLORS } from '@/src/constants/theme'
-import { mockCustomers, mockSuppliers } from '@/src/lib/sampleData'
+import { getPartyReportData, type PartyReportData } from '@/src/db/repositories/reportsRepository'
 import { ProductRankingType, ReportFilterType, TimePeriodType } from '@/src/types/appTypes'
 import { calculateChartScale } from '@/src/Utility/calculateChartScale'
-import { convertCustomersToGroupedBarData } from '@/src/Utility/convertCustomersToGroupedBarData'
-import { convertSuppliersToBarChartData } from '@/src/Utility/convertSuppliersToBarChartData'
-import { getTopBottomParties } from '@/src/Utility/getTopBottomParties'
-import React, { useMemo, useState } from 'react'
-import { View } from 'react-native'
+import { useFocusEffect } from 'expo-router'
+import React, { useCallback, useState } from 'react'
+import { ActivityIndicator, Alert, Text, View } from 'react-native'
 
 const PartyReport = () => {
 
@@ -22,6 +18,27 @@ const PartyReport = () => {
     const [customerGrowthTimePeriod, setCustomerGrowthTimePeriod] = useState<TimePeriodType>('Monthly');
     const [customerOverviewRank, setCustomerOverviewRank] = useState<ProductRankingType>('Top 5');
     const [supplierOverviewRank, setSupplierOverviewRank] = useState<ProductRankingType>('Top 5');
+    const [reportData, setReportData] = useState<PartyReportData | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const loadReportData = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            const data = await getPartyReportData(customerGrowthTimePeriod, customerOverviewRank, supplierOverviewRank);
+            setReportData(data);
+        } catch {
+            Alert.alert('Load failed', 'Unable to load party reports from local storage.');
+        } finally {
+            setLoading(false);
+        }
+    }, [customerGrowthTimePeriod, customerOverviewRank, supplierOverviewRank]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadReportData();
+        }, [loadReportData])
+    );
 
     const salesFilter: ReportFilterType = {
         value: customerGrowthTimePeriod,
@@ -49,48 +66,16 @@ const PartyReport = () => {
     }
 
 
-    {/* Customer Overview Data */ }
-    const rankedCustomers = useMemo(() => {
-        return getTopBottomParties({
-            parties: mockCustomers,
-            type: customerOverviewRank.split(' ')[0] === "Top" ? 'top' : 'bottom',
-            limit: customerOverviewRank.split(' ')[1] === "5" ? 5 : 10,
-            metric: 'total_purchases',
-        });
-
-    }, [mockCustomers, customerOverviewRank]);
-
-    const customersGroupedBarChartData = useMemo(() => {
-        return convertCustomersToGroupedBarData({
-            customers: rankedCustomers,
-            spendingColor: COLORS.primaryGreen,
-            duesColor: COLORS.warning,
-        });
-
-    }, [rankedCustomers]);
-
-
-    {/* Customer Overview Data */ }
-    const rankedSuppliers = useMemo(() => {
-        return getTopBottomParties({
-            parties: mockSuppliers,
-            type: customerOverviewRank.split(' ')[0] === "Top" ? 'top' : 'bottom',
-            limit: customerOverviewRank.split(' ')[1] === "5" ? 5 : 10,
-            metric: 'total_supply_value',
-        });
-
-    }, [mockSuppliers, supplierOverviewRank]);
-
-    const suppliersGroupedBarChartData = useMemo(() => {
-        return convertSuppliersToBarChartData({
-            suppliers: rankedSuppliers,
-            barColor: COLORS.primaryGreen,
-        });
-
-    }, [rankedSuppliers]);
+    const newCustomersData = reportData?.customerGrowthData ?? [];
+    const rankedCustomers = reportData?.rankedCustomers ?? [];
+    const customersGroupedBarChartData = reportData?.customersChartData ?? [];
+    const rankedSuppliers = reportData?.rankedSuppliers ?? [];
+    const suppliersGroupedBarChartData = reportData?.suppliersChartData ?? [];
 
     return (
         <View>
+            {loading && !reportData && <ActivityIndicator className='my-8' />}
+
             {/* Customer Growth */}
             <ReportCard title="CUSTOMER GROWTH" hasFilter={salesFilter}>
                 <CustomLineChart firstLineData={newCustomersData} chartScale={calculateChartScale(newCustomersData, 5)} />
@@ -106,7 +91,7 @@ const PartyReport = () => {
 
             <View className='mb-2'>
                 {
-                    rankedCustomers &&
+                    rankedCustomers.length > 0 ?
                     rankedCustomers.map((item) => {
                         return (
                             <RankItemCard
@@ -116,7 +101,8 @@ const PartyReport = () => {
                                 isCustomer
                             />
                         )
-                    })
+                    }) :
+                        <Text className='text-center text-dark-50 mb-4'>No customer report data found</Text>
                 }
             </View>
 
@@ -130,7 +116,7 @@ const PartyReport = () => {
 
             <View>
                 {
-                    rankedSuppliers &&
+                    rankedSuppliers.length > 0 ?
                     rankedSuppliers.map((item) => {
                         return (
                             <RankItemCard
@@ -140,7 +126,8 @@ const PartyReport = () => {
                                 isSupplier
                             />
                         )
-                    })
+                    }) :
+                        <Text className='text-center text-dark-50 mb-4'>No supplier report data found</Text>
                 }
             </View>
 
