@@ -32,7 +32,7 @@
 Status: In Progress
 
 Description:
-Auth screens are implemented. Supabase Auth is used for sign-up, sign-in, OTP, password reset, sign-out, and session refresh. Local session/profile persistence exists through SQLite. App launch now requires a fresh unlock before protected business data is shown: if a valid biometric credential exists the splash routes to fingerprint, otherwise it routes to sign-in. Profile creation writes to SQLite and `sync_queue` first, then inserts/updates the matching Supabase `public.users` profile row. Supabase profile rows are now confirmed working with the committed setup SQL. Owner profiles use `business_id = user id`, avoiding a separate business id while still allowing future employee grouping. Drawer logout is wired to the shared sign-out flow and clears the active local session before returning to sign-in.
+Auth screens are implemented. Supabase Auth is used for owner sign-up, owner sign-in, OTP, password reset, sign-out, and session refresh. The sign-in form now accepts a single email-or-username identifier plus password; it no longer asks the user to choose a role. Role is resolved from the saved profile and then drives routing/RBAC. Local employee records can sign in from SQLite with email or username, even when no separate username was assigned. Local session/profile persistence exists through SQLite. App launch now requires a fresh unlock before protected business data is shown: if a valid biometric credential exists the splash routes to fingerprint, otherwise it routes to sign-in. Profile creation writes to SQLite and `sync_queue` first, then inserts/updates the matching Supabase `public.users` profile row. Supabase profile rows are now confirmed working with the committed setup SQL. Owner profiles use `business_id = user id`, avoiding a separate business id while still allowing future employee grouping. Drawer logout is wired to the shared sign-out flow and clears the active local session before returning to sign-in.
 
 Main Files:
 - `app/(auth)`
@@ -50,7 +50,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Biometric credential storage and authentication are implemented through Expo Local Authentication and SecureStore. Tokens and expiry are stored for biometric re-auth; passwords are never stored. The startup/sign-in routing now distinguishes between enabled biometrics and a valid saved biometric credential: app launch opens fingerprint only when a usable credential exists; otherwise it opens sign-in. The sign-in screen's `use Touch ID` action opens fingerprint when a valid credential exists, or `manage-fingerprint` when setup is missing. Expired, malformed, or stale biometric credentials are rejected and cleared so the next Touch ID attempt routes to setup. Biometric unlock restores the local SQLite session immediately and refreshes Supabase tokens/profile in the background to keep login fast and local-first.
+Biometric credential storage and authentication are implemented through Expo Local Authentication and SecureStore. Tokens and expiry are stored for biometric re-auth; passwords are never stored. The startup/sign-in routing now distinguishes between enabled biometrics and a valid saved biometric credential: app launch opens fingerprint only when a usable credential exists; otherwise it opens sign-in. The sign-in screen's `use Touch ID` action opens fingerprint when a valid credential exists, or `manage-fingerprint` when setup is missing. Touch ID setup now uses email-or-username plus password and infers the role from the authenticated profile. Expired, malformed, or stale biometric credentials are rejected and cleared so the next Touch ID attempt routes to setup. Biometric unlock restores the local SQLite session immediately and refreshes Supabase tokens/profile in the background to keep login fast and local-first. Local-only employee sessions are not enabled for Touch ID setup yet because biometric restore currently expects cloud auth tokens.
 
 Main Files:
 - `app/(auth)/fingerprint.tsx`
@@ -439,6 +439,7 @@ Main Files:
 - ✅ Fast local-first biometric unlock with background token/profile refresh
 - ✅ Drawer logout confirmation wired to sign-out
 - ✅ Keyboard-aware auth forms
+- ✅ Email-or-username password sign-in with role inferred from the saved profile
 - ✅ Profile/business profile backend integration
 - ✅ Sync queue processor
 - ✅ Inventory screens backed fully by SQLite
@@ -501,6 +502,7 @@ Main Files:
 - Business logos are stored as a dedicated local user/business profile field (`businessLogo` locally, `business_logo` in SQLite/Supabase payloads) so invoice generation can reference the logo independently from the user avatar.
 - Picked images remain local SQLite values for immediate offline use; sync uploads `img` and `business_logo` values to Supabase Storage and sends public Storage URLs in Supabase row/approval payloads.
 - Biometric login stores tokens and expiry in SecureStore, never passwords, and uses those tokens only after device biometric authentication succeeds.
+- Password sign-in uses one email-or-username identifier. The UI never asks the user to choose a role; role comes from the SQLite/Supabase profile. Local employee records can sign in from SQLite by email or username, including employees whose username is effectively absent or email-derived.
 - App launch does not auto-restore the previous SQLite session into authenticated Zustand state. It initializes SQLite/biometric state, then requires password sign-in or fingerprint unlock before protected routes can be used.
 - Biometric credentials must be valid, non-expired, and structurally complete to count as setup. Stale SecureStore flags are cleared when no usable credential exists.
 - Biometric unlock is local-first: it restores the SQLite session immediately from saved secure credentials, routes into the app, and refreshes Supabase tokens/profile in the background.

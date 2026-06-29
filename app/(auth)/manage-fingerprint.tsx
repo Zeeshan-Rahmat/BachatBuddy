@@ -1,7 +1,6 @@
 import GradientBackground from '@/src/components/auth/GradientBackground';
 import InputText from '@/src/components/common/InputText';
 import TextButton from '@/src/components/common/TextButton';
-import ValueSelect from '@/src/components/common/ValueSelect';
 import Button from '@components/common/Button';
 import IconWrapper from '@components/common/IconWrapper';
 import Wrapper from '@components/common/Wrapper';
@@ -11,7 +10,6 @@ import Title from '@/src/components/common/Title';
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
 import { useManageBiometric } from '@/src/hooks/auth/useAuth';
-import type { UserRole } from '@/src/types/auth';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
@@ -19,15 +17,12 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 
 export default function ManageFingerprintScreen() {
     const { enableBiometric, loading, error, clearError } = useManageBiometric();
-    const [username, setUsername] = useState('');
-    const [role, setRole] = useState('');
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const ROLES = ['Owner', 'Employee'];
-
     const handleSignIn = async () => {
-        await enableBiometric(username, role.toLowerCase() as UserRole, password);
+        await enableBiometric(identifier, password);
     };
 
     useEffect(() => {
@@ -63,12 +58,11 @@ export default function ManageFingerprintScreen() {
                     <InputText
                         icon={<IconWrapper name={ICONS.AUTH.user} />}
                         activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
-                        placeholder="Enter your username"
-                        value={username}
-                        onChangeText={setUsername}
+                        placeholder="Email or username"
+                        value={identifier}
+                        onChangeText={setIdentifier}
+                        keyboardType="email-address"
                     />
-
-                    <ValueSelect icon={<IconWrapper name={ICONS.AUTH.role} />} rightIcon={<IconWrapper name={ICONS.AUTH.dropdown} />} values={ROLES} value={role} onChange={setRole} />
 
                     <InputText
                         icon={<IconWrapper name={ICONS.AUTH.password} />}

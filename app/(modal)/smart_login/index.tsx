@@ -5,13 +5,11 @@ import PaddingWrapper from '@/src/components/common/PaddingWrapper'
 import Subtitle from '@/src/components/common/Subtitle'
 import TextButton from '@/src/components/common/TextButton'
 import Title from '@/src/components/common/Title'
-import ValueSelect from '@/src/components/common/ValueSelect'
 import ScreenWrapper from '@/src/components/layout/ScreenWrapper'
 import { ICONS } from '@/src/constants/icons'
 import { ROUTES } from '@/src/constants/routes'
 import { COLORS } from '@/src/constants/theme'
 import { useManageBiometric } from '@/src/hooks/auth/useAuth'
-import type { UserRole } from '@/src/types/auth'
 import { router } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { Alert } from 'react-native'
@@ -23,23 +21,18 @@ const SmartLoginScreen = () => {
 
     const [isOpen, setIsOpen] = useState(false)
 
-    const [username, setUsername] = useState('');
-    const [role, setRole] = useState('');
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
     const [errors, setErrors] = useState({
-        username: '', role: '', password: '',
+        identifier: '', password: '',
     });
 
-
-    const ROLES = ['Owner', 'Employee'];
-
     const validate = () => {
-        const e = { username: '', role: '', password: '' };
+        const e = { identifier: '', password: '' };
         let valid = true;
-        if (!username.trim()) { e.username = 'Username is required'; valid = false; }
-        if (!role.trim()) { e.role = 'Role is required'; valid = false; }
+        if (!identifier.trim()) { e.identifier = 'Email or username is required'; valid = false; }
         if (!password) { e.password = 'Password is required'; valid = false; }
         setErrors(e);
         return valid;
@@ -47,7 +40,7 @@ const SmartLoginScreen = () => {
 
     const handleSignIn = async () => {
         if (!validate()) return;
-        const enabled = await enableBiometric(username, role.toLowerCase() as UserRole, password, {
+        const enabled = await enableBiometric(identifier, password, {
             redirectToFingerprint: false,
         });
         if (enabled) {
@@ -87,20 +80,12 @@ const SmartLoginScreen = () => {
                 <InputText
                     icon={<IconWrapper name={ICONS.AUTH.user} />}
                     activeIcon={<IconWrapper name={ICONS.AUTH.activeUser} />}
-                    placeholder="Enter your username"
-                    value={username}
-                    onChangeText={setUsername}
+                    placeholder="Email or username"
+                    value={identifier}
+                    onChangeText={(t) => { setIdentifier(t); setErrors(e => ({ ...e, identifier: '' })); }}
+                    keyboardType="email-address"
                     bgColor={COLORS.white}
-                    error={errors.username}
-                />
-
-                <ValueSelect
-                    icon={<IconWrapper name={ICONS.AUTH.role} />}
-                    rightIcon={<IconWrapper name={ICONS.AUTH.dropdown} />}
-                    values={ROLES} value={role}
-                    onChange={setRole}
-                    bgColor={COLORS.white}
-                    error={errors.role}
+                    error={errors.identifier}
                 />
 
                 <InputText

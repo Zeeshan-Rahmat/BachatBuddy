@@ -175,6 +175,21 @@ function buildUserProfile(
   };
 }
 
+function buildLocalOnlySession(user: User): AuthSession {
+  const expiresAt = Date.now() + 12 * 60 * 60_000;
+
+  return {
+    access_token: `local:${user.id}:${expiresAt}`,
+    refresh_token: `local-refresh:${user.id}:${expiresAt}`,
+    expires_at: expiresAt,
+    user,
+  };
+}
+
+function passwordMatchesLocalRecord(password: string, passwordHash: string | null): boolean {
+  return Boolean(passwordHash) && password === passwordHash;
+}
+
 async function upsertRemoteUserProfile(user: User): Promise<string | null> {
   const { error } = await supabase
     .from('users')
@@ -492,29 +507,50 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<AuthResult<AuthS
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. SIGN IN — auth.md §1
-// Uses the get_email_by_username RPC to resolve username → email first.
+// Accepts email or username. The saved profile decides the account role.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function signIn(input: SignInInput): Promise<AuthResult<AuthSession>> {
   try {
-    // Step 1 — resolve email from username via Postgres RPC
-    const normalizedLogin = input.username.trim().toLowerCase();
-    const normalizedRole = input.role.toLowerCase() as UserRole;
+    // Step 1: resolve the login identifier.
+    const normalizedLogin = input.identifier.trim().toLowerCase();
+
+    if (!normalizedLogin || !input.password.trim()) {
+      return {
+        success: false,
+        error: 'Please enter your email or username and password.',
+        code: 'validation_error',
+      };
+    }
+
     const localUser = await usersRepository.findByUsernameOrEmail(normalizedLogin);
+
+    if (localUser?.role === 'employee') {
+      if (!passwordMatchesLocalRecord(input.password, localUser.passwordHash)) {
+        return { success: false, error: 'Incorrect email, username, or password.', code: 'invalid_credentials' };
+      }
+
+      return { success: true, data: buildLocalOnlySession(localUser) };
+    }
+
     let email = localUser?.email ?? null;
 
     if (!email) {
-      const { data: rpcData, error: rpcError } = await supabase.rpc('get_email_by_username', {
-        p_username: normalizedLogin,
-      });
+      if (normalizedLogin.includes('@')) {
+        email = normalizedLogin;
+      } else {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_email_by_username', {
+          p_username: normalizedLogin,
+        });
 
-      if (rpcError || !rpcData) {
-        return { success: false, error: 'User not found.', code: 'user_not_found' };
+        if (rpcError || !rpcData) {
+          return { success: false, error: 'User not found.', code: 'user_not_found' };
+        }
+
+        email = rpcData as string;
       }
-
-      email = rpcData as string;
     }
 
-    // Step 2 — authenticate with Supabase
+    // Step 2: authenticate owner profiles with Supabase Auth.
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password: input.password,
@@ -528,7 +564,7 @@ export async function signIn(input: SignInInput): Promise<AuthResult<AuthSession
       return { success: false, error: 'Authentication failed.', code: 'unknown_error' };
     }
 
-    // Step 3 — fetch profile row to confirm role matches what was selected
+    // Step 3: fetch the profile row. Its role drives navigation and RBAC.
     const { data: profileRow, error: profileError } = await supabase
       .from('users')
       .select('id, business_id, business_name, name, phone, business_phone, email, business_email, role, username, password_hash, status, biometric_enabled, address, business_address, img, sync_status, updated_at, created_at')
@@ -538,14 +574,6 @@ export async function signIn(input: SignInInput): Promise<AuthResult<AuthSession
     if (profileError || !profileRow) {
       if (!localUser || localUser.id !== data.user.id) {
         return { success: false, error: 'Profile not found.', code: 'user_not_found' };
-      }
-
-      if (localUser.role !== normalizedRole) {
-        return {
-          success: false,
-          error: `This account is registered as "${localUser.role}", not "${normalizedRole}".`,
-          code: 'role_mismatch',
-        };
       }
 
       const remoteError = await upsertRemoteUserProfile(localUser);
@@ -567,15 +595,6 @@ export async function signIn(input: SignInInput): Promise<AuthResult<AuthSession
     }
 
     const remoteProfile = profileRow as RemoteUserRow;
-
-    if (remoteProfile.role !== normalizedRole) {
-      return {
-        success: false,
-        error: `This account is registered as "${remoteProfile.role}", not "${normalizedRole}".`,
-        code: 'role_mismatch',
-      };
-    }
-
     const profile = mapRemoteUserToLocal(remoteProfile);
     await usersRepository.upsertUser(profile);
 

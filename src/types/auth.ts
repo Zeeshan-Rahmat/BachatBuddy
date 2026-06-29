@@ -91,8 +91,7 @@ export interface AuthActions {
 // ─── Service Input / Output Types ────────────────────────────────────────────
 
 export interface SignInInput {
-    username: string;
-    role: UserRole;
+    identifier: string;
     password: string;
 }
 

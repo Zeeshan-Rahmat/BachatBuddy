@@ -15,7 +15,6 @@ import * as authService from '../../services/auth/authService';
 import * as sessionService from '../../services/sessionService';
 import { useAuthStore } from '../../store/authStore';
 import { useBiometricStore } from '../../store/biometricStore';
-import type { UserRole } from '../../types/auth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useSignIn — wire into sign-in.tsx
@@ -27,19 +26,17 @@ export function useSignIn() {
 
   const signIn = useCallback(
     async (
-      username: string,
-      role: UserRole,
-      password: string,
-      options: { redirectToFingerprint?: boolean } = {}
+      identifier: string,
+      password: string
     ) => {
-      if (!username.trim() || !role || !password) {
+      if (!identifier.trim() || !password) {
         setError('All fields are required.');
         return;
       }
       setLoading(true);
       setError(null);
 
-      const result = await authService.signIn({ username, role, password });
+      const result = await authService.signIn({ identifier, password });
 
       if (!result.success) {
         setError(result.error);
@@ -281,12 +278,11 @@ export function useManageBiometric() {
 
   const enableBiometric = useCallback(
     async (
-      username: string,
-      role: UserRole,
+      identifier: string,
       password: string,
       options: { redirectToFingerprint?: boolean } = {}
     ) => {
-      if (!username || !role || !password) {
+      if (!identifier || !password) {
         setError('All fields are required.');
         return false;
       }
@@ -294,11 +290,15 @@ export function useManageBiometric() {
       setError(null);
 
       try {
-        const normalizedRole = role.toLowerCase() as UserRole;
-        const result = await authService.signIn({ username, role: normalizedRole, password });
+        const result = await authService.signIn({ identifier, password });
 
         if (!result.success) {
           setError(result.error);
+          return false;
+        }
+
+        if (result.data.access_token.startsWith('local:')) {
+          setError('Touch ID setup is only available for cloud-authenticated accounts.');
           return false;
         }
 
