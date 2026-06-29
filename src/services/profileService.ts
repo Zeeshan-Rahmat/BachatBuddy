@@ -11,6 +11,7 @@ import {
   mapRemoteUserToLocal,
   type RemoteUserRow,
 } from './userProfileMapper';
+import { prepareRemotePayloadMedia } from './mediaStorageService';
 
 // ─── Fetch profile from Supabase (cloud) ─────────────────────────────────────
 export async function fetchRemoteUser(userId: string): Promise<AuthResult<User>> {
@@ -56,15 +57,25 @@ export async function updateUser(
   try {
     const updatedUser = await usersRepository.updateProfile(userId, updates);
 
-    void supabase
-      .from('users')
-      .update(mapLocalUserToRemoteUpdate(updatedUser))
-      .eq('id', userId)
-      .then(({ error }) => {
-        if (error) {
-          console.warn('[Profile] Queued profile update for later sync:', error.message);
-        }
-      });
+    void (async () => {
+      const remoteUpdate = await prepareRemotePayloadMedia(
+        'users',
+        userId,
+        mapLocalUserToRemoteUpdate(updatedUser)
+      );
+
+      const { error } = await supabase
+        .from('users')
+        .update(remoteUpdate)
+        .eq('id', userId);
+
+      if (error) {
+        console.warn('[Profile] Queued profile update for later sync:', error.message);
+      }
+    })().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn('[Profile] Queued profile image update for later sync:', message);
+    });
 
     return { success: true, data: updatedUser };
   } catch (err) {

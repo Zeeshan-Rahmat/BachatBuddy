@@ -14,7 +14,7 @@
 - `app/(modal)/`: Modal flows for profile, notifications, backup/restore, business profile, export, smart login, invoice customization, logout, and password changes.
 - `src/components/`: Reusable UI, layout, auth, dashboard, report, modal, menu, notification, and invoice components.
 - `src/db/`: Local SQLite client, Drizzle schema, manual migrations, and repositories.
-- `src/services/`: Auth, session, profile, invoice PDF/viewer, and user profile mapping services.
+- `src/services/`: Auth, session, profile, media storage, invoice PDF/viewer, and user profile mapping services.
 - `src/store/`: Zustand stores and local secure storage helpers.
 - `src/hooks/`: Session, drawer, and auth workflow hooks.
 - `src/lib/`: Supabase client, secure storage helper, and sample data.
@@ -117,7 +117,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Invoice list, add, detail, product/customer/subtotal editing, filtering, and invoice detail amount/date/image edits are backed by SQLite. Invoice creation writes the invoice, invoice items, product stock decrements, customer purchase/due updates, and sync queue rows inside one local transaction before the UI returns to the invoice list. Invoice deletion marks the invoice/items pending delete and restores product stock in the same local transaction. Add-invoice draft detail edits update local draft state until the full invoice is saved. Invoice PDF and invoice viewer services exist.
+Invoice list, add, detail, filtering, add-invoice customer/product/subtotal editing, and saved-invoice amount/date/image edits are backed by SQLite. Invoice creation writes the invoice, invoice items, product stock decrements, customer purchase/due updates, and sync queue rows inside one local transaction before the UI returns to the invoice list. Invoice deletion marks the invoice/items pending delete and restores product stock in the same local transaction. Add-invoice draft detail edits update local draft state until the full invoice is saved. Invoice PDF and invoice viewer services exist.
 
 Completed Updates:
 - Added `src/db/repositories/invoicesRepository.ts` for relation-backed invoice listing/detail lookup, local-first invoice creation, invoice detail/amount updates, and pending-delete handling.
@@ -127,6 +127,7 @@ Completed Updates:
 - Replaced sales list/detail sample data with SQLite-backed invoice reads and mapped Drizzle rows into the current invoice UI model.
 - Replaced invoice product selection sample data with SQLite products and quantity/price draft updates.
 - Fixed add-invoice due date/image edits so unsaved `INV-PENDING` drafts update local draft state instead of calling SQLite with an empty invoice id.
+- Clarified that add-invoice drafts keep `invoice_id = ""` and `invoice_number = "INV-PENDING"` until the user presses SAVE; only the save transaction assigns `crypto.randomUUID()` and a persisted invoice number.
 
 Main Files:
 - `app/(app)/sale`
@@ -158,11 +159,29 @@ Main Files:
 Status: In Progress
 
 Description:
-Customer, supplier, employee, party detail, add, and filter screens exist. SQLite schema has customers and suppliers but no completed local-first repositories for customers, suppliers, employees, ledger entries, or payments.
+Customer, supplier, employee, party detail, add, edit, filter, pull-to-refresh, and delete flows are backed by SQLite. Customer and supplier actions write to their local tables first and enqueue recoverable `sync_queue` rows. Local employee actions use the existing SQLite `users` table with `role = 'employee'` and owner `business_id`; Supabase employee directory sync now writes those records to `public.employees` instead of `public.users`, because `public.users` is tied to Supabase Auth identities. Employee-triggered mutations use `pending_approval` plus `approval_request` queue rows. Ledger entries and payments are not implemented yet.
+
+Completed Updates:
+- Expanded `customersRepository` from list-only to typed local-first create/update/pending-delete APIs with queue rows and `pending_approval` support.
+- Expanded `suppliersRepository` from list-only to typed local-first create/update/pending-delete APIs with queue rows and `pending_approval` support.
+- Added `employeesRepository` for employee user rows, including business-scoped listing, detail lookup, local create/update/pending-delete, and sync queue writes.
+- Added Drizzle relations for customer/supplier `createdBy` and `lastUpdatedBy` users so party screens can load relation-backed SQLite data.
+- Added `src/services/parties/partyUiMapper.ts` to map Drizzle/local customer, supplier, and employee rows into the existing party UI types.
+- Replaced customer, supplier, and employee party screen sample data with SQLite repository reads, pull-to-refresh, empty/loading states, and local-first delete handling.
+- Wired add/edit customer, supplier, and employee modals to local-first repository mutations and immediate SQLite refresh callbacks.
+- Routed employee sync queue rows to Supabase `public.employees`, while keeping local reconciliation against SQLite `users` employee rows.
+- Added `public.employees` table, RLS policies, indexes, and timestamp trigger to `supabase/bachatbuddy_setup.sql`.
+- Fixed party detail modal avatars so saved customer, supplier, and employee images render from local `img` values instead of always falling back to initials.
 
 Main Files:
 - `app/(app)/parties`
 - `src/db/schema.ts`
+- `src/db/repositories/customersRepository.ts`
+- `src/db/repositories/suppliersRepository.ts`
+- `src/db/repositories/employeesRepository.ts`
+- `src/services/syncQueueProcessor.ts`
+- `src/services/parties/partyUiMapper.ts`
+- `supabase/bachatbuddy_setup.sql`
 - `src/components/common/ListItemCard.tsx`
 
 ## Profile And Business Profile
@@ -170,12 +189,13 @@ Main Files:
 Status: Completed
 
 Description:
-Profile and business profile modals are integrated with the local auth profile. Screens, drawer profile card, and app top bar render the current SQLite-backed user from the Zustand session cache instead of hardcoded values. Profile and business profile edits initialize from the saved local user, write updates to SQLite through `usersRepository.updateProfile`, enqueue a `sync_queue` update row, refresh the auth store immediately, and attempt a best-effort Supabase profile update while the full sync engine is still pending. Business profile now stores a dedicated `businessLogo`/`business_logo` image separate from the personal profile image so invoices can later use the business logo without overwriting the user avatar.
+Profile and business profile modals are integrated with the local auth profile. Screens, drawer profile card, and app top bar render the current SQLite-backed user from the Zustand session cache instead of hardcoded values. Profile and business profile edits initialize from the saved local user, write updates to SQLite through `usersRepository.updateProfile`, enqueue a `sync_queue` update row, refresh the auth store immediately, and attempt a best-effort Supabase profile update while the full sync engine is still pending. Business profile now stores a dedicated `businessLogo`/`business_logo` image separate from the personal profile image so invoices can later use the business logo without overwriting the user avatar. Best-effort profile cloud writes now upload local profile/business logo image URIs to Supabase Storage before updating the remote profile row.
 
 Main Files:
 - `app/(modal)/profile`
 - `app/(modal)/business_profile`
 - `src/services/profileService.ts`
+- `src/services/mediaStorageService.ts`
 - `src/db/repositories/usersRepository.ts`
 - `src/store/authStore.ts`
 - `src/components/layout/AppHeader.tsx`
@@ -221,17 +241,20 @@ Main Files:
 Status: In Progress
 
 Description:
-The `sync_queue` table, repository, and app-start background processor exist. The processor reads ready queued/failed rows FIFO, marks each row as `processing`, pushes insert/update/delete mutations to Supabase, sends approval requests to `staging_review_queue`, marks successfully pushed local rows as `synced`, removes locally deleted rows after remote delete succeeds, dequeues successful sync items, and records failed attempts with exponential retry backoff.
+The `sync_queue` table, repository, and app-start background processor exist. The processor reads ready queued/failed rows FIFO, marks each row as `processing`, uploads local image URIs in queued payloads to Supabase Storage, pushes insert/update/delete mutations to Supabase, sends approval requests to `staging_review_queue`, marks successfully pushed local rows as `synced`, removes locally deleted rows after remote delete succeeds, dequeues successful sync items, and records failed attempts with exponential retry backoff.
 
 Completed Updates:
 - Added `src/services/syncQueueProcessor.ts` for queue processing, Supabase mutation dispatch, approval request upload, local sync status reconciliation, and interval start/stop control.
 - Updated `src/db/repositories/syncQueueRepository.ts` to process FIFO, list retry-ready failed rows, mark rows as `processing`, requeue rows when needed, and store retry backoff metadata on failures.
 - Updated `src/components/providers/AppDataProvider.tsx` to start the sync queue processor after SQLite initialization and stop it on provider cleanup.
 - Added `supabase/bachatbuddy_setup.sql` with `public.users`, `staging_review_queue`, helper RPCs, and RLS policies aligned with the app payloads.
+- Added `src/services/mediaStorageService.ts` and sync-processor integration so `img` and `business_logo` local URIs are uploaded to Supabase Storage before remote row upserts or approval payload uploads.
 
 Main Files:
 - `src/db/repositories/syncQueueRepository.ts`
 - `src/services/syncQueueProcessor.ts`
+- `src/services/mediaStorageService.ts`
+- `src/services/mediaBackfillService.ts`
 - `src/components/providers/AppDataProvider.tsx`
 - `src/db/schema.ts`
 
@@ -240,7 +263,8 @@ Main Files:
 - Local database: Expo SQLite database named `bachatbuddy.db`.
 - ORM: Drizzle ORM with schema in `src/db/schema.ts`.
 - Cloud database: Supabase PostgreSQL, intended for auth, backup, sync, remote storage, notifications, and approvals.
-- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.staging_review_queue`, username lookup RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, and RLS policies.
+- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.employees`, business sync tables, `public.staging_review_queue`, username lookup RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, RLS policies, and the `bachatbuddy-media` Storage bucket/policies.
+- Supabase Storage: `bachatbuddy-media` stores synced application images. SQLite keeps local image URIs for immediate offline display; sync uploads those images and sends public Storage URLs in remote payloads.
 - Existing local tables: `users`, `auth_sessions`, `customers`, `suppliers`, `products`, `invoices`, `invoice_items`, `sync_queue`.
 - The `users` table includes `business_logo` for invoice-ready business branding, separate from the personal/profile `img` field.
 - Owner user rows use `business_id = id`; employee rows should use the owner's user id as `business_id` when employee management is implemented.
@@ -256,7 +280,7 @@ Main Files:
   - `invoice_items.invoice_id -> invoices.id`
   - `invoice_items.product_id -> products.id`
 - Migration status: Manual local SQLite migration exists in `src/db/migrations.ts`; Supabase setup SQL exists in `supabase/bachatbuddy_setup.sql`; no generated Drizzle migration files are committed for the current schema.
-- Missing local tables: employees, ledger entries, payments, staging approval mirror, backup metadata, and sync conflict metadata.
+- Missing standalone local tables: ledger entries, payments, staging approval mirror, backup metadata, and sync conflict metadata. Employees currently use local SQLite `users` rows with `role = 'employee'` and shared owner `business_id`, but sync to Supabase `public.employees`.
 
 # State Management
 
@@ -373,16 +397,21 @@ Main Files:
 - Auth service: `src/services/auth/authService.ts` handles Supabase Auth and local-first profile creation.
 - Session service: `src/services/sessionService.ts` saves, restores, refreshes, clears local sessions, restores sessions from biometric credentials, and keeps biometric tokens fresh after refresh.
 - Profile service: `src/services/profileService.ts` fetches remote profile data, maps it to local shape, and performs local-first profile updates.
+- Media storage service: `src/services/mediaStorageService.ts` uploads local image URIs from sync payloads to the `bachatbuddy-media` Supabase Storage bucket and returns public URLs for remote rows.
+- Media backfill service: `src/services/mediaBackfillService.ts` finds existing SQLite records with local image URIs and enqueues update rows so older saved images can be uploaded through the normal sync queue.
 - User profile mapper: `src/services/userProfileMapper.ts` maps Supabase snake_case profile rows to local camelCase `User` records and back.
 - Database services/repositories:
   - `usersRepository`: user lookup, upsert, local profile creation/update, biometric flag, mark synced.
   - `sessionRepository`: active auth session persistence.
   - `productsRepository`: relation-backed product listing plus local-first product create/update/pending-delete and employee approval queue writes.
-  - `suppliersRepository`: SQLite supplier listing for inventory product forms.
-  - `customersRepository`: SQLite customer listing for invoice customer selection.
+  - `customersRepository`: relation-backed customer listing plus local-first customer create/update/pending-delete and employee approval queue writes.
+  - `suppliersRepository`: relation-backed supplier listing plus local-first supplier create/update/pending-delete and employee approval queue writes.
+  - `employeesRepository`: business-scoped employee listing/detail plus local-first employee user create/update/pending-delete and sync queue rows targeting Supabase `public.employees`.
   - `invoicesRepository`: local-first invoice create/update/delete flows with invoice item writes, product stock mutation transactions, customer due updates, and sync queue recovery rows.
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
+- App data provider: `src/components/providers/AppDataProvider.tsx` initializes SQLite, enqueues existing local media uploads, and starts/stops the background sync queue processor.
+- Employee sync note: employee queue rows target remote `employees`; old queued employee rows with table name `users` are also routed to `employees` by payload role for compatibility.
 - Storage service: `src/lib/secureStorage.ts` stores biometric credentials, token expiry, and flags in Expo SecureStore.
 - Invoice services: `src/services/invoice/pdfService.ts`, `src/services/invoice/invoiceViewer.tsx`.
 - Utilities: `src/Utility` contains chart scaling, report conversion, date, ranking, filtering, and status color helpers.
@@ -405,20 +434,24 @@ Main Files:
 - ✅ Sync queue processor
 - ✅ Inventory screens backed fully by SQLite
 - ✅ Invoice repositories and stock mutation transactions
-- ⏳ Customer/supplier/employee repositories
+- ✅ Customer/supplier/employee repositories
+- ✅ Customer/supplier/employee backed fully by SQLite
+- ✅ Supabase Storage image upload integration for synced media payloads
+- ✅ Startup backfill for existing local image URIs
 - ⏳ Reports backed by SQLite queries
 - ⏳ Backup and restore backend
 - ⏳ Approval workflow
 
 # Pending Work
 
-- Expand Supabase setup/RLS policies for remaining cloud sync tables beyond `users` and `staging_review_queue`.
+- Tighten Supabase Storage policies to business-scoped paths if private media access becomes required.
 - Implement conflict handling and stale `processing` row recovery for sync.
 - Complete employee approval workflow UI and local approval-state handling around `staging_review_queue`.
-- Add local-first create/update repositories for customers, suppliers, employees, ledger entries, payments, and reports.
+- Add local-first create/update repositories for ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
-- Wire parties, dashboard, and reports screens to SQLite repositories.
+- Wire dashboard and reports screens to SQLite repositories.
 - Extend invoice transactions with ledger/payment entries after ledger and payment schema tables exist.
+- Persist saved-invoice customer/product edits with stock difference reconciliation and sync queue rows.
 - Add backup/restore implementation.
 - Add pagination and indexes where large lists are queried.
 - Add tests for repositories, sync queue processing, auth/session restoration, and financial/inventory transactions.
@@ -429,9 +462,10 @@ Main Files:
 # Known Issues
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
-- Sync queue processor exists, but conflict resolution, online/offline network detection, stale `processing` row recovery, and Supabase schema/RLS for non-profile business tables still need to be completed.
-- Product and invoice repositories/screens are local-first, but parties, dashboard, reports, ledger, and payment modules do not yet have completed SQLite-backed flows.
+- Sync queue processor exists, but conflict resolution, online/offline network detection, stale `processing` row recovery, and stricter business-scoped Supabase Storage access still need to be completed.
+- Product, invoice, and party screens are local-first, but dashboard, reports, ledger, and payment modules do not yet have completed SQLite-backed flows.
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
+- Supabase media upload sync depends on the `bachatbuddy-media` bucket and policies from `supabase/bachatbuddy_setup.sql`; remote image upload will fail and retry if that SQL has not been applied.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
 - Supabase setup is committed as a SQL setup file, but it is not yet organized as versioned Supabase CLI migrations.
 - Some sample/default data and legacy types still use snake_case names that differ from Drizzle camelCase fields.
@@ -451,11 +485,14 @@ Main Files:
 - User profile rows now use explicit mapping between Supabase `snake_case` and local Drizzle camelCase fields.
 - Profile creation/update now writes to SQLite first, queues the mutation, and also attempts remote writes against the configured Supabase `public.users` table.
 - Owner profiles use the owner's Supabase Auth user id as `business_id`; employee profiles should share that owner id later. No separate business table is required yet.
+- Employee records are represented locally as SQLite `users` rows with `role = 'employee'`; in Supabase they are business directory rows in `public.employees`, not auth profile rows in `public.users`.
 - Profile, business profile, drawer profile card, and app top bar now read from the local auth profile cache; successful saves refresh the Zustand session cache from the saved SQLite row.
 - Business logos are stored as a dedicated local user/business profile field (`businessLogo` locally, `business_logo` in SQLite/Supabase payloads) so invoice generation can reference the logo independently from the user avatar.
+- Picked images remain local SQLite values for immediate offline use; sync uploads `img` and `business_logo` values to Supabase Storage and sends public Storage URLs in Supabase row/approval payloads.
 - Biometric login stores tokens and expiry in SecureStore, never passwords, and uses those tokens only after device biometric authentication succeeds.
 - Biometric preference is treated as device-local and does not mark the user profile as a pending cloud sync mutation.
 - Sync queue processing is app-started from `AppDataProvider`, processes FIFO, retries failed rows with exponential backoff, and only marks local records `synced` after Supabase confirms the queued mutation.
+- Add-invoice screens treat `INV-PENDING` as a draft only: due date, image, customer, products, and totals update screen state until SAVE runs the SQLite invoice transaction and assigns the real UUID/invoice number.
 
 # Coding Standards
 

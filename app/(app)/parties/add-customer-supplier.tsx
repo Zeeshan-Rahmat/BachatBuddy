@@ -4,6 +4,9 @@ import InputText from '@/src/components/common/InputText';
 import Title from '@/src/components/common/Title';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
+import { createCustomer, updateCustomer } from '@/src/db/repositories/customersRepository';
+import { createSupplier, updateSupplier } from '@/src/db/repositories/suppliersRepository';
+import { useAuthStore } from '@/src/store/authStore';
 import { CustomerType, SupplierType } from '@/src/types/appTypes';
 import ProfilePicker from '@components/form/ProfilePicker';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,9 +18,12 @@ interface EditCustomerSupplierModalProps {
     title?: "Add Customer" | "Add Supplier" | "Edit Customer" | "Edit Supplier";
     customerOrSupplier?: CustomerType | SupplierType;
     onClose: () => void;
+    onSaved?: () => void;
 }
 
-const EditCustomerSupplierModal = ({ visible, title = "Edit Customer", customerOrSupplier, onClose }: EditCustomerSupplierModalProps) => {
+const EditCustomerSupplierModal = ({ visible, title = "Edit Customer", customerOrSupplier, onClose, onSaved }: EditCustomerSupplierModalProps) => {
+    const currentUser = useAuthStore((state) => state.user);
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
 
     const [name, setName] = useState(customerOrSupplier?.name ?? "");
     const [email, setEmail] = useState(customerOrSupplier?.email ?? "");
@@ -42,19 +48,64 @@ const EditCustomerSupplierModal = ({ visible, title = "Edit Customer", customerO
         return valid;
     };
 
-    const handleSignUp = async () => {
+    const handleSave = async () => {
         if (!validate()) return;
         setLoading(true);
 
-        // TODO: call API → POST /api/auth/register { username, email, password }
-        // API sends OTP to email
-        // setTimeout(() => {
-        //     setLoading(false);
-        //     router.push({
-        //         pathname: ROUTES.AUTH.SIGN_UP_OTP,
-        //         params: { email },
-        //     });
-        // }, 1000);
+        try {
+            const isSupplier = title.includes('Supplier') || Boolean(customerOrSupplier && 'supplier_id' in customerOrSupplier);
+
+            if (isSupplier) {
+                if (customerOrSupplier && 'supplier_id' in customerOrSupplier) {
+                    await updateSupplier(customerOrSupplier.supplier_id, {
+                        lastUpdatedById: currentUser?.id ?? null,
+                        name: name.trim(),
+                        email: email.trim().toLowerCase(),
+                        phone: phone.trim(),
+                        address: address.trim(),
+                        img: imageUri,
+                        requiresApproval: requiresApproval(),
+                    });
+                } else {
+                    await createSupplier({
+                        createdById: currentUser?.id ?? null,
+                        name: name.trim(),
+                        email: email.trim().toLowerCase(),
+                        phone: phone.trim(),
+                        address: address.trim(),
+                        img: imageUri,
+                        requiresApproval: requiresApproval(),
+                    });
+                }
+            } else if (customerOrSupplier && 'customer_id' in customerOrSupplier) {
+                await updateCustomer(customerOrSupplier.customer_id, {
+                    lastUpdatedById: currentUser?.id ?? null,
+                    name: name.trim(),
+                    email: email.trim().toLowerCase(),
+                    phone: phone.trim(),
+                    address: address.trim(),
+                    img: imageUri,
+                    requiresApproval: requiresApproval(),
+                });
+            } else {
+                await createCustomer({
+                    createdById: currentUser?.id ?? null,
+                    name: name.trim(),
+                    email: email.trim().toLowerCase(),
+                    phone: phone.trim(),
+                    address: address.trim(),
+                    img: imageUri,
+                    requiresApproval: requiresApproval(),
+                });
+            }
+
+            onSaved?.();
+            onClose();
+        } catch {
+            Alert.alert('Save failed', 'Unable to save this party locally. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // This function asks for permission and opens the image gallery
@@ -146,6 +197,8 @@ const EditCustomerSupplierModal = ({ visible, title = "Edit Customer", customerO
                     leftIcon={<IconWrapper name={customerOrSupplier ? ICONS.COMMON.updateOutline : ICONS.COMMON.plus} />}
                     label={customerOrSupplier ? 'UPDATE' : 'ADD'}
                     width='flex-1'
+                    loading={loading}
+                    onPress={handleSave}
                 />
             </View>
         </CustomeModal>

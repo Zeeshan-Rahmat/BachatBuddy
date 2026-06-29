@@ -31,7 +31,7 @@ export default function PartyDetailModal({ visible, party, onClose, onRemove, on
 
             {/* Party Image and Detail */}
             <View className='items-center'>
-                <Avatar name={party.name} size={100} color='dark' textSize='extraLarge' />
+                <Avatar name={party.name} img={party.img} size={100} color='dark' textSize='extraLarge' />
 
                 <View className='items-center mt-4 mb-8 gap-1'>
                     <Text className='text-2xl font-semibold'>{party.name}</Text>

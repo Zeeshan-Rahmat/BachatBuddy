@@ -4,6 +4,8 @@ import InputText from '@/src/components/common/InputText';
 import Title from '@/src/components/common/Title';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
+import { createEmployee, updateEmployee } from '@/src/db/repositories/employeesRepository';
+import { useAuthStore } from '@/src/store/authStore';
 import { EmployeeType } from '@/src/types/appTypes';
 import ProfilePicker from '@components/form/ProfilePicker';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,9 +17,12 @@ interface AddEditEmployeeModalProps {
     title?: "Add Employee" | "Edit Employee";
     employee?: EmployeeType;
     onClose: () => void;
+    onSaved?: () => void;
 }
 
-const AddEditEmployeeModal = ({ visible, title = "Edit Employee", employee, onClose }: AddEditEmployeeModalProps) => {
+const AddEditEmployeeModal = ({ visible, title = "Edit Employee", employee, onClose, onSaved }: AddEditEmployeeModalProps) => {
+    const currentUser = useAuthStore((state) => state.user);
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
 
     const [name, setName] = useState(employee?.name ?? "");
     const [email, setEmail] = useState(employee?.email ?? "");
@@ -39,26 +44,61 @@ const AddEditEmployeeModal = ({ visible, title = "Edit Employee", employee, onCl
         let valid = true;
         if (!name.trim()) { e.name = 'Name is required'; valid = false; }
         if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { e.email = 'Valid email is required'; valid = false; }
-        if (!password.trim()) { e.password = 'Password is required'; valid = false; }
+        if (!employee && !password.trim()) { e.password = 'Password is required'; valid = false; }
         if (!phone.trim()) { e.phone = 'Phone is required'; valid = false; }
         if (!address.trim()) { e.address = 'Address is required'; valid = false; }
         setErrors(e);
         return valid;
     };
 
-    const handleSignUp = async () => {
+    const handleSave = async () => {
         if (!validate()) return;
         setLoading(true);
 
-        // TODO: call API → POST /api/auth/register { username, email, password }
-        // API sends OTP to email
-        // setTimeout(() => {
-        //     setLoading(false);
-        //     router.push({
-        //         pathname: ROUTES.AUTH.SIGN_UP_OTP,
-        //         params: { email },
-        //     });
-        // }, 1000);
+        try {
+            const normalizedEmail = email.trim().toLowerCase();
+            const businessId = currentUser?.businessId ?? currentUser?.id;
+
+            if (!businessId) {
+                Alert.alert('Save failed', 'Unable to identify the active business for this employee.');
+                return;
+            }
+
+            if (employee?.employee_id) {
+                await updateEmployee(employee.employee_id, {
+                    businessId,
+                    businessName: currentUser?.businessName ?? null,
+                    name: name.trim(),
+                    email: normalizedEmail,
+                    username: employee.username || normalizedEmail,
+                    phone: phone.trim(),
+                    address: address.trim(),
+                    img: imageUri,
+                    passwordHash: password.trim() || undefined,
+                    requiresApproval: requiresApproval(),
+                });
+            } else {
+                await createEmployee({
+                    businessId,
+                    businessName: currentUser?.businessName ?? null,
+                    name: name.trim(),
+                    email: normalizedEmail,
+                    username: normalizedEmail,
+                    phone: phone.trim(),
+                    address: address.trim(),
+                    img: imageUri,
+                    passwordHash: password.trim() || null,
+                    requiresApproval: requiresApproval(),
+                });
+            }
+
+            onSaved?.();
+            onClose();
+        } catch {
+            Alert.alert('Save failed', 'Unable to save this employee locally. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // This function asks for permission and opens the image gallery
@@ -168,6 +208,8 @@ const AddEditEmployeeModal = ({ visible, title = "Edit Employee", employee, onCl
                     leftIcon={<IconWrapper name={employee ? ICONS.COMMON.updateOutline : ICONS.COMMON.plus} />}
                     label={employee ? 'UPDATE' : 'ADD'}
                     width='flex-1'
+                    loading={loading}
+                    onPress={handleSave}
                 />
             </View>
         </CustomeModal>

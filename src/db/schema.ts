@@ -224,13 +224,40 @@ export const syncQueue = sqliteTable(
 );
 
 export const userRelations = relations(users, ({ many }) => ({
+    createdCustomers: many(customers, { relationName: 'createdCustomers' }),
+    updatedCustomers: many(customers, { relationName: 'updatedCustomers' }),
+    createdSuppliers: many(suppliers, { relationName: 'createdSuppliers' }),
+    updatedSuppliers: many(suppliers, { relationName: 'updatedSuppliers' }),
     createdProducts: many(products, { relationName: 'createdProducts' }),
     updatedProducts: many(products, { relationName: 'updatedProducts' }),
     createdInvoices: many(invoices, { relationName: 'createdInvoices' }),
     updatedInvoices: many(invoices, { relationName: 'updatedInvoices' }),
 }));
 
-export const supplierRelations = relations(suppliers, ({ many }) => ({
+export const customerRelations = relations(customers, ({ one }) => ({
+    createdBy: one(users, {
+        fields: [customers.createdById],
+        references: [users.id],
+        relationName: 'createdCustomers',
+    }),
+    lastUpdatedBy: one(users, {
+        fields: [customers.lastUpdatedById],
+        references: [users.id],
+        relationName: 'updatedCustomers',
+    }),
+}));
+
+export const supplierRelations = relations(suppliers, ({ one, many }) => ({
+    createdBy: one(users, {
+        fields: [suppliers.createdById],
+        references: [users.id],
+        relationName: 'createdSuppliers',
+    }),
+    lastUpdatedBy: one(users, {
+        fields: [suppliers.lastUpdatedById],
+        references: [users.id],
+        relationName: 'updatedSuppliers',
+    }),
     products: many(products),
 }));
 

@@ -226,6 +226,38 @@ create table if not exists public.suppliers (
   created_at bigint not null default ((extract(epoch from now()) * 1000)::bigint)
 );
 
+create table if not exists public.employees (
+  id uuid primary key,
+  business_id uuid references public.users(id) on delete cascade,
+  business_name text,
+  name text not null,
+  phone text,
+  business_phone text,
+  email text not null,
+  business_email text,
+  role text not null default 'employee' check (role = 'employee'),
+  username text not null,
+  password_hash text,
+  status text not null default 'Active' check (status in ('Active', 'Inactive')),
+  biometric_enabled boolean not null default false,
+  address text,
+  business_address text,
+  business_logo text,
+  img text,
+  sync_status text not null default 'synced' check (
+    sync_status in (
+      'synced',
+      'pending_insert',
+      'pending_update',
+      'pending_delete',
+      'pending_approval',
+      'rejected'
+    )
+  ),
+  updated_at bigint not null default ((extract(epoch from now()) * 1000)::bigint),
+  created_at bigint not null default ((extract(epoch from now()) * 1000)::bigint)
+);
+
 create table if not exists public.products (
   id uuid primary key,
   created_by_id uuid references public.users(id) on delete set null,
@@ -318,6 +350,12 @@ create index if not exists idx_suppliers_status on public.suppliers(status);
 create index if not exists idx_suppliers_created_by_id on public.suppliers(created_by_id);
 create index if not exists idx_suppliers_sync_status on public.suppliers(sync_status);
 
+create index if not exists idx_employees_business_id on public.employees(business_id);
+create index if not exists idx_employees_email on public.employees(email);
+create index if not exists idx_employees_username on public.employees(username);
+create index if not exists idx_employees_status on public.employees(status);
+create index if not exists idx_employees_sync_status on public.employees(sync_status);
+
 create index if not exists idx_products_name on public.products(name);
 create index if not exists idx_products_supplier_id on public.products(supplier_id);
 create index if not exists idx_products_status on public.products(status);
@@ -336,6 +374,7 @@ create index if not exists idx_invoice_items_sync_status on public.invoice_items
 
 alter table public.customers enable row level security;
 alter table public.suppliers enable row level security;
+alter table public.employees enable row level security;
 alter table public.products enable row level security;
 alter table public.invoices enable row level security;
 alter table public.invoice_items enable row level security;
@@ -399,6 +438,51 @@ on public.suppliers
 for delete
 to authenticated
 using (public.is_business_member(created_by_id) or public.is_business_member(last_updated_by_id));
+
+drop policy if exists "Owners can read employees" on public.employees;
+drop policy if exists "Owners can insert employees" on public.employees;
+drop policy if exists "Owners can update employees" on public.employees;
+drop policy if exists "Owners can delete employees" on public.employees;
+
+create policy "Owners can read employees"
+on public.employees
+for select
+to authenticated
+using (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+);
+
+create policy "Owners can insert employees"
+on public.employees
+for insert
+to authenticated
+with check (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+);
+
+create policy "Owners can update employees"
+on public.employees
+for update
+to authenticated
+using (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+)
+with check (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+);
+
+create policy "Owners can delete employees"
+on public.employees
+for delete
+to authenticated
+using (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+);
 
 drop policy if exists "Business members can read products" on public.products;
 drop policy if exists "Business members can insert products" on public.products;
@@ -725,6 +809,7 @@ execute function public.set_updated_at_ms();
 
 drop trigger if exists trg_customers_updated_at_ms on public.customers;
 drop trigger if exists trg_suppliers_updated_at_ms on public.suppliers;
+drop trigger if exists trg_employees_updated_at_ms on public.employees;
 drop trigger if exists trg_products_updated_at_ms on public.products;
 drop trigger if exists trg_invoices_updated_at_ms on public.invoices;
 drop trigger if exists trg_invoice_items_updated_at_ms on public.invoice_items;
@@ -736,6 +821,11 @@ execute function public.set_updated_at_ms();
 
 create trigger trg_suppliers_updated_at_ms
 before update on public.suppliers
+for each row
+execute function public.set_updated_at_ms();
+
+create trigger trg_employees_updated_at_ms
+before update on public.employees
 for each row
 execute function public.set_updated_at_ms();
 
@@ -760,3 +850,50 @@ create trigger trg_staging_review_queue_updated_at_ms
 before update on public.staging_review_queue
 for each row
 execute function public.set_updated_at_ms();
+
+-- 6. Supabase Storage for synced application images.
+-- SQLite remains the local source of truth; the app uploads local image URIs here
+-- during background sync and stores the resulting public URL in cloud rows.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'bachatbuddy-media',
+  'bachatbuddy-media',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Public can read BachatBuddy media" on storage.objects;
+drop policy if exists "Authenticated users can upload BachatBuddy media" on storage.objects;
+drop policy if exists "Authenticated users can update BachatBuddy media" on storage.objects;
+drop policy if exists "Authenticated users can delete BachatBuddy media" on storage.objects;
+
+create policy "Public can read BachatBuddy media"
+on storage.objects
+for select
+to public
+using (bucket_id = 'bachatbuddy-media');
+
+create policy "Authenticated users can upload BachatBuddy media"
+on storage.objects
+for insert
+to authenticated
+with check (bucket_id = 'bachatbuddy-media');
+
+create policy "Authenticated users can update BachatBuddy media"
+on storage.objects
+for update
+to authenticated
+using (bucket_id = 'bachatbuddy-media')
+with check (bucket_id = 'bachatbuddy-media');
+
+create policy "Authenticated users can delete BachatBuddy media"
+on storage.objects
+for delete
+to authenticated
+using (bucket_id = 'bachatbuddy-media');

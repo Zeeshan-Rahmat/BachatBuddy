@@ -1,4 +1,5 @@
 import { initializeLocalDatabase } from '@/src/db/client';
+import { enqueueExistingLocalMediaUploads } from '@/src/services/mediaBackfillService';
 import { startSyncQueueProcessor, stopSyncQueueProcessor } from '@/src/services/syncQueueProcessor';
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -10,7 +11,8 @@ export default function AppDataProvider({ children }: PropsWithChildren) {
         let isMounted = true;
 
         initializeLocalDatabase()
-            .then(() => {
+            .then(async () => {
+                await enqueueExistingLocalMediaUploads();
                 startSyncQueueProcessor();
                 if (isMounted) {
                     setIsReady(true);

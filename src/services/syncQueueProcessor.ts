@@ -2,12 +2,14 @@ import { syncQueueRepository } from '@/src/db/repositories/syncQueueRepository';
 import { sqlite } from '@/src/db/client';
 import { supabase } from '@/src/lib/supabase';
 import type { SyncQueueRow } from '@/src/db/schema';
+import { prepareRemotePayloadMedia } from './mediaStorageService';
 
 const DEFAULT_BATCH_SIZE = 25;
 const DEFAULT_INTERVAL_MS = 60_000;
 
 const syncableTableNames = [
     'users',
+    'employees',
     'customers',
     'suppliers',
     'products',
@@ -72,8 +74,33 @@ function getPayloadUpdatedAt(payload: unknown): number | null {
     return typeof updatedAt === 'number' ? updatedAt : null;
 }
 
+function isEmployeePayload(payload: unknown): boolean {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return false;
+    }
+
+    const values = payload as Record<string, unknown>;
+    return values.role === 'employee';
+}
+
+function getRemoteTableName(entry: SyncQueueRow): SyncableTableName {
+    if (entry.tableName === 'users' && isEmployeePayload(entry.payload)) {
+        return 'employees';
+    }
+
+    return entry.tableName as SyncableTableName;
+}
+
+function getLocalTableName(tableName: SyncableTableName): string {
+    return tableName === 'employees' ? 'users' : tableName;
+}
+
 async function pushApprovalRequest(entry: SyncQueueRow): Promise<void> {
-    const remotePayload = toRemotePayload(entry.payload);
+    const remotePayload = await prepareRemotePayloadMedia(
+        entry.tableName,
+        entry.recordId,
+        toRemotePayload(entry.payload)
+    );
     const now = Date.now();
 
     const { error } = await supabase
@@ -99,6 +126,8 @@ async function pushRemoteMutation(entry: SyncQueueRow): Promise<void> {
         throw new Error(`Unsupported sync table: ${entry.tableName}`);
     }
 
+    const remoteTableName = getRemoteTableName(entry);
+
     if (entry.operation === 'approval_request') {
         await pushApprovalRequest(entry);
         return;
@@ -106,7 +135,7 @@ async function pushRemoteMutation(entry: SyncQueueRow): Promise<void> {
 
     if (entry.operation === 'delete') {
         const { error } = await supabase
-            .from(entry.tableName)
+            .from(remoteTableName)
             .delete()
             .eq('id', entry.recordId);
 
@@ -118,12 +147,16 @@ async function pushRemoteMutation(entry: SyncQueueRow): Promise<void> {
     }
 
     const remotePayload = {
-        ...toRemotePayload(entry.payload),
+        ...await prepareRemotePayloadMedia(
+            remoteTableName,
+            entry.recordId,
+            toRemotePayload(entry.payload)
+        ),
         sync_status: 'synced',
     };
 
     const { error } = await supabase
-        .from(entry.tableName)
+        .from(remoteTableName)
         .upsert(remotePayload, { onConflict: 'id' });
 
     if (error) {
@@ -137,24 +170,25 @@ async function markLocalRecordSynced(entry: SyncQueueRow): Promise<void> {
     }
 
     const payloadUpdatedAt = getPayloadUpdatedAt(entry.payload);
+    const localTableName = getLocalTableName(entry.tableName);
 
     if (entry.operation === 'delete') {
         if (payloadUpdatedAt) {
             await sqlite.runAsync(
-                `DELETE FROM ${entry.tableName} WHERE id = ? AND updated_at = ?`,
+                `DELETE FROM ${localTableName} WHERE id = ? AND updated_at = ?`,
                 entry.recordId,
                 payloadUpdatedAt
             );
             return;
         }
 
-        await sqlite.runAsync(`DELETE FROM ${entry.tableName} WHERE id = ?`, entry.recordId);
+        await sqlite.runAsync(`DELETE FROM ${localTableName} WHERE id = ?`, entry.recordId);
         return;
     }
 
     if (payloadUpdatedAt) {
         await sqlite.runAsync(
-            `UPDATE ${entry.tableName} SET sync_status = ? WHERE id = ? AND updated_at = ?`,
+            `UPDATE ${localTableName} SET sync_status = ? WHERE id = ? AND updated_at = ?`,
             'synced',
             entry.recordId,
             payloadUpdatedAt
@@ -163,7 +197,7 @@ async function markLocalRecordSynced(entry: SyncQueueRow): Promise<void> {
     }
 
     await sqlite.runAsync(
-        `UPDATE ${entry.tableName} SET sync_status = ? WHERE id = ?`,
+        `UPDATE ${localTableName} SET sync_status = ? WHERE id = ?`,
         'synced',
         entry.recordId
     );

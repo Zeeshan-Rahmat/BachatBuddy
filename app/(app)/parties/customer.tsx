@@ -1,23 +1,27 @@
-import ListItemCard from '@/src/components/common/ListItemCard'
-import PaddingWrapper from '@/src/components/common/PaddingWrapper'
-import RoundedIconButton from '@/src/components/common/RoundedIconButton'
-import SearchFilter from '@/src/components/common/SearchFilter'
-import DeleteModal from '@/src/components/modal/DeleteModal'
-import { defaultCustomer } from '@/src/constants/defaultData'
-import { ICONS } from '@/src/constants/icons'
-import { mockCustomers } from '@/src/lib/sampleData'
-import { CustomerType, FilterType } from '@/src/types/appTypes'
-import { handleFilterData } from '@/src/Utility/handleFilterData'
-import React, { useState } from 'react'
-import { FlatList } from 'react-native-gesture-handler'
-import EditCustomerSupplierModal from './add-customer-supplier'
-import FilterPartyModal from './filter-party'
-import PartyDetailModal from './party-detail'
+import ListItemCard from '@/src/components/common/ListItemCard';
+import PaddingWrapper from '@/src/components/common/PaddingWrapper';
+import RoundedIconButton from '@/src/components/common/RoundedIconButton';
+import SearchFilter from '@/src/components/common/SearchFilter';
+import DeleteModal from '@/src/components/modal/DeleteModal';
+import { defaultCustomer } from '@/src/constants/defaultData';
+import { ICONS } from '@/src/constants/icons';
+import { listCustomersWithRelations, markCustomerPendingDelete } from '@/src/db/repositories/customersRepository';
+import { mapCustomerRowToPartyCustomer } from '@/src/services/parties/partyUiMapper';
+import { useAuthStore } from '@/src/store/authStore';
+import { CustomerType, FilterType } from '@/src/types/appTypes';
+import { handleFilterData } from '@/src/Utility/handleFilterData';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
+import EditCustomerSupplierModal from './add-customer-supplier';
+import FilterPartyModal from './filter-party';
+import PartyDetailModal from './party-detail';
 
 export default function CustomerScreen() {
-
-    const customers: CustomerType[] = mockCustomers;
-
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
+    const [customers, setCustomers] = useState<CustomerType[]>([]);
+    const [displayedCustomer, setDisplayedCustomer] = useState<CustomerType[]>([]);
+    const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
 
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -26,58 +30,92 @@ export default function CustomerScreen() {
     const [isEditCustomerSupplierModalOpen, setIsEditCustomerSupplierModalOpen] = useState(false);
     const [isAddCustomerSupplierModalOpen, setIsAddCustomerSupplierModalOpen] = useState(false);
 
-    const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | undefined>(undefined);
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerType>(defaultCustomer);
 
-    const [displayedCustomer, setDisplayedCustomer] = useState<CustomerType[]>(customers);
+    const loadCustomers = useCallback(async () => {
+        setLoading(true);
 
-    const filtered = displayedCustomer.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase())
+        try {
+            const rows = await listCustomersWithRelations();
+            const mappedCustomers = rows.map(mapCustomerRowToPartyCustomer);
+            setCustomers(mappedCustomers);
+            setDisplayedCustomer(mappedCustomers);
+        } catch {
+            Alert.alert('Load failed', 'Unable to load customers from local storage.');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadCustomers();
+        }, [loadCustomers])
+    );
+
+    const filtered = displayedCustomer.filter((customer) =>
+        customer.name.toLowerCase().includes(search.toLowerCase())
     );
 
     const onApplyFilters = (filters: FilterType) => {
-        // Run advanced filtering logic safely over typed multi-entity datasets
         const output = handleFilterData(filters, customers);
-
-        // Update local list layouts and hide selection screen
         setDisplayedCustomer(output as CustomerType[]);
         setIsFilterModalOpen(false);
     };
 
-    const handleListItemPress = (customer: CustomerType) => {
-        setSelectedCustomer(customer)
-        setIsPartyDetailModalOpen(true)
-    }
+    const handleDelete = async () => {
+        const deleted = await markCustomerPendingDelete(selectedCustomer.customer_id, requiresApproval());
 
-    const handleDelete = () => {
+        if (!deleted) {
+            Alert.alert('Remove failed', 'This customer could not be found in local storage.');
+            return;
+        }
+
         setIsDeleteModalOpen(false);
-        setIsPartyDetailModalOpen(false)
-    }
+        setIsPartyDetailModalOpen(false);
+        await loadCustomers();
+    };
+
+    const handleSaved = async () => {
+        setIsEditCustomerSupplierModalOpen(false);
+        setIsAddCustomerSupplierModalOpen(false);
+        setIsPartyDetailModalOpen(false);
+        await loadCustomers();
+    };
 
     return (
-        <>
+        <View className="flex-1">
             <PaddingWrapper addPaddingBottom={false}>
-
                 <SearchFilter
                     value={search}
-                    searchPlaceholder={"Search Customer"}
+                    searchPlaceholder="Search Customer"
                     onChangeText={setSearch}
-
                     onFilterPress={() => setIsFilterModalOpen(true)}
                 />
 
-
-                <FlatList data={filtered} keyExtractor={i => i.customer_id} showsVerticalScrollIndicator={false}
+                <FlatList
+                    data={filtered}
+                    keyExtractor={(item) => item.customer_id}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 80 }}
+                    refreshControl={<RefreshControl refreshing={loading} onRefresh={loadCustomers} />}
+                    ListEmptyComponent={
+                        loading
+                            ? <ActivityIndicator className="my-8" />
+                            : <Text className="text-center text-dark-50 my-8">No customers found</Text>
+                    }
                     renderItem={({ item }) => (
                         <ListItemCard
                             item={item}
                             placeholder={ICONS.COMMON.customer}
-                            isParty={true}
-                            onPress={() => handleListItemPress(item)}
+                            isParty
+                            onPress={() => {
+                                setSelectedCustomer(item);
+                                setIsPartyDetailModalOpen(true);
+                            }}
                         />
                     )}
                 />
-
-
             </PaddingWrapper>
 
             <RoundedIconButton
@@ -85,56 +123,52 @@ export default function CustomerScreen() {
                 onPress={() => setIsAddCustomerSupplierModalOpen(true)}
             />
 
-            {
-                isFilterModalOpen && (
-                    <FilterPartyModal
-                        visible={isFilterModalOpen}
-                        onApplyFilters={onApplyFilters}
-                        onClose={() => setIsFilterModalOpen(false)}
-                    />
-                )
-            }
+            {isFilterModalOpen && (
+                <FilterPartyModal
+                    visible={isFilterModalOpen}
+                    onApplyFilters={onApplyFilters}
+                    onClose={() => setIsFilterModalOpen(false)}
+                />
+            )}
 
-            {
-                isPartyDetailModalOpen &&
+            {isPartyDetailModalOpen && (
                 <PartyDetailModal
                     visible={isPartyDetailModalOpen}
-                    party={selectedCustomer ?? defaultCustomer}
+                    party={selectedCustomer}
                     onClose={() => setIsPartyDetailModalOpen(false)}
                     onRemove={() => setIsDeleteModalOpen(true)}
                     onEdit={() => setIsEditCustomerSupplierModalOpen(true)}
                 />
-            }
+            )}
 
-            {
-                isDeleteModalOpen &&
+            {isDeleteModalOpen && (
                 <DeleteModal
-                    title='Remove Customer'
-                    subtitle='You are going to remove below customer'
-                    removeItem={selectedCustomer?.name ?? "Unknown"}
+                    title="Remove Customer"
+                    subtitle="You are going to remove below customer"
+                    removeItem={selectedCustomer.name}
                     isVisible={isDeleteModalOpen}
                     onClose={() => setIsDeleteModalOpen(false)}
                     onDelete={handleDelete}
                 />
-            }
+            )}
 
-            {
-                isEditCustomerSupplierModalOpen &&
+            {isEditCustomerSupplierModalOpen && (
                 <EditCustomerSupplierModal
                     visible={isEditCustomerSupplierModalOpen}
                     customerOrSupplier={selectedCustomer}
                     onClose={() => setIsEditCustomerSupplierModalOpen(false)}
+                    onSaved={handleSaved}
                 />
-            }
+            )}
 
-            {
-                isAddCustomerSupplierModalOpen &&
+            {isAddCustomerSupplierModalOpen && (
                 <EditCustomerSupplierModal
                     visible={isAddCustomerSupplierModalOpen}
-                    title='Add Customer'
+                    title="Add Customer"
                     onClose={() => setIsAddCustomerSupplierModalOpen(false)}
+                    onSaved={handleSaved}
                 />
-            }
-        </>
-    )
+            )}
+        </View>
+    );
 }

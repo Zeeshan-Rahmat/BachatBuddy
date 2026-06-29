@@ -1,23 +1,28 @@
-import ListItemCard from '@/src/components/common/ListItemCard'
-import PaddingWrapper from '@/src/components/common/PaddingWrapper'
-import RoundedIconButton from '@/src/components/common/RoundedIconButton'
-import SearchFilter from '@/src/components/common/SearchFilter'
-import DeleteModal from '@/src/components/modal/DeleteModal'
-import { defaultEmployee } from '@/src/constants/defaultData'
-import { ICONS } from '@/src/constants/icons'
-import { mockEmployees } from '@/src/lib/sampleData'
-import { EmployeeType, FilterType } from '@/src/types/appTypes'
-import { handleFilterData } from '@/src/Utility/handleFilterData'
-import React, { useState } from 'react'
-import { FlatList } from 'react-native-gesture-handler'
-import AddEditEmployeeModal from './add-employee'
-import FilterPartyModal from './filter-party'
-import PartyDetailModal from './party-detail'
+import ListItemCard from '@/src/components/common/ListItemCard';
+import PaddingWrapper from '@/src/components/common/PaddingWrapper';
+import RoundedIconButton from '@/src/components/common/RoundedIconButton';
+import SearchFilter from '@/src/components/common/SearchFilter';
+import DeleteModal from '@/src/components/modal/DeleteModal';
+import { defaultEmployee } from '@/src/constants/defaultData';
+import { ICONS } from '@/src/constants/icons';
+import { listEmployees, markEmployeePendingDelete } from '@/src/db/repositories/employeesRepository';
+import { mapEmployeeRowToPartyEmployee } from '@/src/services/parties/partyUiMapper';
+import { useAuthStore } from '@/src/store/authStore';
+import { EmployeeType, FilterType } from '@/src/types/appTypes';
+import { handleFilterData } from '@/src/Utility/handleFilterData';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
+import AddEditEmployeeModal from './add-employee';
+import FilterPartyModal from './filter-party';
+import PartyDetailModal from './party-detail';
 
 export default function EmployeeScreen() {
-
-    const employees: EmployeeType[] = mockEmployees;
-
+    const currentUser = useAuthStore((state) => state.user);
+    const requiresApproval = useAuthStore((state) => state.requiresApproval);
+    const [employees, setEmployees] = useState<EmployeeType[]>([]);
+    const [displayedEmployee, setDisplayedEmployee] = useState<EmployeeType[]>([]);
+    const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
 
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -26,58 +31,93 @@ export default function EmployeeScreen() {
     const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
     const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
 
-    const [selectedEmployee, setSelectedEmployee] = useState<EmployeeType | undefined>(undefined);
+    const [selectedEmployee, setSelectedEmployee] = useState<EmployeeType>(defaultEmployee);
 
-    const [displayedEmployee, setDisplayedEmployee] = useState<EmployeeType[]>(employees);
+    const loadEmployees = useCallback(async () => {
+        setLoading(true);
 
-    const filtered = displayedEmployee.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase())
+        try {
+            const businessId = currentUser?.businessId ?? currentUser?.id;
+            const rows = await listEmployees(businessId);
+            const mappedEmployees = rows.map(mapEmployeeRowToPartyEmployee);
+            setEmployees(mappedEmployees);
+            setDisplayedEmployee(mappedEmployees);
+        } catch {
+            Alert.alert('Load failed', 'Unable to load employees from local storage.');
+        } finally {
+            setLoading(false);
+        }
+    }, [currentUser?.businessId, currentUser?.id]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadEmployees();
+        }, [loadEmployees])
+    );
+
+    const filtered = displayedEmployee.filter((employee) =>
+        employee.name.toLowerCase().includes(search.toLowerCase())
     );
 
     const onApplyFilters = (filters: FilterType) => {
-        // Run advanced filtering logic safely over typed multi-entity datasets
         const output = handleFilterData(filters, employees);
-
-        // Update local list layouts and hide selection screen
         setDisplayedEmployee(output as EmployeeType[]);
         setIsFilterModalOpen(false);
     };
 
-    const handleListItemPress = (employee: EmployeeType) => {
-        setSelectedEmployee(employee)
-        setIsPartyDetailModalOpen(true)
-    }
+    const handleDelete = async () => {
+        const deleted = await markEmployeePendingDelete(selectedEmployee.employee_id, requiresApproval());
 
-    const handleDelete = () => {
+        if (!deleted) {
+            Alert.alert('Remove failed', 'This employee could not be found in local storage.');
+            return;
+        }
+
         setIsDeleteModalOpen(false);
-        setIsPartyDetailModalOpen(false)
-    }
+        setIsPartyDetailModalOpen(false);
+        await loadEmployees();
+    };
+
+    const handleSaved = async () => {
+        setIsEditEmployeeModalOpen(false);
+        setIsAddEmployeeModalOpen(false);
+        setIsPartyDetailModalOpen(false);
+        await loadEmployees();
+    };
 
     return (
-        <>
+        <View className="flex-1">
             <PaddingWrapper addPaddingBottom={false}>
-
                 <SearchFilter
                     value={search}
-                    searchPlaceholder={"Search Customer"}
+                    searchPlaceholder="Search Employee"
                     onChangeText={setSearch}
-
                     onFilterPress={() => setIsFilterModalOpen(true)}
                 />
 
-
-                <FlatList data={filtered} keyExtractor={i => i.employee_id} showsVerticalScrollIndicator={false}
+                <FlatList
+                    data={filtered}
+                    keyExtractor={(item) => item.employee_id}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 80 }}
+                    refreshControl={<RefreshControl refreshing={loading} onRefresh={loadEmployees} />}
+                    ListEmptyComponent={
+                        loading
+                            ? <ActivityIndicator className="my-8" />
+                            : <Text className="text-center text-dark-50 my-8">No employees found</Text>
+                    }
                     renderItem={({ item }) => (
                         <ListItemCard
                             item={item}
                             placeholder={ICONS.COMMON.customer}
-                            isParty={true}
-                            onPress={() => handleListItemPress(item)}
+                            isParty
+                            onPress={() => {
+                                setSelectedEmployee(item);
+                                setIsPartyDetailModalOpen(true);
+                            }}
                         />
                     )}
                 />
-
-
             </PaddingWrapper>
 
             <RoundedIconButton
@@ -85,56 +125,52 @@ export default function EmployeeScreen() {
                 onPress={() => setIsAddEmployeeModalOpen(true)}
             />
 
-            {
-                isFilterModalOpen && (
-                    <FilterPartyModal
-                        visible={isFilterModalOpen}
-                        onApplyFilters={onApplyFilters}
-                        onClose={() => setIsFilterModalOpen(false)}
-                    />
-                )
-            }
+            {isFilterModalOpen && (
+                <FilterPartyModal
+                    visible={isFilterModalOpen}
+                    onApplyFilters={onApplyFilters}
+                    onClose={() => setIsFilterModalOpen(false)}
+                />
+            )}
 
-            {
-                isPartyDetailModalOpen &&
+            {isPartyDetailModalOpen && (
                 <PartyDetailModal
                     visible={isPartyDetailModalOpen}
-                    party={selectedEmployee ?? defaultEmployee}
+                    party={selectedEmployee}
                     onClose={() => setIsPartyDetailModalOpen(false)}
                     onRemove={() => setIsDeleteModalOpen(true)}
                     onEdit={() => setIsEditEmployeeModalOpen(true)}
                 />
-            }
+            )}
 
-            {
-                isDeleteModalOpen &&
+            {isDeleteModalOpen && (
                 <DeleteModal
-                    title='Remove Customer'
-                    subtitle='You are going to remove below customer'
-                    removeItem={selectedEmployee?.name ?? "Unknown"}
+                    title="Remove Employee"
+                    subtitle="You are going to remove below employee"
+                    removeItem={selectedEmployee.name}
                     isVisible={isDeleteModalOpen}
                     onClose={() => setIsDeleteModalOpen(false)}
                     onDelete={handleDelete}
                 />
-            }
+            )}
 
-            {
-                isEditEmployeeModalOpen &&
+            {isEditEmployeeModalOpen && (
                 <AddEditEmployeeModal
                     visible={isEditEmployeeModalOpen}
                     employee={selectedEmployee}
                     onClose={() => setIsEditEmployeeModalOpen(false)}
+                    onSaved={handleSaved}
                 />
-            }
+            )}
 
-            {
-                isAddEmployeeModalOpen &&
+            {isAddEmployeeModalOpen && (
                 <AddEditEmployeeModal
                     visible={isAddEmployeeModalOpen}
-                    title='Add Employee'
+                    title="Add Employee"
                     onClose={() => setIsAddEmployeeModalOpen(false)}
+                    onSaved={handleSaved}
                 />
-            }
-        </>
-    )
+            )}
+        </View>
+    );
 }
