@@ -145,6 +145,21 @@ CREATE TABLE IF NOT EXISTS sync_queue (
     created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS backup_metadata (
+    id TEXT PRIMARY KEY NOT NULL,
+    business_id TEXT NOT NULL,
+    user_id TEXT REFERENCES users(id),
+    backup_id TEXT NOT NULL,
+    storage_path TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('completed', 'restored', 'failed')),
+    size_bytes INTEGER NOT NULL DEFAULT 0,
+    record_counts TEXT NOT NULL,
+    last_error TEXT,
+    restored_at INTEGER,
+    updated_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_sync_status ON users(sync_status);
@@ -168,6 +183,8 @@ CREATE INDEX IF NOT EXISTS idx_invoice_items_sync_status ON invoice_items(sync_s
 CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status);
 CREATE INDEX IF NOT EXISTS idx_sync_queue_record ON sync_queue(table_name, record_id);
 CREATE INDEX IF NOT EXISTS idx_sync_queue_next_retry_at ON sync_queue(next_retry_at);
+CREATE INDEX IF NOT EXISTS idx_backup_metadata_business_id ON backup_metadata(business_id);
+CREATE INDEX IF NOT EXISTS idx_backup_metadata_created_at ON backup_metadata(created_at);
 
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_active ON auth_sessions(is_active);

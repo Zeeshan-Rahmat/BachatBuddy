@@ -851,7 +851,88 @@ before update on public.staging_review_queue
 for each row
 execute function public.set_updated_at_ms();
 
--- 6. Supabase Storage for synced application images.
+-- 6. Cloud backup manifests.
+-- Backup files live in Supabase Storage; this table stores the latest visible
+-- metadata without making screens depend on remote business data queries.
+create table if not exists public.backup_manifests (
+  id text primary key,
+  business_id uuid not null,
+  created_by_user_id uuid references auth.users(id) on delete set null,
+  storage_path text not null,
+  size_bytes bigint not null default 0,
+  record_counts jsonb not null default '{}'::jsonb,
+  status text not null default 'completed' check (status in ('completed', 'restored', 'failed')),
+  last_error text,
+  restored_at bigint,
+  updated_at bigint not null,
+  created_at bigint not null
+);
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'backup_manifests'
+      and column_name = 'business_id'
+      and data_type = 'text'
+  ) then
+    execute 'alter table public.backup_manifests alter column business_id type uuid using business_id::uuid';
+  end if;
+end $$;
+
+create index if not exists idx_backup_manifests_business_id
+on public.backup_manifests(business_id);
+
+create index if not exists idx_backup_manifests_created_at
+on public.backup_manifests(created_at);
+
+alter table public.backup_manifests enable row level security;
+
+drop policy if exists "Owners can read business backup manifests" on public.backup_manifests;
+drop policy if exists "Owners can create business backup manifests" on public.backup_manifests;
+drop policy if exists "Owners can update business backup manifests" on public.backup_manifests;
+
+create policy "Owners can read business backup manifests"
+on public.backup_manifests
+for select
+to authenticated
+using (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+);
+
+create policy "Owners can create business backup manifests"
+on public.backup_manifests
+for insert
+to authenticated
+with check (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+);
+
+create policy "Owners can update business backup manifests"
+on public.backup_manifests
+for update
+to authenticated
+using (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+)
+with check (
+  public.current_user_role() = 'owner'
+  and public.current_user_business_id() = business_id
+);
+
+drop trigger if exists trg_backup_manifests_updated_at_ms on public.backup_manifests;
+
+create trigger trg_backup_manifests_updated_at_ms
+before update on public.backup_manifests
+for each row
+execute function public.set_updated_at_ms();
+
+-- 7. Supabase Storage for synced application images.
 -- SQLite remains the local source of truth; the app uploads local image URIs here
 -- during background sync and stores the resulting public URL in cloud rows.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -897,3 +978,70 @@ on storage.objects
 for delete
 to authenticated
 using (bucket_id = 'bachatbuddy-media');
+
+-- 8. Supabase Storage for full local database backups.
+-- Backup files are private and scoped by the first path segment:
+-- {business_id}/{backup_id}.json and {business_id}/latest.json.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'bachatbuddy-backups',
+  'bachatbuddy-backups',
+  false,
+  52428800,
+  array['application/json']
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Owners can read business backups" on storage.objects;
+drop policy if exists "Owners can upload business backups" on storage.objects;
+drop policy if exists "Owners can update business backups" on storage.objects;
+drop policy if exists "Owners can delete business backups" on storage.objects;
+
+create policy "Owners can read business backups"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'bachatbuddy-backups'
+  and public.current_user_role() = 'owner'
+  and public.current_user_business_id()::text = (storage.foldername(name))[1]
+);
+
+create policy "Owners can upload business backups"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'bachatbuddy-backups'
+  and public.current_user_role() = 'owner'
+  and public.current_user_business_id()::text = (storage.foldername(name))[1]
+);
+
+create policy "Owners can update business backups"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'bachatbuddy-backups'
+  and public.current_user_role() = 'owner'
+  and public.current_user_business_id()::text = (storage.foldername(name))[1]
+)
+with check (
+  bucket_id = 'bachatbuddy-backups'
+  and public.current_user_role() = 'owner'
+  and public.current_user_business_id()::text = (storage.foldername(name))[1]
+);
+
+create policy "Owners can delete business backups"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'bachatbuddy-backups'
+  and public.current_user_role() = 'owner'
+  and public.current_user_business_id()::text = (storage.foldername(name))[1]
+);

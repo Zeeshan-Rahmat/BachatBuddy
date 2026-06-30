@@ -1,7 +1,9 @@
 import InternalTabBar from '@/src/components/common/InternalTabBar';
 import PaddingWrapper from '@/src/components/common/PaddingWrapper';
 import ScreenWrapper from '@/src/components/layout/ScreenWrapper';
-import React, { useState } from 'react';
+import { backupRestoreService, type BackupSummary } from '@/src/services/backupRestoreService';
+import { useAuthStore } from '@/src/store/authStore';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import BackupRestore from './backup-restore';
 import BackupRestoreRequests from './backup-restore-request';
@@ -11,7 +13,33 @@ const TABS = ['Backup & Restore', 'Backup & Restore Requests'];
 const BackupRestoreScreen = () => {
 
     const [activeTab, setActiveTab] = useState(TABS[0]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isBackingUp, setIsBackingUp] = useState(false);
+    const [isRestoring, setIsRestoring] = useState(false);
+    const [lastBackup, setLastBackup] = useState<BackupSummary | null>(null);
+    const user = useAuthStore((state) => state.user);
+    const businessId = useMemo(() => user?.businessId ?? user?.id ?? null, [user?.businessId, user?.id]);
+
+    const loadLastBackup = useCallback(async () => {
+        if (!businessId) {
+            setLastBackup(null);
+            return;
+        }
+
+        const metadata = await backupRestoreService.getLastBackup(businessId);
+        setLastBackup(metadata
+            ? {
+                backupId: metadata.backupId,
+                storagePath: metadata.storagePath,
+                createdAt: metadata.createdAt,
+                sizeBytes: metadata.sizeBytes,
+                recordCounts: metadata.recordCounts as BackupSummary['recordCounts'],
+            }
+            : null);
+    }, [businessId]);
+
+    useEffect(() => {
+        void loadLastBackup();
+    }, [loadLastBackup]);
 
     // Inside your main screen component file:
     const handleAcceptRequest = (id: string, type: string) => {
@@ -26,51 +54,79 @@ const BackupRestoreScreen = () => {
 
     // 1. Skeleton Function for Cloud Data Backup
     const handleBackupCurrentData = async () => {
+        if (!user || !businessId) {
+            Alert.alert('Backup Failed', 'Please sign in before creating a cloud backup.');
+            return;
+        }
+
         try {
-            setIsLoading(true);
-            console.log('Starting cloud data backup sequence...');
+            setIsBackingUp(true);
+            const result = await backupRestoreService.backupCurrentData(user.id, businessId);
 
-            // TODO: Your secure cloud backup API call or Expo-Secure-Store / FileSystem logic here
-            // e.g., const response = await uploadBackupToCloud(currentData);
+            if (!result.success || !result.data) {
+                Alert.alert('Backup Failed', result.error ?? 'Something went wrong while packaging your data.');
+                return;
+            }
 
-            // Simulate processing delay
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            setLastBackup(result.data);
+            if (result.upToDate) {
+                Alert.alert('Backup Up to Date', 'Your local data has no changes since the last cloud backup.');
+                return;
+            }
 
             Alert.alert('Backup Successful', 'Your business data has been securely saved to the cloud.');
         } catch (error) {
             console.error('Backup runtime error:', error);
             Alert.alert('Backup Failed', 'Something went wrong while packaging your data.');
         } finally {
-            setIsLoading(false);
+            setIsBackingUp(false);
         }
     };
 
     // 2. Skeleton Function for Cloud Data Restore
     const handleRestoreFromBackup = async () => {
-        try {
-            setIsLoading(true);
-            console.log('Starting database restoration sequence...');
-
-            // TODO: Fetch backup binary from server, unpack it, and overwrite global local state/DB
-            // e.g., await overwriteLocalDatabaseWithBackup(fetchedBackupFile);
-
-            // Simulate processing delay
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-
-            Alert.alert('System Restored', 'Your system data has been successfully overwritten and updated.');
-        } catch (error) {
-            console.error('Restore runtime error:', error);
-            Alert.alert('Restore Failed', 'Could not read or parse the remote backup file.');
-        } finally {
-            setIsLoading(false);
+        if (!user || !businessId) {
+            Alert.alert('Restore Failed', 'Please sign in before restoring a cloud backup.');
+            return;
         }
+
+        Alert.alert(
+            'Restore from Backup',
+            'This will overwrite the current local database with the latest cloud backup.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Restore',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setIsRestoring(true);
+                            const result = await backupRestoreService.restoreLatestBackup(user.id, businessId);
+
+                            if (!result.success || !result.data) {
+                                Alert.alert('Restore Failed', result.error ?? 'Could not read or parse the remote backup file.');
+                                return;
+                            }
+
+                            setLastBackup(result.data);
+                            Alert.alert('System Restored', 'Your system data has been successfully overwritten and updated.');
+                        } catch (error) {
+                            console.error('Restore runtime error:', error);
+                            Alert.alert('Restore Failed', 'Could not read or parse the remote backup file.');
+                        } finally {
+                            setIsRestoring(false);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
 
 
     return (
         <ScreenWrapper
-            title='Backup and Resstore'
+            title='Backup and Restore'
             leftIcon='back'
             rightIcons='none'
             scrollable={false}
@@ -82,11 +138,13 @@ const BackupRestoreScreen = () => {
             <PaddingWrapper>
 
                 {
-                    activeTab == TABS[0]
+                    activeTab === TABS[0]
                         ? <BackupRestore
                             handleBackupCurrentData={handleBackupCurrentData}
                             handleRestoreFromBackup={handleRestoreFromBackup}
-                            isLoading={isLoading}
+                            isBackupLoading={isBackingUp}
+                            isRestoreLoading={isRestoring}
+                            lastBackup={lastBackup}
                         />
 
                         : <BackupRestoreRequests

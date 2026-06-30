@@ -213,13 +213,32 @@ Main Files:
 
 ## Backup And Restore
 
-Status: Planned
+Status: In Progress
 
 Description:
-Backup/restore screens exist, but the backend backup, restore, conflict handling, and Supabase storage flows are not implemented.
+Backup/restore screens are wired to a backend service. Owners can package the implemented SQLite tables into a typed JSON snapshot, upload a versioned backup plus `latest.json` to private Supabase Storage, save local backup metadata, and upsert a Supabase `backup_manifests` row. Restore downloads the latest cloud backup for the active business, validates the snapshot schema/business id, confirms overwrite with the user, and replaces the implemented local SQLite tables in dependency order. The screen now shows local last-backup date and size from SQLite metadata instead of hardcoded values. Backup/restore request approval UI still uses mock request data, and advanced conflict handling is not complete.
+
+Completed Updates:
+- Added `src/services/backupRestoreService.ts` for SQLite snapshot creation, Supabase Storage upload/download, manifest writes, snapshot validation, and full local restore.
+- Added local `backup_metadata` Drizzle schema, migration SQL, indexes, generated row types, and `backupMetadataRepository`.
+- Wired `app/(modal)/backup_restore` backup and restore actions to the backend service with signed-in user/business checks and destructive restore confirmation.
+- Replaced hardcoded last backup date/size cards with local backup metadata loaded from SQLite.
+- Added `public.backup_manifests`, owner-only RLS policies, update trigger, and private `bachatbuddy-backups` Storage bucket/policies to `supabase/bachatbuddy_setup.sql`.
+- Fixed Supabase backup SQL type comparisons so `backup_manifests.business_id` is UUID and Storage path policies compare `current_user_business_id()::text` to folder names.
+- Fixed React Native backup uploads by sending JSON snapshots to Supabase Storage as UTF-8 `ArrayBuffer` data instead of `Blob`, avoiding generic `Network Request Failed` upload errors.
+- Split backup and restore button loading states so starting a backup no longer shows the restore button loader.
+- Added backup freshness detection so pressing backup with no profile/business SQLite changes since the latest local backup metadata shows an up-to-date message instead of uploading a duplicate snapshot; volatile `auth_sessions` and `sync_queue` bookkeeping are ignored for this check.
+- Fixed React Native restore downloads by reading Supabase Storage backup responses through Blob, ArrayBuffer, typed-array, or string-compatible paths instead of assuming `data.text()` exists.
+- Added restore fallback handling for React Native Blob objects through `FileReader.readAsText()` and private Supabase signed-URL fetch when direct Storage download bodies are unreadable.
+- Fixed restore foreign-key ordering by clearing local `backup_metadata` before replacing `users`, then rewriting restored backup metadata after the snapshot restore completes.
 
 Main Files:
 - `app/(modal)/backup_restore`
+- `src/services/backupRestoreService.ts`
+- `src/db/repositories/backupMetadataRepository.ts`
+- `src/db/schema.ts`
+- `src/db/migrations.ts`
+- `supabase/bachatbuddy_setup.sql`
 
 ## Invoice Customization
 
@@ -278,9 +297,10 @@ Main Files:
 - Local database: Expo SQLite database named `bachatbuddy.db`.
 - ORM: Drizzle ORM with schema in `src/db/schema.ts`.
 - Cloud database: Supabase PostgreSQL, intended for auth, backup, sync, remote storage, notifications, and approvals.
-- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.employees`, business sync tables, `public.staging_review_queue`, username lookup RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, RLS policies, and the `bachatbuddy-media` Storage bucket/policies.
+- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.employees`, business sync tables, `public.staging_review_queue`, `public.backup_manifests`, username lookup RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, RLS policies, and the `bachatbuddy-media`/`bachatbuddy-backups` Storage bucket policies.
 - Supabase Storage: `bachatbuddy-media` stores synced application images. SQLite keeps local image URIs for immediate offline display; sync uploads those images and sends public Storage URLs in remote payloads.
-- Existing local tables: `users`, `auth_sessions`, `customers`, `suppliers`, `products`, `invoices`, `invoice_items`, `sync_queue`.
+- Supabase backup storage: `bachatbuddy-backups` stores private JSON database snapshots under `{business_id}/{backup_id}.json` and `{business_id}/latest.json`; `public.backup_manifests` stores owner-scoped backup metadata.
+- Existing local tables: `users`, `auth_sessions`, `customers`, `suppliers`, `products`, `invoices`, `invoice_items`, `sync_queue`, `backup_metadata`.
 - The `users` table includes `business_logo` for invoice-ready business branding, separate from the personal/profile `img` field.
 - Owner user rows use `business_id = id`; employee rows should use the owner's user id as `business_id` when employee management is implemented.
 - Existing sync statuses: `synced`, `pending_insert`, `pending_update`, `pending_delete`, `pending_approval`, `rejected`.
@@ -295,7 +315,7 @@ Main Files:
   - `invoice_items.invoice_id -> invoices.id`
   - `invoice_items.product_id -> products.id`
 - Migration status: Manual local SQLite migration exists in `src/db/migrations.ts`; Supabase setup SQL exists in `supabase/bachatbuddy_setup.sql`; no generated Drizzle migration files are committed for the current schema.
-- Missing standalone local tables: ledger entries, payments, staging approval mirror, backup metadata, and sync conflict metadata. Employees currently use local SQLite `users` rows with `role = 'employee'` and shared owner `business_id`, but sync to Supabase `public.employees`.
+- Missing standalone local tables: ledger entries, payments, staging approval mirror, and sync conflict metadata. Employees currently use local SQLite `users` rows with `role = 'employee'` and shared owner `business_id`, but sync to Supabase `public.employees`.
 
 # State Management
 
@@ -413,6 +433,7 @@ Main Files:
 - Session service: `src/services/sessionService.ts` saves, restores, refreshes, clears local sessions, restores sessions from biometric credentials, and keeps biometric tokens fresh after refresh. Biometric restore returns from local SQLite immediately when saved credentials are valid, then refreshes Supabase tokens/profile in the background.
 - Profile service: `src/services/profileService.ts` fetches remote profile data, maps it to local shape, and performs local-first profile updates.
 - Media storage service: `src/services/mediaStorageService.ts` uploads local image URIs from sync payloads to the `bachatbuddy-media` Supabase Storage bucket and returns public URLs for remote rows.
+- Backup/restore service: `src/services/backupRestoreService.ts` creates typed local SQLite snapshots, uploads/restores the latest private Supabase backup, records local metadata, and updates cloud backup manifests.
 - Media backfill service: `src/services/mediaBackfillService.ts` finds existing SQLite records with local image URIs and enqueues update rows so older saved images can be uploaded through the normal sync queue.
 - User profile mapper: `src/services/userProfileMapper.ts` maps Supabase snake_case profile rows to local camelCase `User` records and back.
 - Database services/repositories:
@@ -425,6 +446,7 @@ Main Files:
   - `invoicesRepository`: local-first invoice create/update/delete flows with invoice item writes, product stock mutation transactions, customer due updates, and sync queue recovery rows.
   - `reportsRepository`: SQLite-backed stock, sales, and party report aggregation for chart datasets, status pies, and ranked lists.
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
+  - `backupMetadataRepository`: latest backup lookup, completed-backup metadata upsert, and restored-state marking.
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
 - App data provider: `src/components/providers/AppDataProvider.tsx` initializes SQLite, enqueues existing local media uploads, and starts/stops the background sync queue processor.
 - Employee sync note: employee queue rows target remote `employees`; old queued employee rows with table name `users` are also routed to `employees` by payload role for compatibility.
@@ -462,7 +484,7 @@ Main Files:
 - ✅ Immediate sync wake-up after local queue writes
 - ✅ React Native local image upload fix for Supabase Storage sync
 - ✅ Reports backed by SQLite queries
-- ⏳ Backup and restore backend
+- ✅ Backup and restore backend foundation
 - ⏳ Approval workflow
 
 # Pending Work
@@ -475,7 +497,8 @@ Main Files:
 - Wire dashboard screens to SQLite repositories.
 - Extend invoice transactions with ledger/payment entries after ledger and payment schema tables exist.
 - Persist saved-invoice customer/product edits with stock difference reconciliation and sync queue rows.
-- Add backup/restore implementation.
+- Complete backup/restore request approval UI and owner/employee request backend.
+- Add backup conflict/staleness handling before overwriting local data with older snapshots.
 - Add pagination and indexes where large lists are queried.
 - Add tests for repositories, sync queue processing, auth/session restoration, and financial/inventory transactions.
 - Clean existing lint warnings.
@@ -489,6 +512,8 @@ Main Files:
 - Product, invoice, party, and report screens are local-first, but dashboard, ledger, and payment modules do not yet have completed SQLite-backed flows.
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
 - Supabase media upload sync depends on the `bachatbuddy-media` bucket and policies from `supabase/bachatbuddy_setup.sql`; remote image upload will fail and retry if that SQL has not been applied, including the current MIME list for JPEG/PNG/WebP/GIF/HEIC/HEIF.
+- Supabase backup/restore depends on the `bachatbuddy-backups` bucket, `backup_manifests` table, and policies from `supabase/bachatbuddy_setup.sql`; backup or restore will fail if that SQL has not been applied.
+- Backup restore currently overwrites the implemented local SQLite tables from the latest cloud snapshot after confirmation; conflict checks for newer local changes and backup request approvals are still pending.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
 - Supabase setup is committed as a SQL setup file, but it is not yet organized as versioned Supabase CLI migrations.
 - Some sample/default data and legacy types still use snake_case names that differ from Drizzle camelCase fields.
@@ -520,6 +545,7 @@ Main Files:
 - Biometric preference is treated as device-local and does not mark the user profile as a pending cloud sync mutation.
 - Sync queue processing is app-started from `AppDataProvider`, processes FIFO, retries failed rows with exponential backoff, and only marks local records `synced` after Supabase confirms the queued mutation.
 - Add-invoice screens treat `INV-PENDING` as a draft only: due date, image, customer, products, and totals update screen state until SAVE runs the SQLite invoice transaction and assigns the real UUID/invoice number.
+- Backup snapshots are full local SQLite JSON snapshots for the currently implemented tables, stored privately in Supabase Storage with local `backup_metadata` as the UI source for last-backup details.
 
 # Coding Standards
 

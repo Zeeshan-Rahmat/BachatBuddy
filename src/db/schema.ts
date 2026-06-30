@@ -223,6 +223,28 @@ export const syncQueue = sqliteTable(
     ],
 );
 
+export const backupMetadata = sqliteTable(
+    'backup_metadata',
+    {
+        id: text('id').primaryKey(),
+        businessId: text('business_id').notNull(),
+        userId: text('user_id').references(() => users.id),
+        backupId: text('backup_id').notNull(),
+        storagePath: text('storage_path').notNull(),
+        status: text('status', { enum: ['completed', 'restored', 'failed'] }).notNull(),
+        sizeBytes: integer('size_bytes').notNull().default(0),
+        recordCounts: text('record_counts', { mode: 'json' }).notNull(),
+        lastError: text('last_error'),
+        restoredAt: integer('restored_at'),
+        updatedAt: integer('updated_at').notNull(),
+        createdAt: integer('created_at').notNull(),
+    },
+    (table) => [
+        index('idx_backup_metadata_business_id').on(table.businessId),
+        index('idx_backup_metadata_created_at').on(table.createdAt),
+    ],
+);
+
 export const userRelations = relations(users, ({ many }) => ({
     createdCustomers: many(customers, { relationName: 'createdCustomers' }),
     updatedCustomers: many(customers, { relationName: 'updatedCustomers' }),
@@ -324,3 +346,5 @@ export type InvoiceItemRow = typeof invoiceItems.$inferSelect;
 export type NewInvoiceItemRow = typeof invoiceItems.$inferInsert;
 export type SyncQueueRow = typeof syncQueue.$inferSelect;
 export type NewSyncQueueRow = typeof syncQueue.$inferInsert;
+export type BackupMetadataRow = typeof backupMetadata.$inferSelect;
+export type NewBackupMetadataRow = typeof backupMetadata.$inferInsert;
