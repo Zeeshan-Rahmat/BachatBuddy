@@ -1,4 +1,4 @@
-import { desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { requestSyncQueueProcessing } from '@/src/services/syncQueueNotifier';
 import { db } from '../client';
 import {
@@ -44,6 +44,7 @@ export type UpdateInvoiceTotalsInput = {
 
 export type UpdateInvoiceDetailInput = {
     lastUpdatedById?: string | null;
+    customerId?: string | null;
     dueDate?: number | null;
     img?: string | null;
     requiresApproval?: boolean;
@@ -398,9 +399,13 @@ export const updateInvoiceDetail = async (id: string, input: UpdateInvoiceDetail
     }
 
     const now = Date.now();
+    const nextCustomerId = Object.prototype.hasOwnProperty.call(input, 'customerId')
+        ? input.customerId ?? null
+        : existing.customerId;
     const updatedInvoice: InvoiceRow = {
         ...existing,
         lastUpdatedById: input.lastUpdatedById ?? existing.lastUpdatedById,
+        customerId: nextCustomerId,
         dueDate: input.dueDate ?? existing.dueDate,
         img: input.img ?? existing.img,
         syncStatus: input.requiresApproval
@@ -411,10 +416,76 @@ export const updateInvoiceDetail = async (id: string, input: UpdateInvoiceDetail
         updatedAt: now,
     };
     const operation: NewSyncQueueRow['operation'] = input.requiresApproval ? 'approval_request' : 'update';
+    const customerChanged = existing.customerId !== nextCustomerId;
+    const customerOperation: NewSyncQueueRow['operation'] = input.requiresApproval ? 'approval_request' : 'update';
+    const nextCustomerSyncStatus: CustomerRow['syncStatus'] = input.requiresApproval ? 'pending_approval' : 'pending_update';
 
     db.transaction((tx) => {
+        if (customerChanged && nextCustomerId) {
+            const nextCustomerRows = tx.select().from(customers).where(eq(customers.id, nextCustomerId)).limit(1).all();
+
+            if (!nextCustomerRows[0] || nextCustomerRows[0].syncStatus === 'pending_delete') {
+                throw new Error('Selected customer is no longer available.');
+            }
+        }
+
         tx.update(invoices).set(updatedInvoice).where(eq(invoices.id, id)).run();
         tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, updatedInvoice, now)).run();
+
+        if (customerChanged && existing.customerId) {
+            const oldCustomerRows = tx.select().from(customers).where(eq(customers.id, existing.customerId)).limit(1).all();
+            const oldCustomer = oldCustomerRows[0];
+
+            if (oldCustomer) {
+                const latestRemainingInvoice = tx
+                    .select()
+                    .from(invoices)
+                    .where(and(
+                        eq(invoices.customerId, oldCustomer.id),
+                        ne(invoices.id, id),
+                        ne(invoices.syncStatus, 'pending_delete'),
+                    ))
+                    .orderBy(desc(invoices.createdAt))
+                    .limit(1)
+                    .all()[0];
+                const updatedOldCustomer: CustomerRow = {
+                    ...oldCustomer,
+                    totalPurchases: Math.max(0, oldCustomer.totalPurchases - existing.totalAmount),
+                    pendingDues: Math.max(0, oldCustomer.pendingDues - existing.remainingAmount),
+                    totalOrders: Math.max(0, oldCustomer.totalOrders - 1),
+                    lastPurchaseDate: latestRemainingInvoice?.createdAt ?? null,
+                    syncStatus: oldCustomer.syncStatus === 'pending_insert'
+                        ? 'pending_insert'
+                        : nextCustomerSyncStatus,
+                    updatedAt: now,
+                };
+
+                tx.update(customers).set(updatedOldCustomer).where(eq(customers.id, oldCustomer.id)).run();
+                tx.insert(syncQueue).values(buildQueueRow('customers', oldCustomer.id, customerOperation, updatedOldCustomer, now)).run();
+            }
+        }
+
+        if (customerChanged && nextCustomerId) {
+            const newCustomerRows = tx.select().from(customers).where(eq(customers.id, nextCustomerId)).limit(1).all();
+            const newCustomer = newCustomerRows[0];
+
+            if (newCustomer) {
+                const updatedNewCustomer: CustomerRow = {
+                    ...newCustomer,
+                    totalPurchases: newCustomer.totalPurchases + existing.totalAmount,
+                    pendingDues: newCustomer.pendingDues + existing.remainingAmount,
+                    totalOrders: newCustomer.totalOrders + 1,
+                    lastPurchaseDate: Math.max(newCustomer.lastPurchaseDate ?? 0, existing.createdAt),
+                    syncStatus: newCustomer.syncStatus === 'pending_insert'
+                        ? 'pending_insert'
+                        : nextCustomerSyncStatus,
+                    updatedAt: now,
+                };
+
+                tx.update(customers).set(updatedNewCustomer).where(eq(customers.id, newCustomer.id)).run();
+                tx.insert(syncQueue).values(buildQueueRow('customers', newCustomer.id, customerOperation, updatedNewCustomer, now)).run();
+            }
+        }
     });
     requestSyncQueueProcessing();
 

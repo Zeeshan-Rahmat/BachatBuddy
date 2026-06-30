@@ -95,6 +95,10 @@ export function generateInvoiceHtml(
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    @page {
+      margin: 14px;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -106,13 +110,15 @@ export function generateInvoiceHtml(
       font-size: ${sizes.base}px;
       color: #1a1a1a;
       background: #ffffff;
+      padding: 14px;
     }
 
     .invoice-wrapper {
-    max-width: 600px;
-    margin: 0 auto;
-    background: #fff;
-}
+      width: 100%;
+      max-width: 560px;
+      margin: 0 auto;
+      background: #fff;
+    }
 
     /* ── Striped Bar (top & bottom) ─────────────────────────────────────── */
     .striped-bar {

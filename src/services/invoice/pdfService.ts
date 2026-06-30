@@ -11,8 +11,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Directory, File, Paths } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import { generateInvoiceHtml } from '../../templates/invoiceTemplate';
 import type { InvoiceCustomization, InvoiceData } from '../../types/invoice';
 
@@ -83,6 +85,51 @@ export async function saveInvoicePdf(
     sourceFile.copy(destFile);
 
     return destFile.uri;
+}
+
+export async function saveInvoicePdfWithPicker(
+    data: InvoiceData,
+    customization: InvoiceCustomization
+): Promise<string | null> {
+    const tempUri = await generateInvoicePdf(data, customization);
+    const fileName = `Invoice_${data.invoiceNo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+    if (Platform.OS !== 'android') {
+        const canShare = await Sharing.isAvailableAsync();
+
+        if (!canShare) {
+            throw new Error('Saving outside the app is not available on this device.');
+        }
+
+        await Sharing.shareAsync(tempUri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `Save Invoice ${data.invoiceNo}`,
+            UTI: 'com.adobe.pdf',
+        });
+
+        return tempUri;
+    }
+
+    const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+    if (!permissions.granted) {
+        return null;
+    }
+
+    const destinationUri = await FileSystem.StorageAccessFramework.createFileAsync(
+        permissions.directoryUri,
+        fileName,
+        'application/pdf',
+    );
+    const pdfBase64 = await FileSystem.readAsStringAsync(tempUri, {
+        encoding: FileSystem.EncodingType.Base64,
+    });
+
+    await FileSystem.StorageAccessFramework.writeAsStringAsync(destinationUri, pdfBase64, {
+        encoding: FileSystem.EncodingType.Base64,
+    });
+
+    return destinationUri;
 }
 
 // ─── Direct print (opens native print dialog) ────────────────────────────────

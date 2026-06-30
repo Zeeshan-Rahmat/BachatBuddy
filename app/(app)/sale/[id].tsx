@@ -8,6 +8,7 @@ import DeleteModal from '@/src/components/modal/DeleteModal'
 import InfoField from '@/src/components/ui/InfoField'
 import InvoiceItemCard from '@/src/components/ui/InvoiceItemCard'
 import { ICONS } from '@/src/constants/icons'
+import { ROUTES } from '@/src/constants/routes'
 import { COLORS } from '@/src/constants/theme'
 import { getInvoiceByIdWithRelations, markInvoicePendingDelete } from '@/src/db/repositories/invoicesRepository'
 import { mapInvoiceRowToAppInvoice } from '@/src/services/invoice/invoiceUiMapper'
@@ -78,6 +79,17 @@ const InvoiceDetailScreen = () => {
 
         setIsDeleteModalOpen(false);
         router.back()
+    }
+
+    const handlePreview = () => {
+        if (!invoice) {
+            return;
+        }
+
+        router.push({
+            pathname: ROUTES.SALE.PREVIEW_INVOICE,
+            params: { id: invoice.invoice_id },
+        });
     }
 
     return (
@@ -176,6 +188,7 @@ const InvoiceDetailScreen = () => {
                                 invoice={invoice}
                                 onDelete={() => setIsDeleteModalOpen(true)}
                                 onPress={() => setIsEditInvoiceSubtotalModalOpen(true)}
+                                onPreview={handlePreview}
                             />
                         )
                         : <Text className='text-xl text-dark-50 text-center font-semibold'>Not Found</Text>
@@ -213,9 +226,11 @@ const InvoiceDetailScreen = () => {
                 invoice &&
                 <EditInvoiceCustomerModal
                     visible={isEditInvoiceCustomerModalOpen}
+                    invoiceId={invoice.invoice_id}
                     selectedCustomer={selectedCustomer}
                     onClose={() => setIsEditInvoiceCustomerModalOpen(false)}
                     setSelectedCustomer={setSelectedCustomer}
+                    onSaved={loadInvoice}
                 />
             }
 
@@ -296,13 +311,15 @@ interface InvoiceTotalProps {
     invoice: InvoiceType,
     onDelete: () => void,
     onPress: () => void
+    onPreview: () => void,
 }
 
 
 function InvoiceTotal({
     invoice,
     onDelete,
-    onPress
+    onPress,
+    onPreview
 }: InvoiceTotalProps
 ): React.JSX.Element {
 
@@ -358,6 +375,7 @@ function InvoiceTotal({
                     leftIcon={<MaterialCommunityIcons name="eye" size={24} color="white" />}
                     label='PREVIEW'
                     width='flex-1'
+                    onPress={onPreview}
                 />
             </View>
 

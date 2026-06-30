@@ -117,7 +117,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Invoice list, add, detail, filtering, add-invoice customer/product/subtotal editing, and saved-invoice amount/date/image edits are backed by SQLite. Invoice creation writes the invoice, invoice items, product stock decrements, customer purchase/due updates, and sync queue rows inside one local transaction before the UI returns to the invoice list. Invoice deletion marks the invoice/items pending delete and restores product stock in the same local transaction. Add-invoice draft detail edits update local draft state until the full invoice is saved. Invoice PDF and invoice viewer services exist.
+Invoice list, add, detail, filtering, add-invoice customer/product/subtotal editing, saved-invoice customer selection, and saved-invoice amount/date/image edits are backed by SQLite. Invoice creation writes the invoice, invoice items, product stock decrements, customer purchase/due updates, and sync queue rows inside one local transaction before the UI returns to the invoice list. Invoice deletion marks the invoice/items pending delete and restores product stock in the same local transaction. Saved-invoice customer changes update the invoice `customer_id`, move invoice totals between old/new customer aggregates, and enqueue recoverable sync rows. Add-invoice draft detail edits update local draft state until the full invoice is saved. Invoice preview, PDF generation, print, share, and save-location picker flows exist.
 
 Completed Updates:
 - Added `src/db/repositories/invoicesRepository.ts` for relation-backed invoice listing/detail lookup, local-first invoice creation, invoice detail/amount updates, and pending-delete handling.
@@ -128,12 +128,18 @@ Completed Updates:
 - Replaced invoice product selection sample data with SQLite products and quantity/price draft updates.
 - Fixed add-invoice due date/image edits so unsaved `INV-PENDING` drafts update local draft state instead of calling SQLite with an empty invoice id.
 - Clarified that add-invoice drafts keep `invoice_id = ""` and `invoice_number = "INV-PENDING"` until the user presses SAVE; only the save transaction assigns `crypto.randomUUID()` and a persisted invoice number.
+- Added saved-invoice customer updates from the invoice detail screen, including SQLite invoice updates, old/new customer aggregate reconciliation, sync queue rows, and customer creation from the invoice customer picker.
+- Added `app/(app)/sale/preview-invoice.tsx` and route wiring so the invoice detail `PREVIEW` button opens a local SQLite-backed invoice preview screen.
+- Added invoice preview mapping in `src/services/invoice/invoicePreviewMapper.ts` so persisted invoices render through the existing invoice HTML/PDF template with business profile data and saved signature state.
+- Added preview actions for print, share, and save. Android save opens the system folder picker through Expo Storage Access Framework; non-Android platforms use the native share/save sheet.
+- Added print/PDF page margins to the invoice template so generated invoices do not touch page edges.
 
 Main Files:
 - `app/(app)/sale`
 - `src/db/repositories/invoicesRepository.ts`
 - `src/db/repositories/customersRepository.ts`
 - `src/services/invoice/invoiceUiMapper.ts`
+- `src/services/invoice/invoicePreviewMapper.ts`
 - `src/services/invoice/pdfService.ts`
 - `src/services/invoice/invoiceViewer.tsx`
 - `src/templates/invoiceTemplate.ts`
@@ -451,7 +457,7 @@ Main Files:
 - App data provider: `src/components/providers/AppDataProvider.tsx` initializes SQLite, enqueues existing local media uploads, and starts/stops the background sync queue processor.
 - Employee sync note: employee queue rows target remote `employees`; old queued employee rows with table name `users` are also routed to `employees` by payload role for compatibility.
 - Storage service: `src/lib/secureStorage.ts` stores biometric credentials, token expiry, and flags in Expo SecureStore.
-- Invoice services: `src/services/invoice/pdfService.ts`, `src/services/invoice/invoiceViewer.tsx`.
+- Invoice services: `src/services/invoice/pdfService.ts`, `src/services/invoice/invoiceViewer.tsx`, `src/services/invoice/invoiceUiMapper.ts`, `src/services/invoice/invoicePreviewMapper.ts`.
 - Utilities: `src/Utility` contains chart scaling, report conversion, date, ranking, filtering, and status color helpers.
 
 # Current Progress
@@ -477,6 +483,8 @@ Main Files:
 - ✅ Sync queue processor
 - ✅ Inventory screens backed fully by SQLite
 - ✅ Invoice repositories and stock mutation transactions
+- ✅ Saved-invoice customer updates backed by SQLite and sync queue rows
+- ✅ Invoice preview, print/share/save PDF actions, and Android save-location picker
 - ✅ Customer/supplier/employee repositories
 - ✅ Customer/supplier/employee backed fully by SQLite
 - ✅ Supabase Storage image upload integration for synced media payloads
@@ -496,7 +504,7 @@ Main Files:
 - Add ledger and payment schema/tables.
 - Wire dashboard screens to SQLite repositories.
 - Extend invoice transactions with ledger/payment entries after ledger and payment schema tables exist.
-- Persist saved-invoice customer/product edits with stock difference reconciliation and sync queue rows.
+- Persist saved-invoice product edits with stock difference reconciliation and sync queue rows.
 - Complete backup/restore request approval UI and owner/employee request backend.
 - Add backup conflict/staleness handling before overwriting local data with older snapshots.
 - Add pagination and indexes where large lists are queried.
@@ -545,6 +553,8 @@ Main Files:
 - Biometric preference is treated as device-local and does not mark the user profile as a pending cloud sync mutation.
 - Sync queue processing is app-started from `AppDataProvider`, processes FIFO, retries failed rows with exponential backoff, and only marks local records `synced` after Supabase confirms the queued mutation.
 - Add-invoice screens treat `INV-PENDING` as a draft only: due date, image, customer, products, and totals update screen state until SAVE runs the SQLite invoice transaction and assigns the real UUID/invoice number.
+- Invoice preview reads persisted invoice data from SQLite, maps it through `invoicePreviewMapper`, and renders/prints/shares/saves using the shared HTML/PDF invoice template so preview and exported files stay consistent.
+- Android invoice PDF save uses Expo Storage Access Framework to let the user choose a folder; non-Android platforms use the native share/save sheet because Expo does not expose the same folder picker there.
 - Backup snapshots are full local SQLite JSON snapshots for the currently implemented tables, stored privately in Supabase Storage with local `backup_metadata` as the UI source for last-backup details.
 
 # Coding Standards
