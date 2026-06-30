@@ -72,6 +72,34 @@ export const sessionRepository = {
     };
   },
 
+  async findActiveSessionByUserId(userId: string): Promise<{
+    user_id: string;
+    access_token: string;
+    refresh_token: string;
+    expires_at: number;
+  } | null> {
+    const rows = await db
+      .select()
+      .from(authSessions)
+      .where(
+        and(
+          eq(authSessions.userId, userId),
+          eq(authSessions.isActive, true),
+          gt(authSessions.expiresAt, nowMs())
+        )
+      )
+      .limit(1);
+
+    if (rows.length === 0) return null;
+
+    return {
+      user_id: rows[0].userId,
+      access_token: rows[0].accessToken,
+      refresh_token: rows[0].refreshToken,
+      expires_at: rows[0].expiresAt,
+    };
+  },
+
   // ── Update tokens after a Supabase background refresh ────────────────────
   async refreshTokens(
     userId: string,

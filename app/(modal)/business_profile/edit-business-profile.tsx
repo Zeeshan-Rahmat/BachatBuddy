@@ -4,6 +4,7 @@ import InputText from '@/src/components/common/InputText';
 import Title from '@/src/components/common/Title';
 import CustomeModal from '@/src/components/modal/CustomModal';
 import { ICONS } from '@/src/constants/icons';
+import { persistLocalMedia } from '@/src/services/localMediaService';
 import { updateUser } from '@/src/services/profileService';
 import { useAuthStore } from '@/src/store/authStore';
 import type { User } from '@/src/types/auth';
@@ -91,7 +92,11 @@ const EditBusinessProfile = ({ visible, user, onClose }: EditBusinessProfileProp
         });
 
         if (!result.canceled) {
-            setLogoUri(result.assets[0].uri);
+            try {
+                setLogoUri(persistLocalMedia(result.assets[0].uri, 'business-logos', user.id));
+            } catch {
+                Alert.alert('Image Failed', 'Unable to save this logo locally. Please select another image.');
+            }
         }
     };
 

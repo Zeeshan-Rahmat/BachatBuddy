@@ -50,7 +50,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Biometric credential storage and authentication are implemented through Expo Local Authentication and SecureStore. Tokens and expiry are stored for biometric re-auth; passwords are never stored. The startup/sign-in routing now distinguishes between enabled biometrics and a valid saved biometric credential: app launch opens fingerprint only when a usable credential exists; otherwise it opens sign-in. The sign-in screen's `use Touch ID` action opens fingerprint when a valid credential exists, or `manage-fingerprint` when setup is missing. Touch ID setup now uses email-or-username plus password and infers the role from the authenticated profile. Expired, malformed, or stale biometric credentials are rejected and cleared so the next Touch ID attempt routes to setup. Biometric unlock restores the local SQLite session immediately and refreshes Supabase tokens/profile in the background to keep login fast and local-first. Local-only employee sessions are not enabled for Touch ID setup yet because biometric restore currently expects cloud auth tokens.
+Biometric credential storage and authentication are implemented through Expo Local Authentication and SecureStore. SecureStore now stores only compact biometric metadata and the enabled flag; session access/refresh tokens remain in SQLite `auth_sessions` to avoid SecureStore size limits. Passwords are never stored. The startup/sign-in routing now distinguishes between enabled biometrics and a valid saved biometric credential: app launch opens fingerprint only when a usable credential exists; otherwise it opens sign-in. The sign-in screen's `use Touch ID` action opens fingerprint when a valid credential exists, or `manage-fingerprint` when setup is missing. Touch ID setup now uses email-or-username plus password and infers the role from the authenticated profile. Expired, malformed, or stale biometric credentials are rejected and cleared so the next Touch ID attempt routes to setup. Biometric unlock restores the active local SQLite session after device authentication and refreshes Supabase tokens/profile in the background to keep login fast and local-first. Local-only employee sessions are not enabled for Touch ID setup yet because biometric setup still requires a cloud-authenticated account.
 
 Main Files:
 - `app/(auth)/fingerprint.tsx`
@@ -66,7 +66,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Expo Router groups are set up for auth, protected app screens, and modals. `AuthGuard` blocks unauthenticated app access and employee access to owner-only dashboard/report routes. Session bootstrap initializes SQLite and biometric state only; it does not automatically authenticate from a previous saved SQLite session, so protected app screens remain locked until password sign-in or successful fingerprint unlock.
+Expo Router groups are set up for auth, protected app screens, nested sale routes, and modals. `AuthGuard` blocks unauthenticated app access and employee access to owner-only dashboard/report routes. Session bootstrap initializes SQLite and biometric state only; it does not automatically authenticate from a previous saved SQLite session, so protected app screens remain locked until password sign-in or successful fingerprint unlock. The app stack registers the nested sale route group as `sale`, avoiding Expo Router child-name warnings for `sale/index`.
 
 Main Files:
 - `app/_layout.tsx`
@@ -212,11 +212,12 @@ Main Files:
 Status: Completed
 
 Description:
-Profile and business profile modals are integrated with the local auth profile. Screens, drawer profile card, and app top bar render the current SQLite-backed user from the Zustand session cache instead of hardcoded values. Profile and business profile edits initialize from the saved local user, write updates to SQLite through `usersRepository.updateProfile`, enqueue a `sync_queue` update row, refresh the auth store immediately, and attempt a best-effort Supabase profile update while the full sync engine is still pending. Business profile now stores a dedicated `businessLogo`/`business_logo` image separate from the personal profile image so invoices can later use the business logo without overwriting the user avatar. Best-effort profile cloud writes now upload local profile/business logo image URIs to Supabase Storage before updating the remote profile row.
+Profile and business profile modals are integrated with the local auth profile. Screens, drawer profile card, and app top bar render the current SQLite-backed user from the Zustand session cache instead of hardcoded values. Profile and business profile edits initialize from the saved local user, write updates to SQLite through `usersRepository.updateProfile`, enqueue a `sync_queue` update row, refresh the auth store immediately, and attempt a best-effort Supabase profile update while the full sync engine is still pending. Business profile stores a dedicated `businessLogo`/`business_logo` image separate from the personal profile image so invoices can later use the business logo without overwriting the user avatar. Picked business logos are copied into persistent app document storage before SQLite is updated, preventing temporary ImagePicker cache URIs from disappearing after restart/session expiry. Profile fetch/sign-in queries include `business_logo`, and profile sync preserves newer pending local profile changes so cloud-null values do not wipe locally saved logos. Best-effort profile cloud writes upload local profile/business logo image URIs to Supabase Storage before updating the remote profile row.
 
 Main Files:
 - `app/(modal)/profile`
 - `app/(modal)/business_profile`
+- `src/services/localMediaService.ts`
 - `src/services/profileService.ts`
 - `src/services/mediaStorageService.ts`
 - `src/db/repositories/usersRepository.ts`
@@ -335,7 +336,7 @@ Main Files:
 - `src/store/authStore.ts`: Auth session, current user, role, loading state, biometric flag, and RBAC helper methods. Zustand only; SQLite stores durable session/profile data.
 - `src/store/biometricStore.ts`: Biometric enable/check/authenticate workflow using secure storage and Expo Local Authentication. It treats missing, expired, malformed, or stale credentials as disabled and clears stale SecureStore flags.
 - `src/store/invoiceCustomizationStore.ts`: Invoice customization UI/template options.
-- `src/store/secureStorage.ts`: Secure storage key definitions/helper area.
+- `src/lib/secureStorage.ts`: Secure storage key definitions/helper area for compact biometric metadata.
 - Persistence strategy: Durable business/auth data should live in SQLite or SecureStore where appropriate. Zustand is runtime state/cache only.
 
 # Navigation
@@ -440,12 +441,13 @@ Main Files:
 
 # Services
 
-- Supabase service: `src/lib/supabase.ts` creates the Supabase client with SecureStore-backed auth persistence.
+- Supabase service: `src/lib/supabase.ts` creates the Supabase client with app-managed SQLite session persistence; Supabase Auth SecureStore persistence is disabled to avoid oversized SecureStore payloads.
 - Supabase setup: `supabase/bachatbuddy_setup.sql` configures profile/approval cloud tables, RLS policies, helper RPCs, and timestamp triggers.
 - Auth service: `src/services/auth/authService.ts` handles Supabase Auth and local-first profile creation.
-- Session service: `src/services/sessionService.ts` saves, restores, refreshes, clears local sessions, restores sessions from biometric credentials, and keeps biometric tokens fresh after refresh. Biometric restore returns from local SQLite immediately when saved credentials are valid, then refreshes Supabase tokens/profile in the background.
+- Session service: `src/services/sessionService.ts` saves, restores, refreshes, clears local sessions, restores sessions after biometric authentication, and keeps local SQLite tokens fresh after refresh. Biometric restore returns from the active local SQLite session immediately when compact SecureStore metadata is valid, then refreshes Supabase tokens/profile in the background.
 - Profile service: `src/services/profileService.ts` fetches remote profile data, maps it to local shape, and performs local-first profile updates.
 - Media storage service: `src/services/mediaStorageService.ts` uploads local image URIs from sync payloads to the `bachatbuddy-media` Supabase Storage bucket and returns public URLs for remote rows.
+- Local media service: `src/services/localMediaService.ts` copies selected local media into persistent app document storage before SQLite stores the URI.
 - Backup/restore service: `src/services/backupRestoreService.ts` creates typed local SQLite snapshots, uploads/restores the latest private Supabase backup, records local metadata, and updates cloud backup manifests.
 - Media backfill service: `src/services/mediaBackfillService.ts` finds existing SQLite records with local image URIs and enqueues update rows so older saved images can be uploaded through the normal sync queue.
 - User profile mapper: `src/services/userProfileMapper.ts` maps Supabase snake_case profile rows to local camelCase `User` records and back.
@@ -464,7 +466,7 @@ Main Files:
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
 - App data provider: `src/components/providers/AppDataProvider.tsx` initializes SQLite, enqueues existing local media uploads, and starts/stops the background sync queue processor.
 - Employee sync note: employee queue rows target remote `employees`; old queued employee rows with table name `users` are also routed to `employees` by payload role for compatibility.
-- Storage service: `src/lib/secureStorage.ts` stores biometric credentials, token expiry, and flags in Expo SecureStore.
+- Storage service: `src/lib/secureStorage.ts` stores compact biometric metadata, expiry, and enabled flags in Expo SecureStore; session tokens are stored in SQLite.
 - Invoice services: `src/services/invoice/pdfService.ts`, `src/services/invoice/invoiceViewer.tsx`, `src/services/invoice/invoiceUiMapper.ts`, `src/services/invoice/invoicePreviewMapper.ts`.
 - Utilities: `src/Utility` contains chart scaling, report conversion, date, ranking, filtering, and status color helpers.
 
@@ -502,6 +504,10 @@ Main Files:
 - ✅ Reports backed by SQLite queries
 - ✅ Dashboard summary cards backed by SQLite queries
 - ✅ Dashboard quick action/report cards restored to route-button behavior
+- ✅ Business logo local persistence and `business_logo` profile restore fixes
+- ✅ Expo Router nested sale route warning fixed
+- ✅ Reanimated transform/layout animation warning fixed on splash logo
+- ✅ SecureStore oversized session payload warning fixed by keeping tokens in SQLite
 - ✅ Backup and restore backend foundation
 - ⏳ Approval workflow
 
@@ -554,12 +560,12 @@ Main Files:
 - Employee records are represented locally as SQLite `users` rows with `role = 'employee'`; in Supabase they are business directory rows in `public.employees`, not auth profile rows in `public.users`.
 - Profile, business profile, drawer profile card, and app top bar now read from the local auth profile cache; successful saves refresh the Zustand session cache from the saved SQLite row.
 - Business logos are stored as a dedicated local user/business profile field (`businessLogo` locally, `business_logo` in SQLite/Supabase payloads) so invoice generation can reference the logo independently from the user avatar.
-- Picked images remain local SQLite values for immediate offline use; sync uploads `img` and `business_logo` values to Supabase Storage and sends public Storage URLs in Supabase row/approval payloads.
-- Biometric login stores tokens and expiry in SecureStore, never passwords, and uses those tokens only after device biometric authentication succeeds.
+- Picked images remain local SQLite values for immediate offline use; business logos are first copied to persistent app document storage, while sync uploads `img` and `business_logo` values to Supabase Storage and sends public Storage URLs in Supabase row/approval payloads.
+- Biometric login stores compact user/session metadata and expiry in SecureStore, never passwords or large access/refresh token payloads. Session tokens are stored in SQLite `auth_sessions` and are used only after device biometric authentication succeeds.
 - Password sign-in uses one email-or-username identifier. The UI never asks the user to choose a role; role comes from the SQLite/Supabase profile. Local employee records can sign in from SQLite by email or username, including employees whose username is effectively absent or email-derived.
 - App launch does not auto-restore the previous SQLite session into authenticated Zustand state. It initializes SQLite/biometric state, then requires password sign-in or fingerprint unlock before protected routes can be used.
-- Biometric credentials must be valid, non-expired, and structurally complete to count as setup. Stale SecureStore flags are cleared when no usable credential exists.
-- Biometric unlock is local-first: it restores the SQLite session immediately from saved secure credentials, routes into the app, and refreshes Supabase tokens/profile in the background.
+- Biometric credentials must be valid, non-expired, and structurally complete to count as setup. Stale SecureStore flags are cleared when no usable metadata exists.
+- Biometric unlock is local-first: it validates compact SecureStore metadata, restores the active SQLite session immediately, routes into the app, and refreshes Supabase tokens/profile in the background.
 - Biometric preference is treated as device-local and does not mark the user profile as a pending cloud sync mutation.
 - Sync queue processing is app-started from `AppDataProvider`, processes FIFO, retries failed rows with exponential backoff, and only marks local records `synced` after Supabase confirms the queued mutation.
 - Add-invoice screens treat `INV-PENDING` as a draft only: due date, image, customer, products, and totals update screen state until SAVE runs the SQLite invoice transaction and assigns the real UUID/invoice number.

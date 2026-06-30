@@ -119,22 +119,27 @@ export async function restoreSessionFromBiometricCredentials(
       return { success: false, error: 'Session expired. Please sign in with your password.', code: 'session_expired' };
     }
 
-    const localProfile = await usersRepository.findById(credentials.user_id);
+    const [localProfile, localSession] = await Promise.all([
+      usersRepository.findById(credentials.user_id),
+      sessionRepository.findActiveSessionByUserId(credentials.user_id),
+    ]);
 
     if (!localProfile) {
       return { success: false, error: 'Profile not found. Please sign in with your password.', code: 'user_not_found' };
     }
 
+    if (!localSession) {
+      return { success: false, error: 'Session expired. Please sign in with your password.', code: 'session_expired' };
+    }
+
     const session: AuthSession = {
-      access_token: credentials.access_token,
-      refresh_token: credentials.refresh_token,
-      expires_at: credentials.expires_at,
+      access_token: localSession.access_token,
+      refresh_token: localSession.refresh_token,
+      expires_at: localSession.expires_at,
       user: localProfile,
     };
 
-    await saveSession(session);
-
-    void refreshBiometricSessionInBackground(credentials).catch((error: unknown) => {
+    void refreshBiometricSessionInBackground(session).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       console.warn('[Session] Background biometric refresh failed:', message);
     });
@@ -149,10 +154,10 @@ export async function restoreSessionFromBiometricCredentials(
   }
 }
 
-async function refreshBiometricSessionInBackground(credentials: BiometricCredentials): Promise<void> {
+async function refreshBiometricSessionInBackground(session: AuthSession): Promise<void> {
   const { data, error } = await supabase.auth.setSession({
-    access_token: credentials.access_token,
-    refresh_token: credentials.refresh_token,
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
   });
 
   if (error || !data.session) {
@@ -161,10 +166,10 @@ async function refreshBiometricSessionInBackground(credentials: BiometricCredent
 
   const expiresAt = data.session.expires_at
     ? data.session.expires_at * 1000
-    : credentials.expires_at || Date.now() + 3600_000;
+    : session.expires_at || Date.now() + 3600_000;
 
   await sessionRepository.refreshTokens(
-    credentials.user_id,
+    session.user.id,
     data.session.access_token,
     data.session.refresh_token,
     expiresAt
@@ -175,7 +180,7 @@ async function refreshBiometricSessionInBackground(credentials: BiometricCredent
     expiresAt
   );
 
-  await syncProfileToLocal(credentials.user_id);
+  await syncProfileToLocal(session.user.id);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

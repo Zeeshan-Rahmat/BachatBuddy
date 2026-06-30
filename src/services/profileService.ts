@@ -18,7 +18,7 @@ export async function fetchRemoteUser(userId: string): Promise<AuthResult<User>>
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, business_id, business_name, name, phone, business_phone, email, business_email, role, username, password_hash, status, biometric_enabled, address, business_address, img, sync_status, updated_at, created_at')
+      .select('id, business_id, business_name, name, phone, business_phone, email, business_email, role, username, password_hash, status, biometric_enabled, address, business_address, business_logo, img, sync_status, updated_at, created_at')
       .eq('id', userId)
       .single();
 
@@ -44,6 +44,16 @@ export async function fetchRemoteUser(userId: string): Promise<AuthResult<User>>
 export async function syncProfileToLocal(userId: string): Promise<AuthResult<User>> {
   const remoteResult = await fetchRemoteUser(userId);
   if (!remoteResult.success) return remoteResult;
+
+  const localProfile = await usersRepository.findById(userId);
+
+  if (
+    localProfile
+    && localProfile.syncStatus !== 'synced'
+    && localProfile.updatedAt >= remoteResult.data.updatedAt
+  ) {
+    return { success: true, data: localProfile };
+  }
 
   await usersRepository.upsertUser(remoteResult.data);
   return { success: true, data: remoteResult.data };

@@ -24,8 +24,6 @@ function isBiometricCredentials(value: unknown): value is BiometricCredentials {
     typeof credentials.email === 'string' &&
     typeof credentials.username === 'string' &&
     (credentials.role === 'owner' || credentials.role === 'employee') &&
-    typeof credentials.access_token === 'string' &&
-    typeof credentials.refresh_token === 'string' &&
     typeof credentials.expires_at === 'number' &&
     credentials.expires_at > Date.now()
   );
@@ -38,9 +36,17 @@ function isBiometricCredentials(value: unknown): value is BiometricCredentials {
 export async function saveBiometricCredentials(
   credentials: BiometricCredentials
 ): Promise<void> {
+  const storedCredentials: BiometricCredentials = {
+    user_id: credentials.user_id,
+    email: credentials.email,
+    username: credentials.username,
+    role: credentials.role,
+    expires_at: credentials.expires_at,
+  };
+
   await SecureStore.setItemAsync(
     KEYS.BIOMETRIC_CREDENTIALS,
-    JSON.stringify(credentials)
+    JSON.stringify(storedCredentials)
   );
   await SecureStore.setItemAsync(KEYS.BIOMETRIC_ENABLED, 'true');
 }
@@ -68,8 +74,8 @@ export async function clearBiometricCredentials(): Promise<void> {
 
 // ─── Update only the tokens (after a refresh) without touching other fields ──
 export async function updateBiometricTokens(
-  accessToken: string,
-  refreshToken: string,
+  _accessToken: string,
+  _refreshToken: string,
   expiresAt: number
 ): Promise<void> {
   const existing = await loadBiometricCredentials();
@@ -77,8 +83,6 @@ export async function updateBiometricTokens(
 
   await saveBiometricCredentials({
     ...existing,
-    access_token: accessToken,
-    refresh_token: refreshToken,
     expires_at: expiresAt,
   });
 }

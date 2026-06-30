@@ -1,6 +1,5 @@
 import '@/src/lib/crypto';
 import { createClient } from '@supabase/supabase-js';
-import * as SecureStore from 'expo-secure-store';
 import 'react-native-url-polyfill/auto';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -13,17 +12,10 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 // ─── SecureStore Adapter ──────────────────────────────────────────────────────
-const ExpoSecureStoreAdapter = {
-    getItem: (key: string): Promise<string | null> => SecureStore.getItemAsync(key),
-    setItem: (key: string, value: string): Promise<void> => SecureStore.setItemAsync(key, value),
-    removeItem: (key: string): Promise<void> => SecureStore.deleteItemAsync(key),
-};
-
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
-        storage: ExpoSecureStoreAdapter,
         autoRefreshToken: true,
-        persistSession: true,
+        persistSession: false,
         detectSessionInUrl: false,
     },
 });

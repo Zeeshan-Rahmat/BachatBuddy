@@ -113,23 +113,30 @@ export default function SplashScreen() {
         >
           <Animated.View
             entering={FadeInDown.duration(550).springify().damping(14)}
-            style={[
-              {
-                width: 152,
-                height: 152,
-                borderRadius: 76,
-                backgroundColor: 'rgba(255,255,255,0.96)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              },
-              logoAnimatedStyle,
-            ]}
+            style={{
+              width: 152,
+              height: 152,
+            }}
           >
-            <Image
-              source={require('../assets/images/logo.png')}
-              style={{ width: 118, height: 118 }}
-              resizeMode="contain"
-            />
+            <Animated.View
+              style={[
+                {
+                  width: 152,
+                  height: 152,
+                  borderRadius: 76,
+                  backgroundColor: 'rgba(255,255,255,0.96)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+                logoAnimatedStyle,
+              ]}
+            >
+              <Image
+                source={require('../assets/images/logo.png')}
+                style={{ width: 118, height: 118 }}
+                resizeMode="contain"
+              />
+            </Animated.View>
           </Animated.View>
 
           <Animated.View entering={FadeInUp.duration(500).delay(180)}>

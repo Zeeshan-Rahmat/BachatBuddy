@@ -125,8 +125,8 @@ export interface BiometricCredentials {
     email: string;
     username: string;
     role: UserRole;
-    access_token: string;
-    refresh_token: string;
+    access_token?: string;
+    refresh_token?: string;
     expires_at?: number;
 }
 

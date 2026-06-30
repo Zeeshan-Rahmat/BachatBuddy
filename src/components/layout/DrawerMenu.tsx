@@ -57,10 +57,14 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
   const overlayOpacity = useSharedValue(0);
 
   const [isLogoutModelOpen, setIsLogoutModelOpen] = useState(false);
+  const [shouldRender, setShouldRender] = useState(isOpen);
 
   // ── Animation + Status Bar style ─────────────────────────────────────────
   useEffect(() => {
+    let closeTimer: ReturnType<typeof setTimeout> | undefined;
+
     if (isOpen) {
+      setShouldRender(true);
       translateX.value = withTiming(0, {
         duration: ANIMATION_DURATION,
         easing: Easing.out(Easing.cubic),
@@ -72,8 +76,17 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
         easing: Easing.in(Easing.cubic),
       });
       overlayOpacity.value = withTiming(0, { duration: ANIMATION_DURATION });
+      closeTimer = setTimeout(() => {
+        setShouldRender(false);
+      }, ANIMATION_DURATION);
     }
-  }, [isOpen]);
+
+    return () => {
+      if (closeTimer) {
+        clearTimeout(closeTimer);
+      }
+    };
+  }, [isOpen, overlayOpacity, translateX]);
 
   const drawerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -81,7 +94,6 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
-    pointerEvents: overlayOpacity.value > 0 ? 'auto' : 'none',
   }));
 
   // ── Swipe-to-close gesture ──────────────────────────────────────────────────
@@ -120,7 +132,7 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
   const isActive = (segment: string) => activeSegment === segment;
 
 
-  if (!isOpen && translateX.value === -DRAWER_WIDTH) return null;
+  if (!shouldRender) return null;
 
   return (
     <View

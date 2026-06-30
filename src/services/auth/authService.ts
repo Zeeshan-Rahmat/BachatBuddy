@@ -567,7 +567,7 @@ export async function signIn(input: SignInInput): Promise<AuthResult<AuthSession
     // Step 3: fetch the profile row. Its role drives navigation and RBAC.
     const { data: profileRow, error: profileError } = await supabase
       .from('users')
-      .select('id, business_id, business_name, name, phone, business_phone, email, business_email, role, username, password_hash, status, biometric_enabled, address, business_address, img, sync_status, updated_at, created_at')
+      .select('id, business_id, business_name, name, phone, business_phone, email, business_email, role, username, password_hash, status, biometric_enabled, address, business_address, business_logo, img, sync_status, updated_at, created_at')
       .eq('id', data.user.id)
       .single();
 
