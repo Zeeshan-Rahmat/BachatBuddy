@@ -9,10 +9,11 @@ interface StatCardProps {
     trend: string;
     trendUp: boolean;
     value: string;
+    valuePrefix?: string;
     label: string;
 }
 
-const StatCard = ({ icon, trend, trendUp, value, label }: StatCardProps) => {
+const StatCard = ({ icon, trend, trendUp, value, valuePrefix, label }: StatCardProps) => {
     return (
         <View className="bg-white rounded-button p-4 flex-1 min-w-[44%]"
             style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 }}>
@@ -23,7 +24,20 @@ const StatCard = ({ icon, trend, trendUp, value, label }: StatCardProps) => {
                     <TrendText label={trend} trendUp={trendUp} />
                 </View>
             </View>
-            <Text className="text-4xl font-bold text-black mb-1">{value}</Text>
+            <View className="mb-1 flex-row items-baseline gap-1">
+                {valuePrefix ? (
+                    <Text className="text-xs font-semibold text-dark-100">
+                        {valuePrefix}
+                    </Text>
+                ) : null}
+                <Text
+                    adjustsFontSizeToFit
+                    className="text-4xl font-bold text-black"
+                    numberOfLines={1}
+                >
+                    {value}
+                </Text>
+            </View>
             <View className="flex-row items-center justify-between">
                 <Text className="text-dark-100 text-base">{label}</Text>
                 <IconWrapper name={ICONS.DASHBOARD.topRightArrow} size={10} />

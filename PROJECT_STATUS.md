@@ -82,12 +82,19 @@ Main Files:
 Status: Completed
 
 Description:
-Dashboard UI exists with stats, quick cards, section headers, and summary cards. Data currently appears frontend/sample-data oriented rather than fully SQLite-backed.
+Dashboard summary cards are backed by SQLite through a typed dashboard repository. The screen loads local product, invoice, invoice item, and customer aggregates on focus, shows local loading/error states, and never depends on Supabase business-data responses. Money stat cards render `PKR` as a small prefix with the amount as the primary value. Quick Action and Quick Report cards behave as navigation buttons only; they route to the closest existing stock, sales, reports, and parties screens instead of displaying inline metric values. Dedicated filtered record screens for quick reports, such as low-stock-only items, are still pending.
+
+Completed Updates:
+- Added `src/db/repositories/dashboardRepository.ts` for SQLite-backed dashboard summary aggregation.
+- Replaced hardcoded dashboard stat values with local SQLite totals for stock, sales amount, active customers, and remaining dues/loans.
+- Added focus-based dashboard refresh so returning from stock, sales, or parties reloads local aggregate data.
+- Updated stat card currency display so `PKR` is smaller than the numeric amount and not wrapped in parentheses.
+- Restored Quick Report cards to button-only behavior and wired quick actions/reports to existing app routes.
 
 Main Files:
 - `app/(app)/dashboard/index.tsx`
+- `src/db/repositories/dashboardRepository.ts`
 - `src/components/dashboard`
-- `src/lib/sampleData.ts`
 
 ## Inventory / Stock
 
@@ -451,6 +458,7 @@ Main Files:
   - `employeesRepository`: business-scoped employee listing/detail plus local-first employee user create/update/pending-delete and sync queue rows targeting Supabase `public.employees`.
   - `invoicesRepository`: local-first invoice create/update/delete flows with invoice item writes, product stock mutation transactions, customer due updates, and sync queue recovery rows.
   - `reportsRepository`: SQLite-backed stock, sales, and party report aggregation for chart datasets, status pies, and ranked lists.
+  - `dashboardRepository`: SQLite-backed dashboard summary aggregation for local stock, sales, customer, due, invoice, profit, and top-product data.
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
   - `backupMetadataRepository`: latest backup lookup, completed-backup metadata upsert, and restored-state marking.
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
@@ -492,6 +500,8 @@ Main Files:
 - ✅ Immediate sync wake-up after local queue writes
 - ✅ React Native local image upload fix for Supabase Storage sync
 - ✅ Reports backed by SQLite queries
+- ✅ Dashboard summary cards backed by SQLite queries
+- ✅ Dashboard quick action/report cards restored to route-button behavior
 - ✅ Backup and restore backend foundation
 - ⏳ Approval workflow
 
@@ -502,7 +512,7 @@ Main Files:
 - Complete employee approval workflow UI and local approval-state handling around `staging_review_queue`.
 - Add local-first create/update repositories for ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
-- Wire dashboard screens to SQLite repositories.
+- Add dedicated filtered destination screens for dashboard quick reports, such as low-stock items, unpaid invoices, pending dues, and top products.
 - Extend invoice transactions with ledger/payment entries after ledger and payment schema tables exist.
 - Persist saved-invoice product edits with stock difference reconciliation and sync queue rows.
 - Complete backup/restore request approval UI and owner/employee request backend.
@@ -517,7 +527,7 @@ Main Files:
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
 - Sync queue processor exists and now wakes immediately after local queue writes, but conflict resolution, online/offline network detection, stale `processing` row recovery, and stricter business-scoped Supabase Storage access still need to be completed.
-- Product, invoice, party, and report screens are local-first, but dashboard, ledger, and payment modules do not yet have completed SQLite-backed flows.
+- Product, invoice, party, report, and dashboard summary screens are local-first, but ledger and payment modules do not yet have completed SQLite-backed flows.
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
 - Supabase media upload sync depends on the `bachatbuddy-media` bucket and policies from `supabase/bachatbuddy_setup.sql`; remote image upload will fail and retry if that SQL has not been applied, including the current MIME list for JPEG/PNG/WebP/GIF/HEIC/HEIF.
 - Supabase backup/restore depends on the `bachatbuddy-backups` bucket, `backup_manifests` table, and policies from `supabase/bachatbuddy_setup.sql`; backup or restore will fail if that SQL has not been applied.
