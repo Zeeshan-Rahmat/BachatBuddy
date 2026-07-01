@@ -95,12 +95,13 @@ const buildQueueRow = (
     operation: NewSyncQueueRow['operation'],
     payload: Record<string, unknown>,
     now: number,
+    approvalOperation?: 'insert' | 'update' | 'delete',
 ): NewSyncQueueRow => ({
     id: crypto.randomUUID(),
     tableName,
     recordId,
     operation,
-    payload,
+    payload: approvalOperation ? { ...payload, approvalOperation } : payload,
     status: 'queued',
     attempts: 0,
     lastError: null,
@@ -284,9 +285,9 @@ export const createInvoice = async (input: CreateInvoiceInput): Promise<CreateIn
             tx.insert(invoiceItems).values(itemRow).run();
         });
 
-        tx.insert(syncQueue).values(buildQueueRow('invoices', invoiceId, queueOperation, invoiceRow, now)).run();
+        tx.insert(syncQueue).values(buildQueueRow('invoices', invoiceId, queueOperation, invoiceRow, now, input.requiresApproval ? 'insert' : undefined)).run();
         invoiceItemRows.forEach((itemRow) => {
-            tx.insert(syncQueue).values(buildQueueRow('invoice_items', itemRow.id, queueOperation, itemRow, now)).run();
+            tx.insert(syncQueue).values(buildQueueRow('invoice_items', itemRow.id, queueOperation, itemRow, now, input.requiresApproval ? 'insert' : undefined)).run();
         });
 
         invoiceItemsWithPrices.forEach((item) => {
@@ -311,7 +312,7 @@ export const createInvoice = async (input: CreateInvoiceInput): Promise<CreateIn
             };
 
             tx.update(products).set(updatedProduct).where(eq(products.id, product.id)).run();
-            tx.insert(syncQueue).values(buildQueueRow('products', product.id, updateQueueOperation, updatedProduct, now)).run();
+            tx.insert(syncQueue).values(buildQueueRow('products', product.id, updateQueueOperation, updatedProduct, now, input.requiresApproval ? 'update' : undefined)).run();
         });
 
         if (input.customerId) {
@@ -334,7 +335,7 @@ export const createInvoice = async (input: CreateInvoiceInput): Promise<CreateIn
                 };
 
                 tx.update(customers).set(updatedCustomer).where(eq(customers.id, customer.id)).run();
-                tx.insert(syncQueue).values(buildQueueRow('customers', customer.id, updateQueueOperation, updatedCustomer, now)).run();
+                tx.insert(syncQueue).values(buildQueueRow('customers', customer.id, updateQueueOperation, updatedCustomer, now, input.requiresApproval ? 'update' : undefined)).run();
             }
         }
     });
@@ -382,7 +383,7 @@ export const updateInvoiceTotals = async (id: string, input: UpdateInvoiceTotals
 
     db.transaction((tx) => {
         tx.update(invoices).set(updatedInvoice).where(eq(invoices.id, id)).run();
-        tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, updatedInvoice, now)).run();
+        tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, updatedInvoice, now, input.requiresApproval ? 'update' : undefined)).run();
     });
     requestSyncQueueProcessing();
 
@@ -430,7 +431,7 @@ export const updateInvoiceDetail = async (id: string, input: UpdateInvoiceDetail
         }
 
         tx.update(invoices).set(updatedInvoice).where(eq(invoices.id, id)).run();
-        tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, updatedInvoice, now)).run();
+        tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, updatedInvoice, now, input.requiresApproval ? 'update' : undefined)).run();
 
         if (customerChanged && existing.customerId) {
             const oldCustomerRows = tx.select().from(customers).where(eq(customers.id, existing.customerId)).limit(1).all();
@@ -461,7 +462,7 @@ export const updateInvoiceDetail = async (id: string, input: UpdateInvoiceDetail
                 };
 
                 tx.update(customers).set(updatedOldCustomer).where(eq(customers.id, oldCustomer.id)).run();
-                tx.insert(syncQueue).values(buildQueueRow('customers', oldCustomer.id, customerOperation, updatedOldCustomer, now)).run();
+                tx.insert(syncQueue).values(buildQueueRow('customers', oldCustomer.id, customerOperation, updatedOldCustomer, now, input.requiresApproval ? 'update' : undefined)).run();
             }
         }
 
@@ -483,7 +484,7 @@ export const updateInvoiceDetail = async (id: string, input: UpdateInvoiceDetail
                 };
 
                 tx.update(customers).set(updatedNewCustomer).where(eq(customers.id, newCustomer.id)).run();
-                tx.insert(syncQueue).values(buildQueueRow('customers', newCustomer.id, customerOperation, updatedNewCustomer, now)).run();
+                tx.insert(syncQueue).values(buildQueueRow('customers', newCustomer.id, customerOperation, updatedNewCustomer, now, input.requiresApproval ? 'update' : undefined)).run();
             }
         }
     });
@@ -510,7 +511,7 @@ export const markInvoicePendingDelete = async (id: string, requiresApproval = fa
 
     db.transaction((tx) => {
         tx.update(invoices).set(deletedInvoice).where(eq(invoices.id, id)).run();
-        tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, deletedInvoice, now)).run();
+        tx.insert(syncQueue).values(buildQueueRow('invoices', id, operation, deletedInvoice, now, requiresApproval ? 'delete' : undefined)).run();
 
         existing.invoiceItems.forEach((item) => {
             const deletedItem: InvoiceItemRow = {
@@ -519,7 +520,7 @@ export const markInvoicePendingDelete = async (id: string, requiresApproval = fa
                 updatedAt: now,
             };
             tx.update(invoiceItems).set(deletedItem).where(eq(invoiceItems.id, item.id)).run();
-            tx.insert(syncQueue).values(buildQueueRow('invoice_items', item.id, operation, deletedItem, now)).run();
+            tx.insert(syncQueue).values(buildQueueRow('invoice_items', item.id, operation, deletedItem, now, requiresApproval ? 'delete' : undefined)).run();
 
             if (!item.product) {
                 return;
@@ -541,7 +542,7 @@ export const markInvoicePendingDelete = async (id: string, requiresApproval = fa
             };
 
             tx.update(products).set(updatedProduct).where(eq(products.id, item.product.id)).run();
-            tx.insert(syncQueue).values(buildQueueRow('products', item.product.id, updateOperation, updatedProduct, now)).run();
+            tx.insert(syncQueue).values(buildQueueRow('products', item.product.id, updateOperation, updatedProduct, now, requiresApproval ? 'update' : undefined)).run();
         });
     });
     requestSyncQueueProcessing();

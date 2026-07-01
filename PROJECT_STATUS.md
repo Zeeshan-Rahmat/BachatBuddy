@@ -247,7 +247,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Backup/restore screens are wired to a backend service. Owners can package the implemented SQLite tables into a typed JSON snapshot, upload a versioned backup plus `latest.json` to private Supabase Storage, save local backup metadata, and upsert a Supabase `backup_manifests` row. Restore downloads the latest cloud backup for the active business, validates the snapshot schema/business id, confirms overwrite with the user, and replaces the implemented local SQLite tables in dependency order. The screen now shows local last-backup date and size from SQLite metadata instead of hardcoded values. Backup/restore request approval UI still uses mock request data, and advanced conflict handling is not complete.
+Backup/restore screens are wired to a backend service. Owners can package the implemented SQLite tables into a typed JSON snapshot, upload a versioned backup plus `latest.json` to private Supabase Storage, save local backup metadata, and upsert a Supabase `backup_manifests` row. Restore downloads the latest cloud backup for the active business, validates the snapshot schema/business id, confirms overwrite with the user, and replaces the implemented local SQLite tables in dependency order. The screen now shows local last-backup date and size from SQLite metadata instead of hardcoded values. The second tab is now used for real employee approval requests from `staging_review_queue`. Backup/restore request approvals are still not implemented as a separate request type, and advanced backup conflict handling is not complete.
 
 Completed Updates:
 - Added `src/services/backupRestoreService.ts` for SQLite snapshot creation, Supabase Storage upload/download, manifest writes, snapshot validation, and full local restore.
@@ -262,14 +262,40 @@ Completed Updates:
 - Fixed React Native restore downloads by reading Supabase Storage backup responses through Blob, ArrayBuffer, typed-array, or string-compatible paths instead of assuming `data.text()` exists.
 - Added restore fallback handling for React Native Blob objects through `FileReader.readAsText()` and private Supabase signed-URL fetch when direct Storage download bodies are unreadable.
 - Fixed restore foreign-key ordering by clearing local `backup_metadata` before replacing `users`, then rewriting restored backup metadata after the snapshot restore completes.
+- Replaced the mock backup/restore request list with the real owner-facing `Approval Requests` tab backed by Supabase `staging_review_queue`.
 
 Main Files:
 - `app/(modal)/backup_restore`
 - `src/services/backupRestoreService.ts`
+- `src/services/approvalWorkflowService.ts`
 - `src/db/repositories/backupMetadataRepository.ts`
 - `src/db/schema.ts`
 - `src/db/migrations.ts`
 - `supabase/bachatbuddy_setup.sql`
+
+## Approval Workflow
+
+Status: In Progress
+
+Description:
+Employee mutations for products, customers, suppliers, employees, invoices, invoice items, and related stock/customer invoice effects still write to SQLite first with `sync_status = pending_approval`, enqueue `sync_queue` rows, and upload approval requests to Supabase `staging_review_queue` in the background. New approval queue payloads now preserve the original intended operation as `approvalOperation` so owner review can distinguish inserts, updates, and deletes. Owners can open `Backup & Restore > Approval Requests`, load pending cloud staging rows for their business, approve requests to replay the staged payload into the correct Supabase business table, or reject requests to mark the staging row rejected. The service also updates matching local SQLite rows from `pending_approval` to `synced` or `rejected` when those rows exist on the reviewing device. Employee business-data download must be separately gated by a `business_data_downloads` approval request: employee login must not pull owner business data until the owner approves that request. Full employee-side data download request submission, approved-only pull sync, and approved/rejected result reconciliation are still pending.
+
+Completed Updates:
+- Added `src/services/approvalWorkflowService.ts` for listing pending staging requests, resolving submitter profile names/images, approving requests, rejecting requests, replaying approved payloads to Supabase business tables, and local pending-row reconciliation.
+- Replaced the mock request cards in `app/(modal)/backup_restore/backup-restore-request.tsx` with typed approval request rendering, pull-to-refresh, loading, empty, accept, and reject states.
+- Wired `app/(modal)/backup_restore/index.tsx` to load pending approval requests only for owners and handle approve/reject actions with user feedback.
+- Updated product, customer, supplier, employee, and invoice repositories so approval queue payloads preserve `approvalOperation` for insert/update/delete review.
+- Added owner-review support for `business_data_downloads` approval requests so future employee data pulls can be approved/rejected without replaying a table mutation.
+
+Main Files:
+- `app/(modal)/backup_restore/index.tsx`
+- `app/(modal)/backup_restore/backup-restore-request.tsx`
+- `src/services/approvalWorkflowService.ts`
+- `src/db/repositories/productsRepository.ts`
+- `src/db/repositories/customersRepository.ts`
+- `src/db/repositories/suppliersRepository.ts`
+- `src/db/repositories/employeesRepository.ts`
+- `src/db/repositories/invoicesRepository.ts`
 
 ## Invoice Customization
 
@@ -527,13 +553,17 @@ Main Files:
 - ✅ Reanimated transform/layout animation warning fixed on splash logo
 - ✅ SecureStore oversized session payload warning fixed by keeping tokens in SQLite
 - ✅ Backup and restore backend foundation
-- ⏳ Approval workflow
+- ✅ Owner approval request review UI
+- ✅ Business data download approval request type
+- ⏳ Employee data download request submission and approved-only pull sync
 
 # Pending Work
 
 - Tighten Supabase Storage policies to business-scoped paths if private media access becomes required.
 - Implement conflict handling and stale `processing` row recovery for sync.
-- Complete employee approval workflow UI and local approval-state handling around `staging_review_queue`.
+- Add employee-side `business_data_downloads` request submission before any owner data pull.
+- Add approved-only employee pull sync for owner business data after `business_data_downloads` is approved.
+- Add pull-based employee device reconciliation for approved/rejected `staging_review_queue` results.
 - Add local-first create/update repositories for ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
 - Add dedicated filtered destination screens for dashboard quick reports, such as low-stock items, unpaid invoices, pending dues, and top products.
@@ -572,6 +602,7 @@ Main Files:
 - Repositories own SQLite access and local mutations.
 - Local mutations should write a sync queue entry in the same transaction.
 - IDs should be UUID strings generated with `crypto.randomUUID()`.
+- Employee login must not automatically download owner business data; employee devices need an approved `business_data_downloads` staging request before any business-table pull sync.
 - User profile rows now use explicit mapping between Supabase `snake_case` and local Drizzle camelCase fields.
 - Profile creation/update now writes to SQLite first, queues the mutation, and also attempts remote writes against the configured Supabase `public.users` table.
 - Owner profiles use the owner's Supabase Auth user id as `business_id`; employee profiles should share that owner id later. No separate business table is required yet.

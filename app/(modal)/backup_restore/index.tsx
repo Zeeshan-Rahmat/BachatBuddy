@@ -1,6 +1,7 @@
 import InternalTabBar from '@/src/components/common/InternalTabBar';
 import PaddingWrapper from '@/src/components/common/PaddingWrapper';
 import ScreenWrapper from '@/src/components/layout/ScreenWrapper';
+import { approvalWorkflowService, type ApprovalRequest } from '@/src/services/approvalWorkflowService';
 import { backupRestoreService, type BackupSummary } from '@/src/services/backupRestoreService';
 import { useAuthStore } from '@/src/store/authStore';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -8,7 +9,7 @@ import { Alert } from 'react-native';
 import BackupRestore from './backup-restore';
 import BackupRestoreRequests from './backup-restore-request';
 
-const TABS = ['Backup & Restore', 'Backup & Restore Requests'];
+const TABS = ['Backup & Restore', 'Approval Requests'];
 
 const BackupRestoreScreen = () => {
 
@@ -16,6 +17,9 @@ const BackupRestoreScreen = () => {
     const [isBackingUp, setIsBackingUp] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
     const [lastBackup, setLastBackup] = useState<BackupSummary | null>(null);
+    const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
+    const [isLoadingApprovals, setIsLoadingApprovals] = useState(false);
+    const [activeApprovalId, setActiveApprovalId] = useState<string | null>(null);
     const user = useAuthStore((state) => state.user);
     const businessId = useMemo(() => user?.businessId ?? user?.id ?? null, [user?.businessId, user?.id]);
 
@@ -41,15 +45,66 @@ const BackupRestoreScreen = () => {
         void loadLastBackup();
     }, [loadLastBackup]);
 
-    // Inside your main screen component file:
-    const handleAcceptRequest = (id: string, type: string) => {
-        console.log(`Approved ${type} ID: ${id}`);
-        // Drop execution handler code here later
+    const loadApprovalRequests = useCallback(async () => {
+        if (user?.role !== 'owner') {
+            setApprovalRequests([]);
+            return;
+        }
+
+        setIsLoadingApprovals(true);
+        const result = await approvalWorkflowService.listPendingRequests();
+        setIsLoadingApprovals(false);
+
+        if (!result.success) {
+            Alert.alert('Approval Requests Failed', result.error);
+            return;
+        }
+
+        setApprovalRequests(result.data);
+    }, [user?.role]);
+
+    useEffect(() => {
+        if (activeTab === TABS[1]) {
+            void loadApprovalRequests();
+        }
+    }, [activeTab, loadApprovalRequests]);
+
+    const handleAcceptRequest = async (id: string) => {
+        if (!user) {
+            Alert.alert('Approval Failed', 'Please sign in before reviewing requests.');
+            return;
+        }
+
+        setActiveApprovalId(id);
+        const result = await approvalWorkflowService.approveRequest(id, user.id);
+        setActiveApprovalId(null);
+
+        if (!result.success) {
+            Alert.alert('Approval Failed', result.error);
+            return;
+        }
+
+        setApprovalRequests((requests) => requests.filter((request) => request.id !== id));
+        Alert.alert('Request Approved', 'The employee change has been approved and synced to the cloud.');
     };
 
-    const handleRejectRequest = (id: string, type: string) => {
-        console.log(`Disapproved ${type} ID: ${id}`);
-        // Drop rejection handler code here later
+    const handleRejectRequest = async (id: string) => {
+        if (!user) {
+            Alert.alert('Rejection Failed', 'Please sign in before reviewing requests.');
+            return;
+        }
+
+        setActiveApprovalId(id);
+        const result = await approvalWorkflowService.rejectRequest(id, user.id);
+        setActiveApprovalId(null);
+
+        if (!result.success) {
+            Alert.alert('Rejection Failed', result.error);
+            return;
+        }
+
+        setApprovalRequests((requests) => requests.filter((request) => request.id !== id));
+        Alert.alert('Request Rejected', 'The employee change has been rejected.');
     };
 
     // 1. Skeleton Function for Cloud Data Backup
@@ -148,8 +203,12 @@ const BackupRestoreScreen = () => {
                         />
 
                         : <BackupRestoreRequests
+                            requests={approvalRequests}
+                            loading={isLoadingApprovals}
+                            activeRequestId={activeApprovalId}
                             onAccept={handleAcceptRequest}
                             onReject={handleRejectRequest}
+                            onRefresh={loadApprovalRequests}
                         />
                 }
 

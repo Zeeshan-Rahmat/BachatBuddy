@@ -38,12 +38,13 @@ const buildQueueRow = (
     operation: NewSyncQueueRow['operation'],
     payload: Record<string, unknown>,
     now: number,
+    approvalOperation?: 'insert' | 'update' | 'delete',
 ): NewSyncQueueRow => ({
     id: crypto.randomUUID(),
     tableName,
     recordId,
     operation,
-    payload,
+    payload: approvalOperation ? { ...payload, approvalOperation } : payload,
     status: 'queued',
     attempts: 0,
     updatedAt: now,
@@ -104,6 +105,7 @@ export const createProduct = async (input: CreateProductInput): Promise<ProductR
         input.requiresApproval ? 'approval_request' : 'insert',
         product,
         now,
+        input.requiresApproval ? 'insert' : undefined,
     );
 
     db.transaction((tx) => {
@@ -150,6 +152,7 @@ export const updateProduct = async (id: string, input: UpdateProductInput): Prom
         input.requiresApproval ? 'approval_request' : 'update',
         updatedProduct,
         now,
+        input.requiresApproval ? 'update' : undefined,
     );
 
     db.transaction((tx) => {
@@ -180,6 +183,7 @@ export const markProductPendingDelete = async (id: string, requiresApproval = fa
         requiresApproval ? 'approval_request' : 'delete',
         deletedProduct,
         now,
+        requiresApproval ? 'delete' : undefined,
     );
 
     db.transaction((tx) => {

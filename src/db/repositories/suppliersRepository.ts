@@ -26,12 +26,13 @@ const buildQueueRow = (
     operation: NewSyncQueueRow['operation'],
     payload: Record<string, unknown>,
     now: number,
+    approvalOperation?: 'insert' | 'update' | 'delete',
 ): NewSyncQueueRow => ({
     id: crypto.randomUUID(),
     tableName: 'suppliers',
     recordId,
     operation,
-    payload,
+    payload: approvalOperation ? { ...payload, approvalOperation } : payload,
     status: 'queued',
     attempts: 0,
     lastError: null,
@@ -89,6 +90,7 @@ export const createSupplier = async (input: CreateSupplierInput): Promise<Suppli
         input.requiresApproval ? 'approval_request' : 'insert',
         supplier,
         now,
+        input.requiresApproval ? 'insert' : undefined,
     );
 
     db.transaction((tx) => {
@@ -132,6 +134,7 @@ export const updateSupplier = async (id: string, input: UpdateSupplierInput): Pr
         input.requiresApproval ? 'approval_request' : 'update',
         updatedSupplier,
         now,
+        input.requiresApproval ? 'update' : undefined,
     );
 
     db.transaction((tx) => {
@@ -161,6 +164,7 @@ export const markSupplierPendingDelete = async (id: string, requiresApproval = f
         requiresApproval ? 'approval_request' : 'delete',
         deletedSupplier,
         now,
+        requiresApproval ? 'delete' : undefined,
     );
 
     db.transaction((tx) => {

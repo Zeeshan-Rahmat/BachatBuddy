@@ -2,101 +2,66 @@ import ImageContainer from '@/src/components/common/ImageContainer';
 import SectionHeader from '@/src/components/dashboard/SectionHeader';
 import { ICONS } from '@/src/constants/icons';
 import { COLORS } from '@/src/constants/theme';
+import type { ApprovalRequest } from '@/src/services/approvalWorkflowService';
 import React from 'react';
-import { ColorValue, FlatList, type ImageSourcePropType, Text, TouchableOpacity, View } from 'react-native';
-
-type RequestType = 'Backup' | 'Restore' | 'Stock Update' | 'Invoice Update' | 'Customer Update' | 'Supplier Update';
+import { ActivityIndicator, ColorValue, FlatList, Text, TouchableOpacity, View } from 'react-native';
 
 interface RequestsSectionProps {
-    onAccept: (id: string, type: RequestType) => void;
-    onReject: (id: string, type: RequestType) => void;
+    requests: ApprovalRequest[];
+    loading: boolean;
+    activeRequestId: string | null;
+    onAccept: (id: string) => void;
+    onReject: (id: string) => void;
+    onRefresh: () => void;
 }
 
 interface RequestCardProps {
+    activeRequestId: string | null;
     onAccept: () => void;
     onReject: () => void;
-    request: RequestItem;
+    request: ApprovalRequest;
 }
 
-export interface RequestItem {
-    id: string;
-    type: RequestType;
-    userName: string;
-    time: string;
-    userImage?: ImageSourcePropType | undefined; // URL or local asset path
-}
-
-const MOCK_REQUESTS: RequestItem[] = [
-    {
-        id: 'req_1',
-        type: 'Backup',
-        userName: 'Muhammad Mubashir',
-        time: 'Today',
-        // Example placeholder image url
-        userImage: undefined,
-    },
-    {
-        id: 'req_2',
-        type: 'Restore',
-        userName: 'Zafar Iqbal',
-        time: '2d',
-        userImage: undefined,
-    },
-    {
-        id: 'req_3',
-        type: 'Stock Update',
-        userName: 'Qamar Ahmad',
-        time: '3d',
-        userImage: undefined,
-    },
-    {
-        id: 'req_4',
-        type: 'Supplier Update',
-        userName: 'Zohib Hassan',
-        time: '4d',
-        userImage: undefined,
-    },
-    {
-        id: 'req_5',
-        type: 'Invoice Update',
-        userName: 'Said Ahmad',
-        time: '7d',
-        userImage: undefined,
-    },
-    {
-        id: 'req_6',
-        type: 'Customer Update',
-        userName: 'Muhammad Sufyan',
-        time: '10d',
-        userImage: undefined,
-    },
-];
-
-export default function BackupRestoreRequests({ onAccept, onReject }: RequestsSectionProps) {
-
-    // Fallback UI if no requests are pending
-    if (MOCK_REQUESTS.length === 0) return null;
-
+export default function BackupRestoreRequests({
+    requests,
+    loading,
+    activeRequestId,
+    onAccept,
+    onReject,
+    onRefresh,
+}: RequestsSectionProps) {
     return (
         <View className="flex-1">
-
-            <SectionHeader title='Backup and Restore Requests' marginTop={0} marginBottom={6} hasViewMore={false} fontSize={20} />
+            <SectionHeader title='Approval Requests' marginTop={0} marginBottom={6} hasViewMore={false} fontSize={20} />
 
             <Text className="text-base text-dark-50 mb-5">
-                Click on <Text className="font-bold text-dark-200">Accept</Text> to approve and <Text className="font-bold text-dark-200">Reject</Text> to disapprove.
+                Review employee changes before they sync into the business cloud data.
             </Text>
 
-            {/* Request Cards Grid Loop */}
             <FlatList
-                data={MOCK_REQUESTS} keyExtractor={i => i.id}
+                data={requests}
+                keyExtractor={(item) => item.id}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ gap: 12 }}
-
+                refreshing={loading}
+                onRefresh={onRefresh}
+                contentContainerStyle={{ gap: 12, paddingBottom: 24 }}
+                ListEmptyComponent={
+                    <View className="items-center justify-center pt-20">
+                        {loading ? (
+                            <ActivityIndicator color={COLORS.primary400} />
+                        ) : (
+                            <Text className="text-dark-50 text-base font-medium">
+                                No approval requests found.
+                            </Text>
+                        )}
+                    </View>
+                }
                 renderItem={({ item }) => (
                     <RequestCard
                         request={item}
-                        onAccept={() => onAccept(item.id, item.type)}
-                        onReject={() => onReject(item.id, item.type)}
+                        activeRequestId={activeRequestId}
+                        onAccept={() => onAccept(item.id)}
+                        onReject={() => onReject(item.id)}
                     />
                 )}
             />
@@ -104,48 +69,57 @@ export default function BackupRestoreRequests({ onAccept, onReject }: RequestsSe
     );
 }
 
+function RequestCard({ request, activeRequestId, onAccept, onReject }: RequestCardProps) {
+    const isLoading = activeRequestId === request.id;
+    const image = request.submittedByImage ? { uri: request.submittedByImage } : undefined;
 
-
-function RequestCard({ request, onAccept, onReject }: RequestCardProps) {
     return (
-        <View
-            key={request.id}
-            className="flex-row items-center bg-white p-3 rounded-button"
-        >
-
-            <ImageContainer placeholder={ICONS.COMMON.customer} image={request.userImage} size={44} />
-
+        <View className="flex-row items-center bg-white p-3 rounded-button">
+            <ImageContainer placeholder={ICONS.COMMON.customer} image={image} size={44} />
 
             <View className="flex-1 pr-2">
-                <Text className="text-base font-bold text-dark-300" numberOfLines={1}>
-                    {request.type} Request
+                <Text className="text-base font-bold text-dark-300 capitalize" numberOfLines={1}>
+                    {request.title}
                 </Text>
                 <Text className="text-xs text-dark-50 font-medium mt-0.5" numberOfLines={1}>
-                    {request.userName} <Text className="text-light-100">|</Text> {request.time}
+                    {request.submittedByName} <Text className="text-light-100">|</Text> {request.subtitle}
                 </Text>
             </View>
 
-
             <View className="flex-row gap-x-2">
-                <RequestButton label='Accept' onPress={onAccept} bgColor={COLORS.success} />
-                <RequestButton label='Reject' onPress={onReject} bgColor={COLORS.danger} />
+                <RequestButton label='Accept' onPress={onAccept} bgColor={COLORS.success} loading={isLoading} />
+                <RequestButton label='Reject' onPress={onReject} bgColor={COLORS.danger} loading={isLoading} />
             </View>
-
         </View>
-    )
+    );
 }
 
-function RequestButton({ label, bgColor, onPress }: { label: string, bgColor: ColorValue, onPress: () => void }) {
+function RequestButton({
+    label,
+    bgColor,
+    loading,
+    onPress,
+}: {
+    label: string;
+    bgColor: ColorValue;
+    loading: boolean;
+    onPress: () => void;
+}) {
     return (
         <TouchableOpacity
             onPress={onPress}
             activeOpacity={0.7}
-            className="px-4 py-2 rounded-button"
-            style={{ backgroundColor: bgColor }}
+            disabled={loading}
+            className="px-4 py-2 rounded-button min-w-16 items-center"
+            style={{ backgroundColor: bgColor, opacity: loading ? 0.7 : 1 }}
         >
-            <Text className="text-white text-xs font-semibold">
-                {label}
-            </Text>
+            {loading ? (
+                <ActivityIndicator color={COLORS.white} size="small" />
+            ) : (
+                <Text className="text-white text-xs font-semibold">
+                    {label}
+                </Text>
+            )}
         </TouchableOpacity>
-    )
+    );
 }
