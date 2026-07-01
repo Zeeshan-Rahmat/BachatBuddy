@@ -160,6 +160,18 @@ CREATE TABLE IF NOT EXISTS backup_metadata (
     created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS invoice_customization (
+    id TEXT PRIMARY KEY NOT NULL,
+    template_id TEXT NOT NULL,
+    primary_color TEXT NOT NULL,
+    font_family TEXT NOT NULL,
+    font_size TEXT NOT NULL,
+    signature_label TEXT,
+    signature_image_uri TEXT,
+    updated_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_sync_status ON users(sync_status);

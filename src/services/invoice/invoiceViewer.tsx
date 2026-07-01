@@ -6,15 +6,17 @@ import { ActivityIndicator, Platform, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { generateInvoicePdf } from './pdfService';
 
-interface InvoiceViewer {
+interface InvoiceViewerProps {
     invoiceData: InvoiceData
     customization: InvoiceCustomization
 }
 
-export default function InvoiceViewer({ invoiceData, customization }: InvoiceViewer) {
+export default function InvoiceViewer({ invoiceData, customization }: InvoiceViewerProps) {
     const [pdfUri, setPdfUri] = useState<string | null>(null);
 
     useEffect(() => {
+        setPdfUri(null);
+
         // Only generate the PDF file if the user is on iOS
         if (Platform.OS === 'ios') {
             async function loadPdf() {
@@ -23,7 +25,7 @@ export default function InvoiceViewer({ invoiceData, customization }: InvoiceVie
             }
             loadPdf();
         }
-    }, [invoiceData]);
+    }, [customization, invoiceData]);
 
     // Fallback loading indicator for iOS while file compiles
     if (Platform.OS === 'ios' && !pdfUri) {
@@ -48,6 +50,7 @@ export default function InvoiceViewer({ invoiceData, customization }: InvoiceVie
             allowUniversalAccessFromFileURLs={true}
             scalesPageToFit={true}
             scrollEnabled={true}
+            nestedScrollEnabled={true}
             source={webViewSource}
         />
     );

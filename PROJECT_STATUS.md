@@ -124,7 +124,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Invoice list, add, detail, filtering, add-invoice customer/product/subtotal editing, saved-invoice customer selection, and saved-invoice amount/date/image edits are backed by SQLite. Invoice creation writes the invoice, invoice items, product stock decrements, customer purchase/due updates, and sync queue rows inside one local transaction before the UI returns to the invoice list. Invoice deletion marks the invoice/items pending delete and restores product stock in the same local transaction. Saved-invoice customer changes update the invoice `customer_id`, move invoice totals between old/new customer aggregates, and enqueue recoverable sync rows. Add-invoice draft detail edits update local draft state until the full invoice is saved. Invoice preview, PDF generation, print, share, and save-location picker flows exist.
+Invoice list, add, detail, filtering, add-invoice customer/product/subtotal editing, saved-invoice customer selection, saved-invoice amount/date/image edits, and invoice customization previews are backed by local app state and SQLite invoice data. Invoice creation writes the invoice, invoice items, product stock decrements, customer purchase/due updates, and sync queue rows inside one local transaction before the UI returns to the invoice list. Invoice deletion marks the invoice/items pending delete and restores product stock in the same local transaction. Saved-invoice customer changes update the invoice `customer_id`, move invoice totals between old/new customer aggregates, and enqueue recoverable sync rows. Add-invoice draft detail edits update local draft state until the full invoice is saved. Invoice preview, PDF generation, print, share, and save-location picker flows exist and now use the selected invoice customization state for template, color, font, size, and signature. Invoice customization is persisted in SQLite so a user can set it once and reuse it for later invoice preview, print, share, and save actions after app restart.
 
 Completed Updates:
 - Added `src/db/repositories/invoicesRepository.ts` for relation-backed invoice listing/detail lookup, local-first invoice creation, invoice detail/amount updates, and pending-delete handling.
@@ -140,10 +140,26 @@ Completed Updates:
 - Added invoice preview mapping in `src/services/invoice/invoicePreviewMapper.ts` so persisted invoices render through the existing invoice HTML/PDF template with business profile data and saved signature state.
 - Added preview actions for print, share, and save. Android save opens the system folder picker through Expo Storage Access Framework; non-Android platforms use the native share/save sheet.
 - Added print/PDF page margins to the invoice template so generated invoices do not touch page edges.
+- Expanded `src/store/invoiceCustomizationStore.ts` from signature-only state to a typed invoice customization state for template, primary color, font family, font size, signature, and reset behavior.
+- Wired customize-invoice template, color, and option tabs to the shared customization store so the on-screen preview reflects user selections immediately.
+- Connected saved invoice preview, print, share, and save PDF actions to the same customization state instead of only applying saved signatures.
+- Added visible `classic`, `modern`, `minimal`, and `bold` style variants inside `src/templates/invoiceTemplate.ts` while keeping one shared HTML/PDF generation path.
+- Fixed iOS invoice viewer regeneration so the rendered PDF preview refreshes when customization settings change.
+- Added local SQLite `invoice_customization` schema/migration and a typed `invoiceCustomizationRepository` for durable customization preferences.
+- Hydrated invoice customization from SQLite during `AppDataProvider` startup and persisted each template/color/font/signature change back to SQLite.
+- Included `invoice_customization` in backup snapshots and restore, while keeping older backups without that table restorable.
+- Fixed the ReactNativeCss variable-remount warning in the invoice customization font-size selector by adding `will-change-variable` to the dynamic NativeWind button class.
+- Replaced placeholder image thumbnails in the invoice customization template picker with real invoice-paper preview cards for `classic`, `modern`, `minimal`, and `bold` templates.
+- Set generated invoice HTML/PDF pages to explicit Letter sizing so preview, print, share, and save flows use a consistent paper format.
+- Updated invoice customization template/color previews to use the signed-in user's local business profile details, including `businessLogo`, so the business logo appears in the preview when one has been saved.
+- Wired the invoice customization color tab eyedropper button to a working local color picker modal with palette swatches, hex input validation, live preview, and persisted apply behavior.
+- Added the live invoice preview to the invoice customization Options tab so font family, font size, and signature changes are visible before printing or sharing.
+- Enabled nested scrolling for app screens and invoice WebView previews so the invoice preview and the full invoice customization Options tab can both scroll.
 
 Main Files:
 - `app/(app)/sale`
 - `src/db/repositories/invoicesRepository.ts`
+- `src/db/repositories/invoiceCustomizationRepository.ts`
 - `src/db/repositories/customersRepository.ts`
 - `src/services/invoice/invoiceUiMapper.ts`
 - `src/services/invoice/invoicePreviewMapper.ts`
@@ -151,6 +167,7 @@ Main Files:
 - `src/services/invoice/invoiceViewer.tsx`
 - `src/templates/invoiceTemplate.ts`
 - `src/templates/mockInvoiceData.ts`
+- `src/store/invoiceCustomizationStore.ts`
 - `src/components/ui/InvoiceItemCard.tsx`
 - `src/components/ui/InvoiceItemProductCard.tsx`
 
@@ -505,6 +522,7 @@ Main Files:
 - ✅ Dashboard summary cards backed by SQLite queries
 - ✅ Dashboard quick action/report cards restored to route-button behavior
 - ✅ Business logo local persistence and `business_logo` profile restore fixes
+- ✅ Invoice customization state wired into template/color/font/signature previews and PDF export
 - ✅ Expo Router nested sale route warning fixed
 - ✅ Reanimated transform/layout animation warning fixed on splash logo
 - ✅ SecureStore oversized session payload warning fixed by keeping tokens in SQLite

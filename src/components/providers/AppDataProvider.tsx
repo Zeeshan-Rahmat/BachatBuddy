@@ -2,6 +2,7 @@ import { initializeLocalDatabase } from '@/src/db/client';
 import { syncQueueRepository } from '@/src/db/repositories/syncQueueRepository';
 import { enqueueExistingLocalMediaUploads } from '@/src/services/mediaBackfillService';
 import { startSyncQueueProcessor, stopSyncQueueProcessor } from '@/src/services/syncQueueProcessor';
+import { useInvoiceCustomizationStore } from '@/src/store/invoiceCustomizationStore';
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -13,6 +14,7 @@ export default function AppDataProvider({ children }: PropsWithChildren) {
 
         initializeLocalDatabase()
             .then(async () => {
+                await useInvoiceCustomizationStore.getState().hydrateCustomization();
                 await enqueueExistingLocalMediaUploads();
                 await syncQueueRepository.retryFailedMediaUploads();
                 startSyncQueueProcessor();

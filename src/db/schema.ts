@@ -245,6 +245,21 @@ export const backupMetadata = sqliteTable(
     ],
 );
 
+export const invoiceCustomization = sqliteTable(
+    'invoice_customization',
+    {
+        id: text('id').primaryKey(),
+        templateId: text('template_id').notNull(),
+        primaryColor: text('primary_color').notNull(),
+        fontFamily: text('font_family').notNull(),
+        fontSize: text('font_size').notNull(),
+        signatureLabel: text('signature_label'),
+        signatureImageUri: text('signature_image_uri'),
+        updatedAt: integer('updated_at').notNull(),
+        createdAt: integer('created_at').notNull(),
+    },
+);
+
 export const userRelations = relations(users, ({ many }) => ({
     createdCustomers: many(customers, { relationName: 'createdCustomers' }),
     updatedCustomers: many(customers, { relationName: 'updatedCustomers' }),
@@ -348,3 +363,5 @@ export type SyncQueueRow = typeof syncQueue.$inferSelect;
 export type NewSyncQueueRow = typeof syncQueue.$inferInsert;
 export type BackupMetadataRow = typeof backupMetadata.$inferSelect;
 export type NewBackupMetadataRow = typeof backupMetadata.$inferInsert;
+export type InvoiceCustomizationRow = typeof invoiceCustomization.$inferSelect;
+export type NewInvoiceCustomizationRow = typeof invoiceCustomization.$inferInsert;

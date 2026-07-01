@@ -50,6 +50,9 @@ export function generateInvoiceHtml(
 ): string {
   const { primaryColor, fontFamily, fontSize, signature, templateId } = customization;
   const sizes = FONT_SIZE_MAP[fontSize];
+  const templateClass = `template-${templateId}`;
+  const showStripedBars = templateId === 'classic' || templateId === 'bold';
+  const showHeaderBadge = templateId === 'modern' || templateId === 'bold';
 
   const itemsRows = data.items
     .map(
@@ -96,6 +99,7 @@ export function generateInvoiceHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     @page {
+      size: Letter;
       margin: 14px;
     }
 
@@ -115,9 +119,19 @@ export function generateInvoiceHtml(
 
     .invoice-wrapper {
       width: 100%;
-      max-width: 560px;
+      max-width: 794px;
+      min-height: 900px;
       margin: 0 auto;
       background: #fff;
+    }
+    .invoice-wrapper.template-minimal {
+      border: 1px solid #e5e7eb;
+    }
+    .invoice-wrapper.template-modern {
+      border-top: 8px solid ${primaryColor};
+    }
+    .invoice-wrapper.template-bold {
+      border-left: 8px solid ${primaryColor};
     }
 
     /* ── Striped Bar (top & bottom) ─────────────────────────────────────── */
@@ -159,6 +173,19 @@ export function generateInvoiceHtml(
       gap: 16px;
       border-bottom: 2px solid ${primaryColor};
     }
+    .template-modern .header {
+      background: ${primaryColor}12;
+      border-bottom: none;
+      align-items: center;
+    }
+    .template-minimal .header {
+      border-bottom: 1px solid #d1d5db;
+      padding-top: 24px;
+    }
+    .template-bold .header {
+      background: #111827;
+      border-bottom: none;
+    }
     .logo {
       width: 64px;
       height: 64px;
@@ -189,6 +216,11 @@ export function generateInvoiceHtml(
       color: ${primaryColor};
       margin-bottom: 4px;
     }
+    .template-bold .business-name,
+    .template-bold .business-address,
+    .template-bold .business-contact {
+      color: #ffffff;
+    }
     .business-address {
       font-size: ${sizes.small}px;
       color: #333;
@@ -201,12 +233,29 @@ export function generateInvoiceHtml(
     .business-contact b {
       font-weight: 700;
     }
+    .invoice-badge {
+      margin-left: auto;
+      padding: 8px 12px;
+      border-radius: 4px;
+      background: ${primaryColor};
+      color: #ffffff;
+      font-size: ${sizes.small}px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
 
     /* ── Bill To / Invoice Meta ─────────────────────────────────────────── */
     .meta-section {
       display: flex;
       padding: 16px 32px;
       gap: 24px;
+    }
+    .template-minimal .meta-section {
+      padding-top: 22px;
+    }
+    .template-bold .meta-section {
+      background: ${primaryColor}10;
     }
     .meta-col {
       flex: 1;
@@ -252,6 +301,19 @@ export function generateInvoiceHtml(
     .items-table thead tr {
       border-top: 2px solid ${primaryColor};
       border-bottom: 2px solid ${primaryColor};
+    }
+    .template-modern .items-table thead tr,
+    .template-bold .items-table thead tr {
+      background: ${primaryColor};
+      border-color: ${primaryColor};
+    }
+    .template-modern .items-table th,
+    .template-bold .items-table th {
+      color: #ffffff;
+    }
+    .template-minimal .items-table thead tr {
+      border-top: 1px solid #9ca3af;
+      border-bottom: 1px solid #9ca3af;
     }
     .items-table th {
       text-align: left;
@@ -305,6 +367,18 @@ export function generateInvoiceHtml(
       font-weight: 700;
       font-size: ${sizes.base}px;
     }
+    .template-modern .subtotal-row {
+      background: ${primaryColor}12;
+    }
+    .template-minimal .subtotal-row {
+      border-top: 1px solid #9ca3af;
+      border-bottom: 1px solid #9ca3af;
+    }
+    .template-bold .subtotal-row {
+      background: #111827;
+      border-color: #111827;
+      color: #ffffff;
+    }
     .subtotal-row .label { flex: 0 0 40%; }
     .subtotal-row .qty   { flex: 0 0 20%; text-align: center; }
     .subtotal-row .amt   { flex: 0 0 40%; text-align: right; }
@@ -348,6 +422,13 @@ export function generateInvoiceHtml(
       font-size: ${sizes.large}px;
       padding: 10px 0;
     }
+    .template-bold .totals-row.total-amount {
+      background: ${primaryColor};
+      border-color: ${primaryColor};
+      color: #ffffff;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
     .totals-row .t-label { color: #333; }
     .totals-row .t-value { font-weight: 600; }
 
@@ -380,9 +461,9 @@ export function generateInvoiceHtml(
   </style>
 </head>
 <body>
-  <div class="invoice-wrapper">
+  <div class="invoice-wrapper ${templateClass}">
 
-    ${stripedBar(primaryColor)}
+    ${showStripedBars ? stripedBar(primaryColor) : ''}
 
     <!-- Header -->
     <div class="header">
@@ -398,6 +479,7 @@ export function generateInvoiceHtml(
           <b>Email:</b> ${escapeHtml(data.business.email)}
         </div>
       </div>
+      ${showHeaderBadge ? '<div class="invoice-badge">Invoice</div>' : ''}
     </div>
 
     <!-- Bill To / Invoice Meta -->
@@ -476,7 +558,7 @@ export function generateInvoiceHtml(
 
     <div class="footer-spacer"></div>
 
-    ${stripedBar(primaryColor, true)}
+    ${showStripedBars ? stripedBar(primaryColor, true) : ''}
 
   </div>
 </body>

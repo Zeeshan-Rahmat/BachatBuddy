@@ -12,10 +12,10 @@ import {
 } from '@/src/services/invoice/pdfService';
 import { useAuthStore } from '@/src/store/authStore';
 import { useInvoiceCustomizationStore } from '@/src/store/invoiceCustomizationStore';
-import { DEFAULT_CUSTOMIZATION, type InvoiceCustomization, type InvoiceData } from '@/src/types/invoice';
+import { type InvoiceData } from '@/src/types/invoice';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native';
 
 type PreviewAction = 'print' | 'share' | 'save';
@@ -23,21 +23,11 @@ type PreviewAction = 'print' | 'share' | 'save';
 const PreviewInvoiceScreen = () => {
     const { id } = useLocalSearchParams<{ id: string }>();
     const currentUser = useAuthStore((state) => state.user);
-    const signature = useInvoiceCustomizationStore((state) => state.signature);
+    const customization = useInvoiceCustomizationStore((state) => state.customization);
 
     const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeAction, setActiveAction] = useState<PreviewAction | null>(null);
-
-    const customization = useMemo<InvoiceCustomization>(() => ({
-        ...DEFAULT_CUSTOMIZATION,
-        signature: signature
-            ? {
-                label: signature.label,
-                imageUri: signature.dataUri,
-            }
-            : DEFAULT_CUSTOMIZATION.signature,
-    }), [signature]);
 
     const loadInvoice = useCallback(async () => {
         if (!id) {

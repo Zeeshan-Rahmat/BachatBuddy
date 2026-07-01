@@ -40,6 +40,9 @@ export default function ScreenWrapper({
                 <ScrollView
                     className="flex-1"
                     showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ flexGrow: 1 }}
                 >
                     {children}
                 </ScrollView>

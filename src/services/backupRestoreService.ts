@@ -4,6 +4,7 @@ import {
     authSessions,
     backupMetadata,
     customers,
+    invoiceCustomization,
     invoiceItems,
     invoices,
     products,
@@ -13,6 +14,7 @@ import {
     type AuthSessionRow,
     type BackupMetadataRow,
     type CustomerRow,
+    type InvoiceCustomizationRow,
     type InvoiceItemRow,
     type InvoiceRow,
     type ProductRow,
@@ -34,6 +36,7 @@ type BackupTableName =
     | 'products'
     | 'invoices'
     | 'invoice_items'
+    | 'invoice_customization'
     | 'sync_queue';
 
 type BackupRecordCounts = Record<BackupTableName, number>;
@@ -52,6 +55,7 @@ type BackupSnapshot = {
         products: ProductRow[];
         invoices: InvoiceRow[];
         invoiceItems: InvoiceItemRow[];
+        invoiceCustomization: InvoiceCustomizationRow[];
         syncQueue: SyncQueueRow[];
     };
 };
@@ -106,6 +110,7 @@ function buildRecordCounts(snapshot: BackupSnapshot): BackupRecordCounts {
         products: snapshot.tables.products.length,
         invoices: snapshot.tables.invoices.length,
         invoice_items: snapshot.tables.invoiceItems.length,
+        invoice_customization: snapshot.tables.invoiceCustomization.length,
         sync_queue: snapshot.tables.syncQueue.length,
     };
 }
@@ -118,6 +123,7 @@ function getSnapshotLastChangedAt(snapshot: BackupSnapshot): number {
         ...snapshot.tables.products.map((row) => row.updatedAt || row.createdAt),
         ...snapshot.tables.invoices.map((row) => row.updatedAt || row.createdAt),
         ...snapshot.tables.invoiceItems.map((row) => row.updatedAt || row.createdAt),
+        ...snapshot.tables.invoiceCustomization.map((row) => row.updatedAt || row.createdAt),
     ];
 
     return timestamps.reduce((latest, timestamp) => Math.max(latest, timestamp || 0), 0);
@@ -230,6 +236,10 @@ function parseSnapshot(value: unknown): BackupSnapshot {
         throw new Error('Backup file is missing one or more local tables.');
     }
 
+    if (!isArray(tables.invoiceCustomization)) {
+        tables.invoiceCustomization = [];
+    }
+
     return value as BackupSnapshot;
 }
 
@@ -245,6 +255,7 @@ async function createSnapshot(userId: string, businessId: string): Promise<Backu
         productRows,
         invoiceRows,
         invoiceItemRows,
+        invoiceCustomizationRows,
         queueRows,
     ] = await Promise.all([
         db.select().from(users),
@@ -254,6 +265,7 @@ async function createSnapshot(userId: string, businessId: string): Promise<Backu
         db.select().from(products),
         db.select().from(invoices),
         db.select().from(invoiceItems),
+        db.select().from(invoiceCustomization),
         db.select().from(syncQueue),
     ]);
 
@@ -271,6 +283,7 @@ async function createSnapshot(userId: string, businessId: string): Promise<Backu
             products: productRows,
             invoices: invoiceRows,
             invoiceItems: invoiceItemRows,
+            invoiceCustomization: invoiceCustomizationRows,
             syncQueue: queueRows,
         },
     };
@@ -383,6 +396,7 @@ async function restoreSnapshot(snapshot: BackupSnapshot): Promise<void> {
     await db.transaction((tx) => {
         tx.delete(backupMetadata).run();
         tx.delete(syncQueue).run();
+        tx.delete(invoiceCustomization).run();
         tx.delete(invoiceItems).run();
         tx.delete(invoices).run();
         tx.delete(products).run();
@@ -398,6 +412,7 @@ async function restoreSnapshot(snapshot: BackupSnapshot): Promise<void> {
         if (snapshot.tables.products.length > 0) tx.insert(products).values(snapshot.tables.products).run();
         if (snapshot.tables.invoices.length > 0) tx.insert(invoices).values(snapshot.tables.invoices).run();
         if (snapshot.tables.invoiceItems.length > 0) tx.insert(invoiceItems).values(snapshot.tables.invoiceItems).run();
+        if (snapshot.tables.invoiceCustomization.length > 0) tx.insert(invoiceCustomization).values(snapshot.tables.invoiceCustomization).run();
         if (snapshot.tables.syncQueue.length > 0) tx.insert(syncQueue).values(snapshot.tables.syncQueue).run();
     });
 }
