@@ -177,6 +177,8 @@ function mapRequest(row: StagingReviewRow, profileMap: Map<string, ProfileRow>):
     }
 
     const profile = row.submitted_by ? profileMap.get(row.submitted_by) : undefined;
+    const payloadEmployeeName = typeof row.payload.employee_name === 'string' ? row.payload.employee_name : null;
+    const payloadEmployeeImage = typeof row.payload.employee_img === 'string' ? row.payload.employee_img : null;
     const operation = normalizeOperation(row);
 
     return {
@@ -187,8 +189,8 @@ function mapRequest(row: StagingReviewRow, profileMap: Map<string, ProfileRow>):
         title: getRequestTitle(sourceTable, operation, row.payload),
         subtitle: getRequestSubtitle(row),
         submittedById: row.submitted_by,
-        submittedByName: profile?.name ?? 'Employee',
-        submittedByImage: profile?.img ?? null,
+        submittedByName: profile?.name ?? payloadEmployeeName ?? 'Employee',
+        submittedByImage: profile?.img ?? payloadEmployeeImage,
         createdAt: row.created_at,
     };
 }

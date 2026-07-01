@@ -6,6 +6,7 @@
 
 import { supabase } from '../../lib/supabase';
 import { usersRepository } from '../../db/repositories/usersRepository';
+import { findEmployeeByUsernameOrEmail } from '../../db/repositories/employeesRepository';
 import * as SecureStore from 'expo-secure-store';
 import type {
   AuthErrorCode,
@@ -22,6 +23,7 @@ import {
   mapRemoteUserToLocal,
   type RemoteUserRow,
 } from '../userProfileMapper';
+import { employeeDataSyncService } from '../employeeDataSyncService';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -188,6 +190,13 @@ function buildLocalOnlySession(user: User): AuthSession {
 
 function passwordMatchesLocalRecord(password: string, passwordHash: string | null): boolean {
   return Boolean(passwordHash) && password === passwordHash;
+}
+
+function isMissingEmployeeDownloadRpcError(error: string): boolean {
+  const lower = error.toLowerCase();
+  return lower.includes('employee_submit_business_data_download_request') ||
+    lower.includes('could not find the function') ||
+    lower.includes('function') && lower.includes('schema cache');
 }
 
 async function upsertRemoteUserProfile(user: User): Promise<string | null> {
@@ -522,14 +531,40 @@ export async function signIn(input: SignInInput): Promise<AuthResult<AuthSession
       };
     }
 
-    const localUser = await usersRepository.findByUsernameOrEmail(normalizedLogin);
+    const localEmployee = await findEmployeeByUsernameOrEmail(normalizedLogin);
 
-    if (localUser?.role === 'employee') {
-      if (!passwordMatchesLocalRecord(input.password, localUser.passwordHash)) {
+    if (localEmployee) {
+      if (!passwordMatchesLocalRecord(input.password, localEmployee.passwordHash)) {
         return { success: false, error: 'Incorrect email, username, or password.', code: 'invalid_credentials' };
       }
 
-      return { success: true, data: buildLocalOnlySession(localUser) };
+      void employeeDataSyncService.submitDownloadRequest(normalizedLogin, input.password)
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error);
+          console.warn('[Auth] Employee data download request failed:', message);
+        });
+
+      return { success: true, data: buildLocalOnlySession(localEmployee) };
+    }
+
+    const localUser = await usersRepository.findByUsernameOrEmail(normalizedLogin);
+    const employeeDownloadRequest = !localUser
+      ? await employeeDataSyncService.submitDownloadRequest(normalizedLogin, input.password)
+      : null;
+
+    if (employeeDownloadRequest?.success) {
+      return {
+        success: true,
+        data: buildLocalOnlySession(employeeDownloadRequest.data.employee),
+      };
+    }
+
+    if (employeeDownloadRequest && isMissingEmployeeDownloadRpcError(employeeDownloadRequest.error)) {
+      return {
+        success: false,
+        error: 'Employee login is not ready on this device because the employee download RPC has not been applied in Supabase yet. Please apply the latest setup SQL, or sign in on the owner device where the employee was created.',
+        code: 'unknown_error',
+      };
     }
 
     let email = localUser?.email ?? null;

@@ -51,6 +51,8 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
   const insets = useSafeAreaInsets();
   // const { handleSignOut } = useSignOut();
   const canAccessDashboard = useAuthStore((state) => state.canAccessDashboard);
+  const canAccessReports = useAuthStore((state) => state.canAccessReports);
+  const isOwner = useAuthStore((state) => state.isOwner);
   const segments = useSegments();
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
@@ -224,19 +226,25 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
             </MenuItemsWrapper>
 
             {/* ── Section 3: Export & Backup ───────────────────────────────── */}
-            <MenuItemsWrapper>
-              <MenuItem
-                icon={ICONS.MENU.exportIcon}
-                label="Export Reports"
-                onPress={() => navigate(ROUTES.MODAL.EXPORT_REPORT)}
-              />
+            {(canAccessReports() || isOwner()) && (
+              <MenuItemsWrapper>
+                {canAccessReports() && (
+                  <MenuItem
+                    icon={ICONS.MENU.exportIcon}
+                    label="Export Reports"
+                    onPress={() => navigate(ROUTES.MODAL.EXPORT_REPORT)}
+                  />
+                )}
 
-              <MenuItem
-                icon={ICONS.MENU.backupRestore}
-                label="Backup and Restore"
-                onPress={() => navigate(ROUTES.MODAL.BACKUP_RESTORE)}
-              />
-            </MenuItemsWrapper>
+                {isOwner() && (
+                  <MenuItem
+                    icon={ICONS.MENU.backupRestore}
+                    label="Backup and Restore"
+                    onPress={() => navigate(ROUTES.MODAL.BACKUP_RESTORE)}
+                  />
+                )}
+              </MenuItemsWrapper>
+            )}
 
             {/* ── Section 4: Account ───────────────────────────────────────── */}
             <MenuItemsWrapper>

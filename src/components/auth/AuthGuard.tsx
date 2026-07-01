@@ -15,6 +15,9 @@ import { useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
 
 const EMPLOYEE_BLOCKED_SEGMENTS = ['dashboard', 'reports'];
+const EMPLOYEE_BLOCKED_PARTIES_SEGMENTS = ['employee', 'add-employee'];
+const EMPLOYEE_BLOCKED_MODAL_SEGMENTS = ['export', 'backup_restore'];
+const APP_SEGMENTS = ['dashboard', 'stock', 'sale', 'reports', 'parties'];
 const AUTH_SUCCESS_SEGMENTS = ['sign-up-verified', 'email-verified', 'password-updated'];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -28,7 +31,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inAppGroup = segments[0] === '(app)';
+    const inAppGroup = segments[0] === '(app)' || APP_SEGMENTS.includes(segments[0] ?? '');
+    const inModalGroup = segments[0] === '(modal)';
+    const currentSegment = segments[0] === '(app)' ? segments[1] : segments[0];
+    const nestedSegment = segments[0] === '(app)' ? segments[2] : segments[1];
 
     if (!isAuthenticated && inAppGroup) {
       router.replace('/(auth)/sign-in');
@@ -43,12 +49,29 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     // AGENTS.md §5: Employee blocked from Dashboard & Reports — enforce at navigation layer
     if (isAuthenticated && user?.role === 'employee' && inAppGroup) {
-      const currentSegment = segments[1];
       if (currentSegment && EMPLOYEE_BLOCKED_SEGMENTS.includes(currentSegment)) {
+        router.replace('/(app)/stock');
+        return;
+      }
+
+      if (
+        currentSegment === 'parties' &&
+        nestedSegment &&
+        EMPLOYEE_BLOCKED_PARTIES_SEGMENTS.includes(nestedSegment)
+      ) {
         router.replace('/(app)/stock');
       }
     }
-  }, [isAuthenticated, isLoading, user?.role, segments]);
+
+    if (
+      isAuthenticated &&
+      user?.role === 'employee' &&
+      inModalGroup &&
+      EMPLOYEE_BLOCKED_MODAL_SEGMENTS.includes(segments[1] ?? '')
+    ) {
+      router.replace('/(app)/stock');
+    }
+  }, [isAuthenticated, isLoading, user?.role, segments, router]);
 
   return <>{children}</>;
 }

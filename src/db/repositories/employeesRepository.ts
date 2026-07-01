@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, ne, or } from 'drizzle-orm';
 import { requestSyncQueueProcessing } from '@/src/services/syncQueueNotifier';
 import { db } from '../client';
 import { syncQueue, users, type NewSyncQueueRow, type NewUserRow, type UserRow } from '../schema';
@@ -57,6 +57,18 @@ export const listEmployees = async (businessId?: string): Promise<UserRow[]> => 
 export const getEmployeeById = async (id: string): Promise<UserRow | undefined> => {
     return db.query.users.findFirst({
         where: and(eq(users.id, id), eq(users.role, 'employee')),
+    });
+};
+
+export const findEmployeeByUsernameOrEmail = async (value: string): Promise<UserRow | undefined> => {
+    const normalized = value.trim().toLowerCase();
+
+    return db.query.users.findFirst({
+        where: and(
+            eq(users.role, 'employee'),
+            or(eq(users.username, normalized), eq(users.email, normalized)),
+            ne(users.syncStatus, 'pending_delete'),
+        ),
     });
 };
 
@@ -179,6 +191,7 @@ export const markEmployeePendingDelete = async (id: string, requiresApproval = f
 export const employeesRepository = {
     listEmployees,
     getEmployeeById,
+    findEmployeeByUsernameOrEmail,
     createEmployee,
     updateEmployee,
     markEmployeePendingDelete,

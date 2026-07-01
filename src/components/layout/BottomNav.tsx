@@ -14,7 +14,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import IconWrapper from '../common/IconWrapper';
-// import { useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '../../store/authStore';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -66,8 +66,7 @@ const ALL_TABS = [
 export function BottomNav() {
     const insets = useSafeAreaInsets();
     const segments = useSegments();
-    //   const { role } = useAuthStore();
-    const role = "owner"
+    const role = useAuthStore((state) => state.role);
 
     // Filter tabs based on RBAC role
     const visibleTabs = ALL_TABS.filter(
@@ -75,7 +74,7 @@ export function BottomNav() {
     );
 
     // Determine active tab from current route segment
-    const activeSegment = segments[1] ?? 'dashboard';
+    const activeSegment = segments[1] ?? (role === 'owner' ? 'dashboard' : 'stock');
 
     return (
         <View

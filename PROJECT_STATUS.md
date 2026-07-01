@@ -66,12 +66,19 @@ Main Files:
 Status: In Progress
 
 Description:
-Expo Router groups are set up for auth, protected app screens, nested sale routes, and modals. `AuthGuard` blocks unauthenticated app access and employee access to owner-only dashboard/report routes. Session bootstrap initializes SQLite and biometric state only; it does not automatically authenticate from a previous saved SQLite session, so protected app screens remain locked until password sign-in or successful fingerprint unlock. The app stack registers the nested sale route group as `sale`, avoiding Expo Router child-name warnings for `sale/index`.
+Expo Router groups are set up for auth, protected app screens, nested sale routes, and modals. `AuthGuard` blocks unauthenticated app access and employee access to owner-only dashboard/report routes, including grouped and ungrouped app route segment shapes. It also blocks direct employee access to owner-only employee-management party routes. Session bootstrap initializes SQLite and biometric state only; it does not automatically authenticate from a previous saved SQLite session, so protected app screens remain locked until password sign-in or successful fingerprint unlock. The app stack registers the nested sale route group as `sale`, avoiding Expo Router child-name warnings for `sale/index`.
+
+Completed Updates:
+- Fixed bottom navigation RBAC so it reads the real auth role instead of a hardcoded owner role, hiding Dashboard and Reports for employees.
+- Hid and gated the Parties `Employees` tab for employee users while keeping Customers and Suppliers available.
+- Extended route guards to redirect employees away from Dashboard, Reports, direct employee-management party routes, report export, and backup/restore.
+- Hid owner-only report export and backup/restore drawer actions for employees.
 
 Main Files:
 - `app/_layout.tsx`
 - `app/(auth)/_layout.tsx`
 - `app/(app)/_layout.tsx`
+- `app/(app)/parties/index.tsx`
 - `app/(modal)/_layout.tsx`
 - `src/components/auth/AuthGuard.tsx`
 - `src/components/layout/BottomNav.tsx`
@@ -278,7 +285,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Employee mutations for products, customers, suppliers, employees, invoices, invoice items, and related stock/customer invoice effects still write to SQLite first with `sync_status = pending_approval`, enqueue `sync_queue` rows, and upload approval requests to Supabase `staging_review_queue` in the background. New approval queue payloads now preserve the original intended operation as `approvalOperation` so owner review can distinguish inserts, updates, and deletes. Owners can open `Backup & Restore > Approval Requests`, load pending cloud staging rows for their business, approve requests to replay the staged payload into the correct Supabase business table, or reject requests to mark the staging row rejected. The service also updates matching local SQLite rows from `pending_approval` to `synced` or `rejected` when those rows exist on the reviewing device. Employee business-data download must be separately gated by a `business_data_downloads` approval request: employee login must not pull owner business data until the owner approves that request. Full employee-side data download request submission, approved-only pull sync, and approved/rejected result reconciliation are still pending.
+Employee mutations for products, customers, suppliers, employees, invoices, invoice items, and related stock/customer invoice effects still write to SQLite first with `sync_status = pending_approval`, enqueue `sync_queue` rows, and upload approval requests to Supabase `staging_review_queue` in the background. New approval queue payloads now preserve the original intended operation as `approvalOperation` so owner review can distinguish inserts, updates, and deletes. Owners can open `Backup & Restore > Approval Requests`, load pending cloud staging rows for their business, approve requests to replay the staged payload into the correct Supabase business table, or reject requests to mark the staging row rejected. The service also updates matching local SQLite rows from `pending_approval` to `synced` or `rejected` when those rows exist on the reviewing device. Employee business-data download is now separately gated by a `business_data_downloads` approval request: employee sign-in submits or reuses the request, pending/rejected requests do not pull owner business data, and approved requests pull owner business tables into SQLite in dependency order.
 
 Completed Updates:
 - Added `src/services/approvalWorkflowService.ts` for listing pending staging requests, resolving submitter profile names/images, approving requests, rejecting requests, replaying approved payloads to Supabase business tables, and local pending-row reconciliation.
@@ -286,11 +293,17 @@ Completed Updates:
 - Wired `app/(modal)/backup_restore/index.tsx` to load pending approval requests only for owners and handle approve/reject actions with user feedback.
 - Updated product, customer, supplier, employee, and invoice repositories so approval queue payloads preserve `approvalOperation` for insert/update/delete review.
 - Added owner-review support for `business_data_downloads` approval requests so future employee data pulls can be approved/rejected without replaying a table mutation.
+- Added `src/services/employeeDataSyncService.ts` for employee download request submission, approved-only pull sync, strict remote payload mapping, and local SQLite hydration for employees, customers, suppliers, products, invoices, and invoice items.
+- Wired employee sign-in to submit/reuse `business_data_downloads` requests. Existing local employees continue signing in offline-first while the request is refreshed in the background; first-time employee devices can create the local employee profile from the remote directory response.
+- Added Supabase RPC support in `supabase/bachatbuddy_setup.sql` for employee credential-verified download request submission and approved-only business data payload retrieval without requiring employees to be `public.users` Auth profile rows.
+- Updated owner approval request mapping so `business_data_downloads` rows submitted from `public.employees` still display the employee name and image from the request payload.
+- Fixed employee credential sign-in by adding an employee-specific local lookup before owner profile lookup, so employees saved by the owner authenticate against local SQLite employee rows first.
 
 Main Files:
 - `app/(modal)/backup_restore/index.tsx`
 - `app/(modal)/backup_restore/backup-restore-request.tsx`
 - `src/services/approvalWorkflowService.ts`
+- `src/services/employeeDataSyncService.ts`
 - `src/db/repositories/productsRepository.ts`
 - `src/db/repositories/customersRepository.ts`
 - `src/db/repositories/suppliersRepository.ts`
@@ -354,7 +367,7 @@ Main Files:
 - Local database: Expo SQLite database named `bachatbuddy.db`.
 - ORM: Drizzle ORM with schema in `src/db/schema.ts`.
 - Cloud database: Supabase PostgreSQL, intended for auth, backup, sync, remote storage, notifications, and approvals.
-- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.employees`, business sync tables, `public.staging_review_queue`, `public.backup_manifests`, username lookup RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, RLS policies, and the `bachatbuddy-media`/`bachatbuddy-backups` Storage bucket policies.
+- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.employees`, business sync tables, `public.staging_review_queue`, `public.backup_manifests`, username lookup RPCs, employee data-download request/pull RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, RLS policies, and the `bachatbuddy-media`/`bachatbuddy-backups` Storage bucket policies.
 - Supabase Storage: `bachatbuddy-media` stores synced application images. SQLite keeps local image URIs for immediate offline display; sync uploads those images and sends public Storage URLs in remote payloads.
 - Supabase backup storage: `bachatbuddy-backups` stores private JSON database snapshots under `{business_id}/{backup_id}.json` and `{business_id}/latest.json`; `public.backup_manifests` stores owner-scoped backup metadata.
 - Existing local tables: `users`, `auth_sessions`, `customers`, `suppliers`, `products`, `invoices`, `invoice_items`, `sync_queue`, `backup_metadata`.
@@ -507,6 +520,7 @@ Main Files:
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
   - `backupMetadataRepository`: latest backup lookup, completed-backup metadata upsert, and restored-state marking.
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
+- Employee data sync service: `src/services/employeeDataSyncService.ts` submits employee `business_data_downloads` approval requests, creates first-time local employee profiles from the remote employee directory response, and pulls owner business data into SQLite only after the request is approved. Employee auth first checks local SQLite employee rows through `employeesRepository.findEmployeeByUsernameOrEmail`.
 - App data provider: `src/components/providers/AppDataProvider.tsx` initializes SQLite, enqueues existing local media uploads, and starts/stops the background sync queue processor.
 - Employee sync note: employee queue rows target remote `employees`; old queued employee rows with table name `users` are also routed to `employees` by payload role for compatibility.
 - Storage service: `src/lib/secureStorage.ts` stores compact biometric metadata, expiry, and enabled flags in Expo SecureStore; session tokens are stored in SQLite.
@@ -555,7 +569,7 @@ Main Files:
 - ✅ Backup and restore backend foundation
 - ✅ Owner approval request review UI
 - ✅ Business data download approval request type
-- ⏳ Employee data download request submission and approved-only pull sync
+- âœ… Employee data download request submission and approved-only pull sync
 
 Startup UX Update:
 - Native Expo splash now uses `assets/images/logo.png`.
@@ -566,8 +580,6 @@ Startup UX Update:
 
 - Tighten Supabase Storage policies to business-scoped paths if private media access becomes required.
 - Implement conflict handling and stale `processing` row recovery for sync.
-- Add employee-side `business_data_downloads` request submission before any owner data pull.
-- Add approved-only employee pull sync for owner business data after `business_data_downloads` is approved.
 - Add pull-based employee device reconciliation for approved/rejected `staging_review_queue` results.
 - Add local-first create/update repositories for ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
@@ -607,7 +619,7 @@ Startup UX Update:
 - Repositories own SQLite access and local mutations.
 - Local mutations should write a sync queue entry in the same transaction.
 - IDs should be UUID strings generated with `crypto.randomUUID()`.
-- Employee login must not automatically download owner business data; employee devices need an approved `business_data_downloads` staging request before any business-table pull sync.
+- Employee login must not automatically download owner business data; employee devices submit or reuse a `business_data_downloads` staging request and can only pull business-table data after that request is approved.
 - User profile rows now use explicit mapping between Supabase `snake_case` and local Drizzle camelCase fields.
 - Profile creation/update now writes to SQLite first, queues the mutation, and also attempts remote writes against the configured Supabase `public.users` table.
 - Owner profiles use the owner's Supabase Auth user id as `business_id`; employee profiles should share that owner id later. No separate business table is required yet.

@@ -698,6 +698,9 @@ alter table public.staging_review_queue
 alter table public.staging_review_queue
   alter column business_id set default public.current_user_business_id();
 
+alter table public.staging_review_queue
+  alter column submitted_by drop not null;
+
 update public.staging_review_queue queue
 set business_id = coalesce(queue.business_id, profile.business_id, profile.id)
 from public.users profile
@@ -745,6 +748,213 @@ create index if not exists idx_staging_review_queue_submitted_by on public.stagi
 create index if not exists idx_staging_review_queue_business_id on public.staging_review_queue(business_id);
 
 alter table public.staging_review_queue enable row level security;
+
+create or replace function public.employee_submit_business_data_download_request(
+  p_identifier text,
+  p_password text,
+  p_device_name text default 'Employee device'
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_employee public.employees%rowtype;
+  v_request public.staging_review_queue%rowtype;
+  v_now bigint := ((extract(epoch from now()) * 1000)::bigint);
+begin
+  select *
+  into v_employee
+  from public.employees
+  where status = 'Active'
+    and sync_status <> 'pending_delete'
+    and (
+      lower(email) = lower(trim(p_identifier))
+      or lower(username) = lower(trim(p_identifier))
+    )
+  limit 1;
+
+  if v_employee.id is null or coalesce(v_employee.password_hash, '') <> p_password then
+    raise exception 'Invalid employee credentials.';
+  end if;
+
+  select *
+  into v_request
+  from public.staging_review_queue
+  where source_table = 'business_data_downloads'
+    and source_record_id = v_employee.id::text
+    and business_id = v_employee.business_id
+    and status in ('pending', 'approved')
+  order by created_at desc
+  limit 1;
+
+  if v_request.id is null then
+    insert into public.staging_review_queue (
+      id,
+      source_table,
+      source_record_id,
+      operation,
+      payload,
+      submitted_by,
+      business_id,
+      status,
+      updated_at,
+      created_at
+    )
+    values (
+      gen_random_uuid(),
+      'business_data_downloads',
+      v_employee.id::text,
+      'approval_request',
+      jsonb_build_object(
+        'employee_id', v_employee.id,
+        'employee_name', v_employee.name,
+        'employee_img', v_employee.img,
+        'device_name', coalesce(nullif(trim(p_device_name), ''), 'Employee device'),
+        'requested_at', v_now
+      ),
+      null,
+      v_employee.business_id,
+      'pending',
+      v_now,
+      v_now
+    )
+    returning * into v_request;
+  end if;
+
+  return jsonb_build_object(
+    'request_id', v_request.id,
+    'status', v_request.status,
+    'employee', to_jsonb(v_employee)
+  );
+end;
+$$;
+
+grant execute on function public.employee_submit_business_data_download_request(text, text, text) to anon, authenticated;
+
+drop function if exists public.employee_pull_approved_business_data(uuid, uuid);
+
+create or replace function public.employee_pull_approved_business_data(
+  p_employee_id uuid,
+  p_business_id uuid,
+  p_request_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_request public.staging_review_queue%rowtype;
+begin
+  select *
+  into v_request
+  from public.staging_review_queue
+  where id = p_request_id
+    and source_table = 'business_data_downloads'
+    and source_record_id = p_employee_id::text
+    and business_id = p_business_id
+    and status = 'approved'
+  order by reviewed_at desc nulls last, updated_at desc
+  limit 1;
+
+  if v_request.id is null then
+    return jsonb_build_object('status', 'missing');
+  end if;
+
+  return jsonb_build_object(
+    'request_id', v_request.id,
+    'status', 'approved',
+    'employees', coalesce((
+      select jsonb_agg(to_jsonb(employee_row) order by employee_row.updated_at desc)
+      from public.employees employee_row
+      where employee_row.business_id = p_business_id
+        and employee_row.sync_status <> 'pending_delete'
+    ), '[]'::jsonb),
+    'customers', coalesce((
+      select jsonb_agg(to_jsonb(customer_row) order by customer_row.updated_at desc)
+      from public.customers customer_row
+      where customer_row.sync_status <> 'pending_delete'
+        and (
+          customer_row.created_by_id = p_business_id
+          or customer_row.last_updated_by_id = p_business_id
+        )
+    ), '[]'::jsonb),
+    'suppliers', coalesce((
+      select jsonb_agg(to_jsonb(supplier_row) order by supplier_row.updated_at desc)
+      from public.suppliers supplier_row
+      where supplier_row.sync_status <> 'pending_delete'
+        and (
+          supplier_row.created_by_id = p_business_id
+          or supplier_row.last_updated_by_id = p_business_id
+        )
+    ), '[]'::jsonb),
+    'products', coalesce((
+      select jsonb_agg(to_jsonb(product_row) order by product_row.updated_at desc)
+      from public.products product_row
+      where product_row.sync_status <> 'pending_delete'
+        and (
+          product_row.created_by_id = p_business_id
+          or product_row.last_updated_by_id = p_business_id
+          or exists (
+            select 1
+            from public.suppliers supplier_row
+            where supplier_row.id = product_row.supplier_id
+              and (
+                supplier_row.created_by_id = p_business_id
+                or supplier_row.last_updated_by_id = p_business_id
+              )
+          )
+        )
+    ), '[]'::jsonb),
+    'invoices', coalesce((
+      select jsonb_agg(to_jsonb(invoice_row) order by invoice_row.updated_at desc)
+      from public.invoices invoice_row
+      where invoice_row.sync_status <> 'pending_delete'
+        and (
+          invoice_row.created_by_id = p_business_id
+          or invoice_row.last_updated_by_id = p_business_id
+          or exists (
+            select 1
+            from public.customers customer_row
+            where customer_row.id = invoice_row.customer_id
+              and (
+                customer_row.created_by_id = p_business_id
+                or customer_row.last_updated_by_id = p_business_id
+              )
+          )
+        )
+    ), '[]'::jsonb),
+    'invoice_items', coalesce((
+      select jsonb_agg(to_jsonb(item_row) order by item_row.updated_at desc)
+      from public.invoice_items item_row
+      where item_row.sync_status <> 'pending_delete'
+        and exists (
+          select 1
+          from public.invoices invoice_row
+          where invoice_row.id = item_row.invoice_id
+            and invoice_row.sync_status <> 'pending_delete'
+            and (
+              invoice_row.created_by_id = p_business_id
+              or invoice_row.last_updated_by_id = p_business_id
+              or exists (
+                select 1
+                from public.customers customer_row
+                where customer_row.id = invoice_row.customer_id
+                  and (
+                    customer_row.created_by_id = p_business_id
+                    or customer_row.last_updated_by_id = p_business_id
+                  )
+              )
+            )
+        )
+    ), '[]'::jsonb)
+  );
+end;
+$$;
+
+grant execute on function public.employee_pull_approved_business_data(uuid, uuid, uuid) to anon, authenticated;
 
 drop policy if exists "Employees can submit for approval" on public.staging_review_queue;
 drop policy if exists "Users can read own approval requests" on public.staging_review_queue;
