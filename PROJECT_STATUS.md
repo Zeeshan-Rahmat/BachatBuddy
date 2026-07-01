@@ -557,6 +557,11 @@ Main Files:
 - ✅ Business data download approval request type
 - ⏳ Employee data download request submission and approved-only pull sync
 
+Startup UX Update:
+- Native Expo splash now uses `assets/images/logo.png`.
+- Custom splash minimum display time was reduced from 2500ms to 1200ms.
+- `AppDataProvider` local database initialization fallback now shows the app logo instead of a bare spinner.
+
 # Pending Work
 
 - Tighten Supabase Storage policies to business-scoped paths if private media access becomes required.

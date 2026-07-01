@@ -22,7 +22,7 @@ import { useBiometricStore } from '@/src/store/biometricStore';
 
 NativeSplashScreen.preventAutoHideAsync().catch(() => { });
 
-const MIN_SPLASH_DURATION_MS = 2500;
+const MIN_SPLASH_DURATION_MS = 1200;
 
 export default function SplashScreen() {
   const { enabled, hasSavedCredentials, isChecking, checkEnabled } = useBiometricStore();

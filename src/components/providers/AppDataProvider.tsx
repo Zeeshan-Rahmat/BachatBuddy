@@ -4,7 +4,7 @@ import { enqueueExistingLocalMediaUploads } from '@/src/services/mediaBackfillSe
 import { startSyncQueueProcessor, stopSyncQueueProcessor } from '@/src/services/syncQueueProcessor';
 import { useInvoiceCustomizationStore } from '@/src/store/invoiceCustomizationStore';
 import React, { PropsWithChildren, useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Image, Text, View } from 'react-native';
 
 export default function AppDataProvider({ children }: PropsWithChildren) {
     const [isReady, setIsReady] = useState(false);
@@ -38,7 +38,15 @@ export default function AppDataProvider({ children }: PropsWithChildren) {
     if (!isReady) {
         return (
             <View className="flex-1 items-center justify-center bg-slate-50">
+                <Image
+                    source={require('../../../assets/images/logo.png')}
+                    className="w-28 h-28 mb-5"
+                    resizeMode="contain"
+                />
                 <ActivityIndicator color="#10b981" />
+                <Text className="text-slate-500 text-sm font-semibold mt-3">
+                    Loading BachatBuddy
+                </Text>
             </View>
         );
     }

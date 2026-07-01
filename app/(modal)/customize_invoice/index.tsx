@@ -35,6 +35,7 @@ const CustomizeInvoiceScreen = () => {
             rightIcons='none'
             isBottomNavIncluded={false}
             isMenuIncluded={false}
+            scrollable={false}
         >
 
             <InternalTabBar tabs={TABS} activeTab={activeTab} setActiveTab={setActiveTab} />
