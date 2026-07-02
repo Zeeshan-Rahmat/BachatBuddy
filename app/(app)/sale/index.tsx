@@ -5,12 +5,13 @@ import SearchFilter from '@/src/components/common/SearchFilter';
 import { ICONS } from '@/src/constants/icons';
 import { ROUTES } from '@/src/constants/routes';
 import { listInvoicesWithRelations } from '@/src/db/repositories/invoicesRepository';
+import { subscribeToLocalDataChanges } from '@/src/services/localDataChangeNotifier';
 import { mapInvoiceRowToAppInvoice } from '@/src/services/invoice/invoiceUiMapper';
 import { FilterType, InvoiceType } from '@/src/types/appTypes';
 import { handleFilterData } from '@/src/Utility/handleFilterData';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import FilterInvoiceModal from './filter-invoice';
 
@@ -45,6 +46,14 @@ export default function SaleScreen() {
             void loadInvoices();
         }, [loadInvoices])
     );
+
+    useEffect(() => {
+        return subscribeToLocalDataChanges((scope) => {
+            if (scope === 'business-data') {
+                void loadInvoices();
+            }
+        });
+    }, [loadInvoices]);
 
     const onApplyFilters = (filters: FilterType) => {
         // Run advanced filtering logic safely over typed multi-entity datasets

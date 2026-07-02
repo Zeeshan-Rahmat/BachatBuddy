@@ -7,12 +7,13 @@ import { defaultProduct } from '@/src/constants/defaultData';
 import { ICONS } from '@/src/constants/icons';
 import { listProductsWithRelations, markProductPendingDelete } from '@/src/db/repositories/productsRepository';
 import { mapProductRowToAppProduct } from '@/src/services/inventory/productUiMapper';
+import { subscribeToLocalDataChanges } from '@/src/services/localDataChangeNotifier';
 import { useAuthStore } from '@/src/store/authStore';
 import { FilterType, ProductType } from '@/src/types/appTypes';
 import { handleFilterData } from '@/src/Utility/handleFilterData';
 import ScreenWrapper from '@components/layout/ScreenWrapper';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import AddProductManualModal from './add-product-manual';
 import EditProductModal from './edit-product';
@@ -53,6 +54,14 @@ export default function StockScreen() {
             void loadProducts();
         }, [loadProducts])
     );
+
+    useEffect(() => {
+        return subscribeToLocalDataChanges((scope) => {
+            if (scope === 'business-data') {
+                void loadProducts();
+            }
+        });
+    }, [loadProducts]);
 
     // Combine stateful multi-category modal filters with local text queries smoothly
     const filtered = displayedStock.filter(item =>

@@ -285,7 +285,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Employee mutations for products, customers, suppliers, employees, invoices, invoice items, and related stock/customer invoice effects still write to SQLite first with `sync_status = pending_approval`, enqueue `sync_queue` rows, and upload approval requests to Supabase `staging_review_queue` in the background. New approval queue payloads now preserve the original intended operation as `approvalOperation` so owner review can distinguish inserts, updates, and deletes. Owners can open `Backup & Restore > Approval Requests`, load pending cloud staging rows for their business, approve requests to replay the staged payload into the correct Supabase business table, or reject requests to mark the staging row rejected. The service also updates matching local SQLite rows from `pending_approval` to `synced` or `rejected` when those rows exist on the reviewing device. Employee business-data download is now separately gated by a `business_data_downloads` approval request: employee sign-in submits or reuses the request, pending/rejected requests do not pull owner business data, and approved requests pull owner business tables into SQLite in dependency order.
+Employee mutations for products, customers, suppliers, employees, invoices, invoice items, and related stock/customer invoice effects still write to SQLite first with `sync_status = pending_approval`, enqueue `sync_queue` rows, and upload approval requests to Supabase `staging_review_queue` in the background. New approval queue payloads now preserve the original intended operation as `approvalOperation` so owner review can distinguish inserts, updates, and deletes. Owners can open `Backup & Restore > Approval Requests`, load pending cloud staging rows for their business, approve requests to replay the staged payload into the correct Supabase business table, or reject requests to mark the staging row rejected. The service also updates matching local SQLite rows from `pending_approval` to `synced` or `rejected` when those rows exist on the reviewing device. Employee business-data download is separately gated by a `business_data_downloads` approval request: employee sign-in submits or reuses the request, pending/rejected requests do not pull owner business data, and approved requests pull owner business tables into SQLite in dependency order. Employee devices now poll for approved business-data pulls while signed in, automatically refresh local list screens after imported SQLite data changes, and import owner/user dependency rows before customers, suppliers, products, invoices, and invoice items to avoid local foreign-key failures.
 
 Completed Updates:
 - Added `src/services/approvalWorkflowService.ts` for listing pending staging requests, resolving submitter profile names/images, approving requests, rejecting requests, replaying approved payloads to Supabase business tables, and local pending-row reconciliation.
@@ -298,12 +298,17 @@ Completed Updates:
 - Added Supabase RPC support in `supabase/bachatbuddy_setup.sql` for employee credential-verified download request submission and approved-only business data payload retrieval without requiring employees to be `public.users` Auth profile rows.
 - Updated owner approval request mapping so `business_data_downloads` rows submitted from `public.employees` still display the employee name and image from the request payload.
 - Fixed employee credential sign-in by adding an employee-specific local lookup before owner profile lookup, so employees saved by the owner authenticate against local SQLite employee rows first.
+- Added approved business-data reconcile polling from `AppDataProvider` for signed-in employee sessions, with automatic Stock, Sales, Customer, Supplier, and Employee list refreshes through `localDataChangeNotifier`.
+- Updated owner approval for `business_data_downloads` so it attempts to flush the owner's local `sync_queue` first; approval fails with the sync error instead of approving an empty or stale cloud snapshot.
+- Fixed employee pull foreign-key failures by importing the owner profile from the Supabase RPC payload and creating safe local placeholder owner/user rows when older RPC responses do not include every referenced user id.
+- Updated `employee_pull_approved_business_data` so `p_request_id` is optional and the latest approved request can be pulled during background reconciliation.
 
 Main Files:
 - `app/(modal)/backup_restore/index.tsx`
 - `app/(modal)/backup_restore/backup-restore-request.tsx`
 - `src/services/approvalWorkflowService.ts`
 - `src/services/employeeDataSyncService.ts`
+- `src/services/localDataChangeNotifier.ts`
 - `src/db/repositories/productsRepository.ts`
 - `src/db/repositories/customersRepository.ts`
 - `src/db/repositories/suppliersRepository.ts`
@@ -340,14 +345,14 @@ Main Files:
 Status: In Progress
 
 Description:
-The `sync_queue` table, repository, and app-start background processor exist. The processor reads ready queued/failed rows FIFO, marks each row as `processing`, uploads local image URIs in queued payloads to Supabase Storage, pushes insert/update/delete mutations to Supabase, sends approval requests to `staging_review_queue`, marks successfully pushed local rows as `synced`, removes locally deleted rows after remote delete succeeds, dequeues successful sync items, and records failed attempts with exponential retry backoff. Local mutations now wake the sync processor immediately after SQLite commits instead of waiting for the next interval tick.
+The `sync_queue` table, repository, and app-start background processor exist. The processor reads ready queued/failed rows FIFO, marks each row as `processing`, uploads local image URIs in queued payloads to Supabase Storage, pushes insert/update/delete mutations to Supabase, sends approval requests to `staging_review_queue`, marks successfully pushed local rows as `synced`, removes locally deleted rows after remote delete succeeds, dequeues successful sync items, and records failed attempts with exponential retry backoff. Local mutations now wake the sync processor immediately after SQLite commits instead of waiting for the next interval tick. App startup retries failed queue rows, stale `processing` rows become retry-eligible after a short timeout, and business-data download approval forces a sync attempt before the owner approves an employee's data pull.
 
 Completed Updates:
 - Added `src/services/syncQueueProcessor.ts` for queue processing, Supabase mutation dispatch, approval request upload, local sync status reconciliation, and interval start/stop control.
 - Added `src/services/syncQueueNotifier.ts` so repositories can request immediate background sync after enqueueing local mutations.
 - Updated product, customer, supplier, employee, user/profile, invoice, and generic sync queue enqueue paths to request sync immediately after the local transaction succeeds.
-- Updated `src/db/repositories/syncQueueRepository.ts` to process FIFO, list retry-ready failed rows, mark rows as `processing`, requeue rows when needed, store retry backoff metadata on failures, and reset failed local-media sync rows for prompt retry.
-- Updated `src/components/providers/AppDataProvider.tsx` to initialize SQLite, enqueue existing local media uploads, retry failed media uploads, start the sync queue processor, and stop it on provider cleanup.
+- Updated `src/db/repositories/syncQueueRepository.ts` to process FIFO, list retry-ready failed rows and stale `processing` rows, mark rows as `processing`, requeue rows when needed, store retry backoff metadata on failures, reset failed rows for retry, and reset failed local-media sync rows for prompt retry.
+- Updated `src/components/providers/AppDataProvider.tsx` to initialize SQLite, enqueue existing local media uploads, retry failed media uploads, retry failed queue rows, start the sync queue processor, poll approved employee business-data downloads, and stop background work on provider cleanup.
 - Added `supabase/bachatbuddy_setup.sql` with `public.users`, `staging_review_queue`, helper RPCs, and RLS policies aligned with the app payloads.
 - Added `src/services/mediaStorageService.ts` and sync-processor integration so `img` and `business_logo` local URIs are uploaded to Supabase Storage before remote row upserts or approval payload uploads.
 - Fixed React Native image sync by reading local file URIs through Expo FileSystem `File(...).arrayBuffer()` instead of relying on `fetch(uri).blob()` for device files.
@@ -358,6 +363,7 @@ Main Files:
 - `src/services/syncQueueProcessor.ts`
 - `src/services/syncQueueNotifier.ts`
 - `src/services/mediaStorageService.ts`
+- `src/services/localDataChangeNotifier.ts`
 - `src/services/mediaBackfillService.ts`
 - `src/components/providers/AppDataProvider.tsx`
 - `src/db/schema.ts`
@@ -520,8 +526,9 @@ Main Files:
   - `syncQueueRepository`: enqueue/list/dequeue/failure handling for sync queue rows.
   - `backupMetadataRepository`: latest backup lookup, completed-backup metadata upsert, and restored-state marking.
 - Sync service: `src/services/syncQueueProcessor.ts` processes queued local mutations in the background and reconciles local sync status after successful Supabase pushes.
-- Employee data sync service: `src/services/employeeDataSyncService.ts` submits employee `business_data_downloads` approval requests, creates first-time local employee profiles from the remote employee directory response, and pulls owner business data into SQLite only after the request is approved. Employee auth first checks local SQLite employee rows through `employeesRepository.findEmployeeByUsernameOrEmail`.
-- App data provider: `src/components/providers/AppDataProvider.tsx` initializes SQLite, enqueues existing local media uploads, and starts/stops the background sync queue processor.
+- Employee data sync service: `src/services/employeeDataSyncService.ts` submits employee `business_data_downloads` approval requests, creates first-time local employee profiles from the remote employee directory response, pulls owner business data into SQLite only after the request is approved, imports owner/user dependency rows before foreign-keyed business rows, and supports background approved-request reconciliation. Employee auth first checks local SQLite employee rows through `employeesRepository.findEmployeeByUsernameOrEmail`.
+- Local data change notifier: `src/services/localDataChangeNotifier.ts` lets background employee data imports notify SQLite-backed list screens so they refresh without requiring navigation away/back.
+- App data provider: `src/components/providers/AppDataProvider.tsx` initializes SQLite, enqueues existing local media uploads, retries failed media/sync rows, starts/stops the background sync queue processor, and polls approved employee business-data downloads for signed-in employee sessions.
 - Employee sync note: employee queue rows target remote `employees`; old queued employee rows with table name `users` are also routed to `employees` by payload role for compatibility.
 - Storage service: `src/lib/secureStorage.ts` stores compact biometric metadata, expiry, and enabled flags in Expo SecureStore; session tokens are stored in SQLite.
 - Invoice services: `src/services/invoice/pdfService.ts`, `src/services/invoice/invoiceViewer.tsx`, `src/services/invoice/invoiceUiMapper.ts`, `src/services/invoice/invoicePreviewMapper.ts`.
@@ -571,6 +578,9 @@ Main Files:
 - ✅ Business data download approval request type
 - âœ… Employee data download request submission and approved-only pull sync
 
+- Done: Employee approved-download background reconciliation and local list refresh
+- Done: Employee pull foreign-key dependency import fix
+
 Startup UX Update:
 - Native Expo splash now uses `assets/images/logo.png`.
 - Custom splash minimum display time was reduced from 2500ms to 1200ms.
@@ -579,14 +589,14 @@ Startup UX Update:
 # Pending Work
 
 - Tighten Supabase Storage policies to business-scoped paths if private media access becomes required.
-- Implement conflict handling and stale `processing` row recovery for sync.
-- Add pull-based employee device reconciliation for approved/rejected `staging_review_queue` results.
+- Implement full conflict handling and online/offline network detection for sync.
+- Add employee-side rejected-request reconciliation and user-facing rejected/pending status messaging.
 - Add local-first create/update repositories for ledger entries, payments, and reports.
 - Add ledger and payment schema/tables.
 - Add dedicated filtered destination screens for dashboard quick reports, such as low-stock items, unpaid invoices, pending dues, and top products.
 - Extend invoice transactions with ledger/payment entries after ledger and payment schema tables exist.
 - Persist saved-invoice product edits with stock difference reconciliation and sync queue rows.
-- Complete backup/restore request approval UI and owner/employee request backend.
+- Complete backup/restore request approval workflow as a separate request type.
 - Add backup conflict/staleness handling before overwriting local data with older snapshots.
 - Add pagination and indexes where large lists are queried.
 - Add tests for repositories, sync queue processing, auth/session restoration, and financial/inventory transactions.
@@ -597,7 +607,7 @@ Startup UX Update:
 # Known Issues
 
 - `npm run lint` passes with warnings only; current warnings include unused variables, hook dependency warnings, `==` usage, and import ordering in `src/constants/icons.ts`.
-- Sync queue processor exists and now wakes immediately after local queue writes, but conflict resolution, online/offline network detection, stale `processing` row recovery, and stricter business-scoped Supabase Storage access still need to be completed.
+- Sync queue processor exists and now wakes immediately after local queue writes, retries failed rows, and treats stale `processing` rows as retry-ready, but conflict resolution, online/offline network detection, and stricter business-scoped Supabase Storage access still need to be completed.
 - Product, invoice, party, report, and dashboard summary screens are local-first, but ledger and payment modules do not yet have completed SQLite-backed flows.
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
 - Supabase media upload sync depends on the `bachatbuddy-media` bucket and policies from `supabase/bachatbuddy_setup.sql`; remote image upload will fail and retry if that SQL has not been applied, including the current MIME list for JPEG/PNG/WebP/GIF/HEIC/HEIF.
@@ -620,6 +630,7 @@ Startup UX Update:
 - Local mutations should write a sync queue entry in the same transaction.
 - IDs should be UUID strings generated with `crypto.randomUUID()`.
 - Employee login must not automatically download owner business data; employee devices submit or reuse a `business_data_downloads` staging request and can only pull business-table data after that request is approved.
+- Approved employee business-data pulls must hydrate SQLite locally, including owner/user dependency rows, before importing foreign-keyed business records. Screens still read SQLite only and refresh through local data-change notifications.
 - User profile rows now use explicit mapping between Supabase `snake_case` and local Drizzle camelCase fields.
 - Profile creation/update now writes to SQLite first, queues the mutation, and also attempts remote writes against the configured Supabase `public.users` table.
 - Owner profiles use the owner's Supabase Auth user id as `business_id`; employee profiles should share that owner id later. No separate business table is required yet.
@@ -633,7 +644,7 @@ Startup UX Update:
 - Biometric credentials must be valid, non-expired, and structurally complete to count as setup. Stale SecureStore flags are cleared when no usable metadata exists.
 - Biometric unlock is local-first: it validates compact SecureStore metadata, restores the active SQLite session immediately, routes into the app, and refreshes Supabase tokens/profile in the background.
 - Biometric preference is treated as device-local and does not mark the user profile as a pending cloud sync mutation.
-- Sync queue processing is app-started from `AppDataProvider`, processes FIFO, retries failed rows with exponential backoff, and only marks local records `synced` after Supabase confirms the queued mutation.
+- Sync queue processing is app-started from `AppDataProvider`, processes FIFO, retries failed rows with exponential backoff, retries stale `processing` rows, and only marks local records `synced` after Supabase confirms the queued mutation.
 - Add-invoice screens treat `INV-PENDING` as a draft only: due date, image, customer, products, and totals update screen state until SAVE runs the SQLite invoice transaction and assigns the real UUID/invoice number.
 - Invoice preview reads persisted invoice data from SQLite, maps it through `invoicePreviewMapper`, and renders/prints/shares/saves using the shared HTML/PDF invoice template so preview and exported files stay consistent.
 - Android invoice PDF save uses Expo Storage Access Framework to let the user choose a folder; non-Android platforms use the native share/save sheet because Expo does not expose the same folder picker there.

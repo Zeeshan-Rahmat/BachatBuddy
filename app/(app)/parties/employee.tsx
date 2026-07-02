@@ -6,12 +6,13 @@ import DeleteModal from '@/src/components/modal/DeleteModal';
 import { defaultEmployee } from '@/src/constants/defaultData';
 import { ICONS } from '@/src/constants/icons';
 import { listEmployees, markEmployeePendingDelete } from '@/src/db/repositories/employeesRepository';
+import { subscribeToLocalDataChanges } from '@/src/services/localDataChangeNotifier';
 import { mapEmployeeRowToPartyEmployee } from '@/src/services/parties/partyUiMapper';
 import { useAuthStore } from '@/src/store/authStore';
 import { EmployeeType, FilterType } from '@/src/types/appTypes';
 import { handleFilterData } from '@/src/Utility/handleFilterData';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import AddEditEmployeeModal from './add-employee';
 import FilterPartyModal from './filter-party';
@@ -54,6 +55,14 @@ export default function EmployeeScreen() {
             void loadEmployees();
         }, [loadEmployees])
     );
+
+    useEffect(() => {
+        return subscribeToLocalDataChanges((scope) => {
+            if (scope === 'business-data') {
+                void loadEmployees();
+            }
+        });
+    }, [loadEmployees]);
 
     const filtered = displayedEmployee.filter((employee) =>
         employee.name.toLowerCase().includes(search.toLowerCase())

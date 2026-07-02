@@ -42,6 +42,29 @@ type RemoteEmployeeRow = {
     created_at: number;
 };
 
+type RemoteOwnerRow = {
+    id: string;
+    business_id: string | null;
+    business_name: string | null;
+    name: string;
+    phone: string | null;
+    business_phone: string | null;
+    email: string;
+    business_email: string | null;
+    role: 'owner';
+    username: string;
+    password_hash: string | null;
+    status: RemotePartyStatus;
+    biometric_enabled: boolean | null;
+    address: string | null;
+    business_address: string | null;
+    business_logo: string | null;
+    img: string | null;
+    sync_status: RemoteSyncStatus;
+    updated_at: number;
+    created_at: number;
+};
+
 type RemoteCustomerRow = {
     id: string;
     created_by_id: string | null;
@@ -143,6 +166,7 @@ type DownloadRequestPayload = {
 type ApprovedBusinessDataPayload = {
     requestId: string;
     status: 'approved';
+    owner: RemoteOwnerRow | null;
     employees: RemoteEmployeeRow[];
     customers: RemoteCustomerRow[];
     suppliers: RemoteSupplierRow[];
@@ -163,6 +187,21 @@ export type EmployeeDataDownloadState = {
         invoiceItems: number;
     };
 };
+
+function emptyDownloadState(status: DownloadRequestStatus = 'missing'): EmployeeDataDownloadState {
+    return {
+        requestId: null,
+        status,
+        pulledCounts: {
+            employees: 0,
+            customers: 0,
+            suppliers: 0,
+            products: 0,
+            invoices: 0,
+            invoiceItems: 0,
+        },
+    };
+}
 
 function normalizeError(error: unknown): string {
     if (error instanceof Error) {
@@ -225,6 +264,35 @@ function mapRemoteEmployee(value: unknown): RemoteEmployeeRow | null {
         email: value.email,
         business_email: toNullableString(value.business_email),
         role: 'employee',
+        username: value.username,
+        password_hash: toNullableString(value.password_hash),
+        status: toPartyStatus(value.status),
+        biometric_enabled: value.biometric_enabled === true,
+        address: toNullableString(value.address),
+        business_address: toNullableString(value.business_address),
+        business_logo: toNullableString(value.business_logo),
+        img: toNullableString(value.img),
+        sync_status: toSyncStatus(value.sync_status),
+        updated_at: toNumber(value.updated_at, Date.now()),
+        created_at: toNumber(value.created_at, Date.now()),
+    };
+}
+
+function mapRemoteOwner(value: unknown): RemoteOwnerRow | null {
+    if (!isRecord(value) || typeof value.id !== 'string' || typeof value.name !== 'string' || typeof value.email !== 'string' || typeof value.username !== 'string') {
+        return null;
+    }
+
+    return {
+        id: value.id,
+        business_id: toNullableString(value.business_id),
+        business_name: toNullableString(value.business_name),
+        name: value.name,
+        phone: toNullableString(value.phone),
+        business_phone: toNullableString(value.business_phone),
+        email: value.email,
+        business_email: toNullableString(value.business_email),
+        role: 'owner',
         username: value.username,
         password_hash: toNullableString(value.password_hash),
         status: toPartyStatus(value.status),
@@ -394,6 +462,7 @@ function mapApprovedPayload(value: unknown): ApprovedBusinessDataPayload | null 
     return {
         requestId: value.request_id,
         status: 'approved',
+        owner: mapRemoteOwner(value.owner),
         employees: mapArray(value.employees, mapRemoteEmployee),
         customers: mapArray(value.customers, mapRemoteCustomer),
         suppliers: mapArray(value.suppliers, mapRemoteSupplier),
@@ -428,6 +497,92 @@ function toLocalEmployee(row: RemoteEmployeeRow): UserRow {
     };
 }
 
+function toLocalOwner(row: RemoteOwnerRow): UserRow {
+    return {
+        id: row.id,
+        businessId: row.business_id ?? row.id,
+        businessName: row.business_name,
+        name: row.name,
+        phone: row.phone,
+        businessPhone: row.business_phone,
+        email: row.email,
+        businessEmail: row.business_email,
+        role: 'owner',
+        username: row.username,
+        passwordHash: row.password_hash,
+        status: row.status,
+        biometricEnabled: false,
+        address: row.address,
+        businessAddress: row.business_address,
+        businessLogo: row.business_logo,
+        img: row.img,
+        syncStatus: 'synced',
+        updatedAt: row.updated_at,
+        createdAt: row.created_at,
+    };
+}
+
+function buildPlaceholderOwner(id: string, businessName: string | null): UserRow {
+    const suffix = id.replace(/[^a-zA-Z0-9]/g, '') || 'business';
+
+    return {
+        id,
+        businessId: id,
+        businessName,
+        name: businessName ?? 'Business Owner',
+        phone: null,
+        businessPhone: null,
+        email: `owner-${suffix}@local.bachatbuddy`,
+        businessEmail: null,
+        role: 'owner',
+        username: `owner-${suffix}`,
+        passwordHash: null,
+        status: 'Active',
+        biometricEnabled: false,
+        address: null,
+        businessAddress: null,
+        businessLogo: null,
+        img: null,
+        syncStatus: 'synced',
+        updatedAt: 0,
+        createdAt: 0,
+    };
+}
+
+function collectReferencedUserIds(payload: ApprovedBusinessDataPayload): Set<string> {
+    const ids = new Set<string>();
+    const add = (value: string | null) => {
+        if (value) {
+            ids.add(value);
+        }
+    };
+
+    add(payload.owner?.id ?? null);
+
+    payload.employees.forEach((employee) => {
+        add(employee.id);
+        add(employee.business_id);
+    });
+    payload.customers.forEach((customer) => {
+        add(customer.created_by_id);
+        add(customer.last_updated_by_id);
+    });
+    payload.suppliers.forEach((supplier) => {
+        add(supplier.created_by_id);
+        add(supplier.last_updated_by_id);
+    });
+    payload.products.forEach((product) => {
+        add(product.created_by_id);
+        add(product.last_updated_by_id);
+    });
+    payload.invoices.forEach((invoice) => {
+        add(invoice.created_by_id);
+        add(invoice.last_updated_by_id);
+    });
+
+    return ids;
+}
+
 async function upsertRemoteEmployeeLocally(row: RemoteEmployeeRow): Promise<UserRow> {
     return usersRepository.upsertUser(toLocalEmployee(row));
 }
@@ -450,6 +605,20 @@ async function upsertPulledRow(tableName: string, columns: string[], values: SQL
 
 async function persistApprovedBusinessData(payload: ApprovedBusinessDataPayload): Promise<EmployeeDataDownloadState['pulledCounts']> {
     await sqlite.withTransactionAsync(async () => {
+        const referencedUserIds = collectReferencedUserIds(payload);
+
+        for (const userId of referencedUserIds) {
+            const placeholder = payload.owner?.id === userId
+                ? toLocalOwner(payload.owner)
+                : buildPlaceholderOwner(userId, payload.owner?.business_name ?? payload.employees[0]?.business_name ?? null);
+
+            await upsertPulledRow(
+                'users',
+                ['id', 'business_id', 'business_name', 'name', 'phone', 'business_phone', 'email', 'business_email', 'role', 'username', 'password_hash', 'status', 'biometric_enabled', 'address', 'business_address', 'business_logo', 'img', 'sync_status', 'updated_at', 'created_at'],
+                [placeholder.id, placeholder.businessId, placeholder.businessName, placeholder.name, placeholder.phone, placeholder.businessPhone, placeholder.email, placeholder.businessEmail, placeholder.role, placeholder.username, placeholder.passwordHash, placeholder.status, placeholder.biometricEnabled ? 1 : 0, placeholder.address, placeholder.businessAddress, placeholder.businessLogo, placeholder.img, placeholder.syncStatus, placeholder.updatedAt, placeholder.createdAt],
+            );
+        }
+
         for (const employee of payload.employees) {
             const row = toLocalEmployee(employee);
             await upsertPulledRow(
@@ -513,7 +682,7 @@ async function persistApprovedBusinessData(payload: ApprovedBusinessDataPayload)
 async function pullApprovedBusinessData(
     employeeId: string,
     businessId: string,
-    requestId: string,
+    requestId: string | null,
 ): Promise<ServiceResult<EmployeeDataDownloadState>> {
     const { data, error } = await supabase.rpc('employee_pull_approved_business_data', {
         p_employee_id: employeeId,
@@ -530,18 +699,7 @@ async function pullApprovedBusinessData(
     if (!payload) {
         return {
             success: true,
-            data: {
-                requestId: null,
-                status: 'missing',
-                pulledCounts: {
-                    employees: 0,
-                    customers: 0,
-                    suppliers: 0,
-                    products: 0,
-                    invoices: 0,
-                    invoiceItems: 0,
-                },
-            },
+            data: emptyDownloadState(),
         };
     }
 
@@ -584,14 +742,7 @@ export const employeeDataSyncService = {
             let request: EmployeeDataDownloadState = {
                 requestId: payload.requestId,
                 status: payload.status,
-                pulledCounts: {
-                    employees: 0,
-                    customers: 0,
-                    suppliers: 0,
-                    products: 0,
-                    invoices: 0,
-                    invoiceItems: 0,
-                },
+                pulledCounts: emptyDownloadState().pulledCounts,
             };
 
             if (payload.status === 'approved' && employee.businessId) {
@@ -614,21 +765,7 @@ export const employeeDataSyncService = {
                 return { success: false, error: 'Only employee profiles can pull approved business data.' };
             }
 
-            return {
-                success: true,
-                data: {
-                    requestId: null,
-                    status: 'missing',
-                    pulledCounts: {
-                        employees: 0,
-                        customers: 0,
-                        suppliers: 0,
-                        products: 0,
-                        invoices: 0,
-                        invoiceItems: 0,
-                    },
-                },
-            };
+            return pullApprovedBusinessData(user.id, user.businessId, null);
         } catch (error) {
             return { success: false, error: normalizeError(error) };
         }

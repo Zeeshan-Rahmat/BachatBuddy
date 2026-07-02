@@ -14,6 +14,8 @@ function nowMs(): number {
     return Date.now();
 }
 
+const STALE_PROCESSING_MS = 2 * 60_000;
+
 function newUUID(): string {
     return crypto.randomUUID();
 }
@@ -93,9 +95,15 @@ export const syncQueueRepository = {
             .select()
             .from(syncQueue)
             .where(
-                and(
-                    inArray(syncQueue.status, ['queued', 'failed']),
-                    or(isNull(syncQueue.nextRetryAt), lte(syncQueue.nextRetryAt, now))
+                or(
+                    and(
+                        inArray(syncQueue.status, ['queued', 'failed']),
+                        or(isNull(syncQueue.nextRetryAt), lte(syncQueue.nextRetryAt, now))
+                    ),
+                    and(
+                        eq(syncQueue.status, 'processing'),
+                        lte(syncQueue.updatedAt, now - STALE_PROCESSING_MS)
+                    )
                 )
             )
             .orderBy(asc(syncQueue.createdAt))
@@ -129,6 +137,29 @@ export const syncQueueRepository = {
         }
 
         return mediaEntries.length;
+    },
+
+    async retryFailedEntries(): Promise<number> {
+        const failedEntries = await db
+            .select()
+            .from(syncQueue)
+            .where(eq(syncQueue.status, 'failed'));
+
+        if (failedEntries.length === 0) {
+            return 0;
+        }
+
+        await db
+            .update(syncQueue)
+            .set({
+                status: 'queued',
+                nextRetryAt: null,
+                updatedAt: nowMs(),
+            })
+            .where(eq(syncQueue.status, 'failed'));
+
+        requestSyncQueueProcessing();
+        return failedEntries.length;
     },
 
     async listPendingForTable(tableName: string, limit = 50): Promise<SyncQueueRow[]> {

@@ -1,5 +1,7 @@
 import { sqlite } from '@/src/db/client';
+import { syncQueueRepository } from '@/src/db/repositories/syncQueueRepository';
 import { supabase } from '@/src/lib/supabase';
+import { processSyncQueue } from './syncQueueProcessor';
 
 type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 type ApprovalOperation = 'insert' | 'update' | 'delete';
@@ -313,6 +315,19 @@ async function markLocalReviewResult(row: StagingReviewRow, status: 'synced' | '
     );
 }
 
+async function flushOwnerBusinessDataBeforeDownloadApproval(row: StagingReviewRow): Promise<void> {
+    if (normalizeSourceTable(row.source_table) !== 'business_data_downloads') {
+        return;
+    }
+
+    await syncQueueRepository.retryFailedEntries();
+    const result = await processSyncQueue({ limit: 100 });
+
+    if (result.failed > 0) {
+        throw new Error(`Business data is not uploaded yet. Sync failed: ${result.errors[0] ?? 'Unknown sync error'}`);
+    }
+}
+
 export const approvalWorkflowService = {
     async listPendingRequests(): Promise<ApprovalResult<ApprovalRequest[]>> {
         try {
@@ -341,6 +356,7 @@ export const approvalWorkflowService = {
     async approveRequest(id: string, reviewerId: string): Promise<ApprovalResult<null>> {
         try {
             const row = await getReviewRow(id);
+            await flushOwnerBusinessDataBeforeDownloadApproval(row);
             await applyApprovedMutation(row);
             await updateReviewStatus(id, 'approved', reviewerId);
             await markLocalReviewResult(row, 'synced');

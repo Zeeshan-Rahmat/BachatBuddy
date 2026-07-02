@@ -6,12 +6,13 @@ import DeleteModal from '@/src/components/modal/DeleteModal';
 import { defaultSupplier } from '@/src/constants/defaultData';
 import { ICONS } from '@/src/constants/icons';
 import { listSuppliersWithRelations, markSupplierPendingDelete } from '@/src/db/repositories/suppliersRepository';
+import { subscribeToLocalDataChanges } from '@/src/services/localDataChangeNotifier';
 import { mapSupplierRowToPartySupplier } from '@/src/services/parties/partyUiMapper';
 import { useAuthStore } from '@/src/store/authStore';
 import { FilterType, SupplierType } from '@/src/types/appTypes';
 import { handleFilterData } from '@/src/Utility/handleFilterData';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import EditCustomerSupplierModal from './add-customer-supplier';
 import FilterPartyModal from './filter-party';
@@ -52,6 +53,14 @@ export default function SupplierScreen() {
             void loadSuppliers();
         }, [loadSuppliers])
     );
+
+    useEffect(() => {
+        return subscribeToLocalDataChanges((scope) => {
+            if (scope === 'business-data') {
+                void loadSuppliers();
+            }
+        });
+    }, [loadSuppliers]);
 
     const filtered = displayedSupplier.filter((supplier) =>
         supplier.name.toLowerCase().includes(search.toLowerCase())

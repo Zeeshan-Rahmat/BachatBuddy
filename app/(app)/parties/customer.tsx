@@ -6,12 +6,13 @@ import DeleteModal from '@/src/components/modal/DeleteModal';
 import { defaultCustomer } from '@/src/constants/defaultData';
 import { ICONS } from '@/src/constants/icons';
 import { listCustomersWithRelations, markCustomerPendingDelete } from '@/src/db/repositories/customersRepository';
+import { subscribeToLocalDataChanges } from '@/src/services/localDataChangeNotifier';
 import { mapCustomerRowToPartyCustomer } from '@/src/services/parties/partyUiMapper';
 import { useAuthStore } from '@/src/store/authStore';
 import { CustomerType, FilterType } from '@/src/types/appTypes';
 import { handleFilterData } from '@/src/Utility/handleFilterData';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import EditCustomerSupplierModal from './add-customer-supplier';
 import FilterPartyModal from './filter-party';
@@ -52,6 +53,14 @@ export default function CustomerScreen() {
             void loadCustomers();
         }, [loadCustomers])
     );
+
+    useEffect(() => {
+        return subscribeToLocalDataChanges((scope) => {
+            if (scope === 'business-data') {
+                void loadCustomers();
+            }
+        });
+    }, [loadCustomers]);
 
     const filtered = displayedCustomer.filter((customer) =>
         customer.name.toLowerCase().includes(search.toLowerCase())

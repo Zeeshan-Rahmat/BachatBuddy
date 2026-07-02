@@ -834,11 +834,12 @@ $$;
 grant execute on function public.employee_submit_business_data_download_request(text, text, text) to anon, authenticated;
 
 drop function if exists public.employee_pull_approved_business_data(uuid, uuid);
+drop function if exists public.employee_pull_approved_business_data(uuid, uuid, uuid);
 
 create or replace function public.employee_pull_approved_business_data(
   p_employee_id uuid,
   p_business_id uuid,
-  p_request_id uuid
+  p_request_id uuid default null
 )
 returns jsonb
 language plpgsql
@@ -851,7 +852,7 @@ begin
   select *
   into v_request
   from public.staging_review_queue
-  where id = p_request_id
+  where (p_request_id is null or id = p_request_id)
     and source_table = 'business_data_downloads'
     and source_record_id = p_employee_id::text
     and business_id = p_business_id
@@ -866,6 +867,13 @@ begin
   return jsonb_build_object(
     'request_id', v_request.id,
     'status', 'approved',
+    'owner', (
+      select to_jsonb(owner_row)
+      from public.users owner_row
+      where owner_row.id = p_business_id
+        and owner_row.sync_status <> 'pending_delete'
+      limit 1
+    ),
     'employees', coalesce((
       select jsonb_agg(to_jsonb(employee_row) order by employee_row.updated_at desc)
       from public.employees employee_row
