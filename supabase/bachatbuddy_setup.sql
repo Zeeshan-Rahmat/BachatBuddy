@@ -964,6 +964,98 @@ $$;
 
 grant execute on function public.employee_pull_approved_business_data(uuid, uuid, uuid) to anon, authenticated;
 
+drop function if exists public.employee_submit_backup_restore_request(uuid, uuid, text);
+drop function if exists public.employee_submit_backup_restore_request(uuid, uuid, text, text);
+
+create or replace function public.employee_submit_backup_restore_request(
+  p_employee_id uuid,
+  p_business_id uuid,
+  p_password text,
+  p_request_type text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_employee public.employees%rowtype;
+  v_request public.staging_review_queue%rowtype;
+  v_now bigint := ((extract(epoch from now()) * 1000)::bigint);
+  v_request_type text := lower(trim(p_request_type));
+begin
+  if v_request_type not in ('backup', 'restore') then
+    raise exception 'Unsupported backup/restore request type.';
+  end if;
+
+  select *
+  into v_employee
+  from public.employees
+  where id = p_employee_id
+    and business_id = p_business_id
+    and status = 'Active'
+    and sync_status <> 'pending_delete'
+  limit 1;
+
+  if v_employee.id is null or coalesce(v_employee.password_hash, '') <> p_password then
+    raise exception 'Invalid employee credentials.';
+  end if;
+
+  select *
+  into v_request
+  from public.staging_review_queue
+  where source_table = 'backup_restore_requests'
+    and source_record_id = v_employee.id::text
+    and business_id = v_employee.business_id
+    and status = 'pending'
+    and payload ->> 'request_type' = v_request_type
+  order by created_at desc
+  limit 1;
+
+  if v_request.id is null then
+    insert into public.staging_review_queue (
+      id,
+      source_table,
+      source_record_id,
+      operation,
+      payload,
+      submitted_by,
+      business_id,
+      status,
+      updated_at,
+      created_at
+    )
+    values (
+      gen_random_uuid(),
+      'backup_restore_requests',
+      v_employee.id::text,
+      'approval_request',
+      jsonb_build_object(
+        'request_type', v_request_type,
+        'employee_id', v_employee.id,
+        'employee_name', v_employee.name,
+        'employee_img', v_employee.img,
+        'requested_at', v_now
+      ),
+      null,
+      v_employee.business_id,
+      'pending',
+      v_now,
+      v_now
+    )
+    returning * into v_request;
+  end if;
+
+  return jsonb_build_object(
+    'request_id', v_request.id,
+    'status', v_request.status,
+    'request_type', v_request_type
+  );
+end;
+$$;
+
+grant execute on function public.employee_submit_backup_restore_request(uuid, uuid, text, text) to anon, authenticated;
+
 drop policy if exists "Employees can submit for approval" on public.staging_review_queue;
 drop policy if exists "Users can read own approval requests" on public.staging_review_queue;
 drop policy if exists "Owners can review their business approvals" on public.staging_review_queue;

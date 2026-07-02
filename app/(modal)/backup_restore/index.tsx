@@ -1,11 +1,15 @@
 import InternalTabBar from '@/src/components/common/InternalTabBar';
+import Button from '@/src/components/common/Button';
 import PaddingWrapper from '@/src/components/common/PaddingWrapper';
+import Subtitle from '@/src/components/common/Subtitle';
+import SectionHeader from '@/src/components/dashboard/SectionHeader';
 import ScreenWrapper from '@/src/components/layout/ScreenWrapper';
 import { approvalWorkflowService, type ApprovalRequest } from '@/src/services/approvalWorkflowService';
 import { backupRestoreService, type BackupSummary } from '@/src/services/backupRestoreService';
 import { useAuthStore } from '@/src/store/authStore';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, View } from 'react-native';
 import BackupRestore from './backup-restore';
 import BackupRestoreRequests from './backup-restore-request';
 
@@ -20,7 +24,9 @@ const BackupRestoreScreen = () => {
     const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
     const [isLoadingApprovals, setIsLoadingApprovals] = useState(false);
     const [activeApprovalId, setActiveApprovalId] = useState<string | null>(null);
+    const [activeEmployeeRequest, setActiveEmployeeRequest] = useState<'backup' | 'restore' | null>(null);
     const user = useAuthStore((state) => state.user);
+    const isOwner = user?.role === 'owner';
     const businessId = useMemo(() => user?.businessId ?? user?.id ?? null, [user?.businessId, user?.id]);
 
     const loadLastBackup = useCallback(async () => {
@@ -46,7 +52,7 @@ const BackupRestoreScreen = () => {
     }, [loadLastBackup]);
 
     const loadApprovalRequests = useCallback(async () => {
-        if (user?.role !== 'owner') {
+        if (!isOwner) {
             setApprovalRequests([]);
             return;
         }
@@ -61,7 +67,7 @@ const BackupRestoreScreen = () => {
         }
 
         setApprovalRequests(result.data);
-    }, [user?.role]);
+    }, [isOwner]);
 
     useEffect(() => {
         if (activeTab === TABS[1]) {
@@ -177,6 +183,29 @@ const BackupRestoreScreen = () => {
         );
     };
 
+    const handleEmployeeRequest = async (requestType: 'backup' | 'restore') => {
+        if (!user) {
+            Alert.alert('Request Failed', 'Please sign in before sending a request.');
+            return;
+        }
+
+        setActiveEmployeeRequest(requestType);
+        const result = await approvalWorkflowService.submitBackupRestoreRequest(user, requestType);
+        setActiveEmployeeRequest(null);
+
+        if (!result.success) {
+            Alert.alert('Request Failed', result.error);
+            return;
+        }
+
+        Alert.alert(
+            'Request Sent',
+            requestType === 'backup'
+                ? 'Your backup request has been sent to the owner for approval.'
+                : 'Your restore request has been sent to the owner for approval.'
+        );
+    };
+
 
 
     return (
@@ -188,12 +217,17 @@ const BackupRestoreScreen = () => {
             isBottomNavIncluded={false}
             isMenuIncluded={false}
         >
-            <InternalTabBar tabs={TABS} activeTab={activeTab} setActiveTab={setActiveTab} />
+            {isOwner && <InternalTabBar tabs={TABS} activeTab={activeTab} setActiveTab={setActiveTab} />}
 
             <PaddingWrapper>
 
                 {
-                    activeTab === TABS[0]
+                    !isOwner
+                        ? <EmployeeBackupRestoreRequests
+                            activeRequest={activeEmployeeRequest}
+                            onRequest={handleEmployeeRequest}
+                        />
+                        : activeTab === TABS[0]
                         ? <BackupRestore
                             handleBackupCurrentData={handleBackupCurrentData}
                             handleRestoreFromBackup={handleRestoreFromBackup}
@@ -221,3 +255,39 @@ const BackupRestoreScreen = () => {
 
 
 export default BackupRestoreScreen
+
+function EmployeeBackupRestoreRequests({
+    activeRequest,
+    onRequest,
+}: {
+    activeRequest: 'backup' | 'restore' | null;
+    onRequest: (requestType: 'backup' | 'restore') => void;
+}) {
+    return (
+        <View className='flex-1 gap-8'>
+            <View>
+                <SectionHeader title='Backup Request' marginTop={0} marginBottom={8} hasViewMore={false} fontSize={20} />
+                <Subtitle className='text-left mb-4' text='Ask the owner to save the latest business data to the cloud backup.' />
+                <Button
+                    label='Request Backup'
+                    onPress={() => onRequest('backup')}
+                    leftIcon={<MaterialCommunityIcons name="cloud-upload" size={24} color="white" />}
+                    loading={activeRequest === 'backup'}
+                    isDisabled={activeRequest === 'restore'}
+                />
+            </View>
+
+            <View>
+                <SectionHeader title='Restore Request' marginTop={0} marginBottom={8} hasViewMore={false} fontSize={20} />
+                <Subtitle className='text-left mb-4' text='Ask the owner to restore the business data from the latest cloud backup.' />
+                <Button
+                    label='Request Restore'
+                    onPress={() => onRequest('restore')}
+                    leftIcon={<MaterialCommunityIcons name="database-refresh" size={24} color="white" />}
+                    loading={activeRequest === 'restore'}
+                    isDisabled={activeRequest === 'backup'}
+                />
+            </View>
+        </View>
+    );
+}

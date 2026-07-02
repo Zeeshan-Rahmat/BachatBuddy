@@ -16,7 +16,7 @@ import React, { useEffect } from 'react';
 
 const EMPLOYEE_BLOCKED_SEGMENTS = ['dashboard', 'reports'];
 const EMPLOYEE_BLOCKED_PARTIES_SEGMENTS = ['employee', 'add-employee'];
-const EMPLOYEE_BLOCKED_MODAL_SEGMENTS = ['export', 'backup_restore'];
+const EMPLOYEE_BLOCKED_MODAL_SEGMENTS = ['export', 'customize_invoice', 'notification', 'change_password'];
 const APP_SEGMENTS = ['dashboard', 'stock', 'sale', 'reports', 'parties'];
 const AUTH_SUCCESS_SEGMENTS = ['sign-up-verified', 'email-verified', 'password-updated'];
 

@@ -1,12 +1,15 @@
 import { sqlite } from '@/src/db/client';
 import { syncQueueRepository } from '@/src/db/repositories/syncQueueRepository';
 import { supabase } from '@/src/lib/supabase';
+import type { User } from '@/src/types/auth';
+import { backupRestoreService } from './backupRestoreService';
 import { processSyncQueue } from './syncQueueProcessor';
 
 type ApprovalStatus = 'pending' | 'approved' | 'rejected';
-type ApprovalOperation = 'insert' | 'update' | 'delete';
+type ApprovalOperation = 'insert' | 'update' | 'delete' | 'approval_request';
 type BusinessMutationSourceTable = 'users' | 'employees' | 'customers' | 'suppliers' | 'products' | 'invoices' | 'invoice_items';
-type ApprovalSourceTable = BusinessMutationSourceTable | 'business_data_downloads';
+type ApprovalSourceTable = BusinessMutationSourceTable | 'business_data_downloads' | 'backup_restore_requests';
+type BackupRestoreRequestType = 'backup' | 'restore';
 type RemotePayload = Record<string, unknown>;
 
 type StagingReviewRow = {
@@ -56,6 +59,7 @@ const supportedTables = new Set<ApprovalSourceTable>([
     'invoices',
     'invoice_items',
     'business_data_downloads',
+    'backup_restore_requests',
 ]);
 
 const localTableBySource: Record<BusinessMutationSourceTable, string> = {
@@ -79,7 +83,7 @@ const remoteTableBySource: Record<BusinessMutationSourceTable, BusinessMutationS
 };
 
 function isBusinessMutationSourceTable(value: ApprovalSourceTable): value is BusinessMutationSourceTable {
-    return value !== 'business_data_downloads';
+    return value !== 'business_data_downloads' && value !== 'backup_restore_requests';
 }
 
 function getRemoteTableName(sourceTable: BusinessMutationSourceTable, payload: RemotePayload): BusinessMutationSourceTable {
@@ -117,7 +121,12 @@ function normalizeOperation(row: StagingReviewRow): ApprovalOperation {
         return payloadOperation;
     }
 
-    if (row.operation === 'insert' || row.operation === 'update' || row.operation === 'delete') {
+    if (
+        row.operation === 'insert'
+        || row.operation === 'update'
+        || row.operation === 'delete'
+        || row.operation === 'approval_request'
+    ) {
         return row.operation;
     }
 
@@ -139,6 +148,11 @@ function cleanRemotePayload(payload: RemotePayload): RemotePayload {
 function getRequestTitle(tableName: ApprovalSourceTable, operation: ApprovalOperation, payload: RemotePayload): string {
     if (tableName === 'business_data_downloads') {
         return 'Business Data Download Request';
+    }
+
+    if (tableName === 'backup_restore_requests') {
+        const requestType = payload.request_type === 'restore' ? 'Restore' : 'Backup';
+        return `${requestType} Request`;
     }
 
     const recordName = typeof payload.name === 'string'
@@ -166,6 +180,14 @@ function getRequestSubtitle(row: StagingReviewRow): string {
             : 'Employee device';
 
         return `${formattedDate} | ${deviceName}`;
+    }
+
+    if (row.source_table === 'backup_restore_requests') {
+        const requestType = isRemotePayload(row.payload) && row.payload.request_type === 'restore'
+            ? 'Restore from backup'
+            : 'Create backup';
+
+        return `${formattedDate} | ${requestType}`;
     }
 
     return `${formattedDate} | ${row.source_record_id ?? 'Unknown record'}`;
@@ -230,11 +252,43 @@ async function getReviewRow(id: string): Promise<StagingReviewRow> {
     return data as StagingReviewRow;
 }
 
-async function applyApprovedMutation(row: StagingReviewRow): Promise<void> {
+function readBackupRestoreRequestType(row: StagingReviewRow): BackupRestoreRequestType {
+    if (!isRemotePayload(row.payload)) {
+        throw new Error('Backup/restore request is missing details.');
+    }
+
+    if (row.payload.request_type === 'backup' || row.payload.request_type === 'restore') {
+        return row.payload.request_type;
+    }
+
+    throw new Error('Backup/restore request type is not supported.');
+}
+
+async function applyApprovedBackupRestoreRequest(row: StagingReviewRow, reviewerId: string): Promise<void> {
+    if (!row.business_id) {
+        throw new Error('Backup/restore request is missing a business id.');
+    }
+
+    const requestType = readBackupRestoreRequestType(row);
+    const result = requestType === 'backup'
+        ? await backupRestoreService.backupCurrentData(reviewerId, row.business_id)
+        : await backupRestoreService.restoreLatestBackup(reviewerId, row.business_id);
+
+    if (!result.success) {
+        throw new Error(result.error ?? 'Backup/restore request failed.');
+    }
+}
+
+async function applyApprovedMutation(row: StagingReviewRow, reviewerId: string): Promise<void> {
     const sourceTable = normalizeSourceTable(row.source_table);
 
     if (!sourceTable || !row.source_record_id || !isRemotePayload(row.payload)) {
         throw new Error('Approval request has an unsupported target.');
+    }
+
+    if (sourceTable === 'backup_restore_requests') {
+        await applyApprovedBackupRestoreRequest(row, reviewerId);
+        return;
     }
 
     if (!isBusinessMutationSourceTable(sourceTable)) {
@@ -329,6 +383,32 @@ async function flushOwnerBusinessDataBeforeDownloadApproval(row: StagingReviewRo
 }
 
 export const approvalWorkflowService = {
+    async submitBackupRestoreRequest(
+        user: Pick<User, 'id' | 'businessId' | 'passwordHash' | 'role'>,
+        requestType: BackupRestoreRequestType
+    ): Promise<ApprovalResult<null>> {
+        try {
+            if (user.role !== 'employee' || !user.businessId) {
+                return { success: false, error: 'Only employees can request backup or restore approval.' };
+            }
+
+            const { error } = await supabase.rpc('employee_submit_backup_restore_request', {
+                p_employee_id: user.id,
+                p_business_id: user.businessId,
+                p_password: user.passwordHash ?? '',
+                p_request_type: requestType,
+            });
+
+            if (error) {
+                return { success: false, error: error.message };
+            }
+
+            return { success: true, data: null };
+        } catch (error) {
+            return { success: false, error: normalizeError(error) };
+        }
+    },
+
     async listPendingRequests(): Promise<ApprovalResult<ApprovalRequest[]>> {
         try {
             const { data, error } = await supabase
@@ -357,7 +437,7 @@ export const approvalWorkflowService = {
         try {
             const row = await getReviewRow(id);
             await flushOwnerBusinessDataBeforeDownloadApproval(row);
-            await applyApprovedMutation(row);
+            await applyApprovedMutation(row, reviewerId);
             await updateReviewStatus(id, 'approved', reviewerId);
             await markLocalReviewResult(row, 'synced');
 

@@ -36,6 +36,7 @@ export function AppHeader(
 
 ) {
     const user = useAuthStore((state) => state.user);
+    const canReadNotifications = useAuthStore((state) => state.role) === 'owner';
     const insets = useSafeAreaInsets();
     const displayTitle = title === 'BachatBuddy'
         ? user?.businessName ?? title
@@ -64,7 +65,7 @@ export function AppHeader(
 
                 {/* Bell */}
                 {
-                    rightIcons === "avatarNotification"
+                    rightIcons === "avatarNotification" && canReadNotifications
                     && <AppBarIcons icon={ICONS.TOP_BAR.notificationOutline} onPress={() => router.push(ROUTES.MODAL.NOTIFICATION)} />
                 }
 

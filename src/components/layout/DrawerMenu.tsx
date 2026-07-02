@@ -53,7 +53,9 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
   const canAccessDashboard = useAuthStore((state) => state.canAccessDashboard);
   const canAccessReports = useAuthStore((state) => state.canAccessReports);
   const isOwner = useAuthStore((state) => state.isOwner);
+  const role = useAuthStore((state) => state.role);
   const segments = useSegments();
+  const owner = isOwner();
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const overlayOpacity = useSharedValue(0);
@@ -202,21 +204,25 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
                   onPress={() => navigate(ROUTES.DASHBOARD)}
                 />
               )}
-              <MenuItem
-                icon={ICONS.MENU.customizeInvoice}
-                label="Customize Invoice"
-                onPress={() => navigate(ROUTES.MODAL.CUSTOMIZE_INVOICE)}
-              />
+              {owner && (
+                <MenuItem
+                  icon={ICONS.MENU.customizeInvoice}
+                  label="Customize Invoice"
+                  onPress={() => navigate(ROUTES.MODAL.CUSTOMIZE_INVOICE)}
+                />
+              )}
               <MenuItem
                 icon={ICONS.MENU.businessDetail}
                 label="Business Profile"
                 onPress={() => navigate(ROUTES.MODAL.BUSINES_PROFILE)}
               />
-              <MenuItem
-                icon={ICONS.MENU.notificationFilled}
-                label="Notification"
-                onPress={() => navigate(ROUTES.MODAL.NOTIFICATION)}
-              />
+              {owner && (
+                <MenuItem
+                  icon={ICONS.MENU.notificationFilled}
+                  label="Notification"
+                  onPress={() => navigate(ROUTES.MODAL.NOTIFICATION)}
+                />
+              )}
               <MenuItem
                 icon={ICONS.MENU.addfriend}
                 label="Invite a Friend"
@@ -226,7 +232,7 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
             </MenuItemsWrapper>
 
             {/* ── Section 3: Export & Backup ───────────────────────────────── */}
-            {(canAccessReports() || isOwner()) && (
+            {(canAccessReports() || role === 'employee' || owner) && (
               <MenuItemsWrapper>
                 {canAccessReports() && (
                   <MenuItem
@@ -236,13 +242,11 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
                   />
                 )}
 
-                {isOwner() && (
-                  <MenuItem
-                    icon={ICONS.MENU.backupRestore}
-                    label="Backup and Restore"
-                    onPress={() => navigate(ROUTES.MODAL.BACKUP_RESTORE)}
-                  />
-                )}
+                <MenuItem
+                  icon={ICONS.MENU.backupRestore}
+                  label="Backup and Restore"
+                  onPress={() => navigate(ROUTES.MODAL.BACKUP_RESTORE)}
+                />
               </MenuItemsWrapper>
             )}
 
@@ -253,11 +257,13 @@ export function DrawerMenu({ isOpen, onClose }: DrawerMenuProps) {
                 label="Smart Login"
                 onPress={() => navigate(ROUTES.MODAL.SMART_LOGIN)}
               />
-              <MenuItem
-                icon={ICONS.MENU.changePassword}
-                label="Change Password"
-                onPress={() => navigate(ROUTES.MODAL.CHANGE_PASSWORD)}
-              />
+              {owner && (
+                <MenuItem
+                  icon={ICONS.MENU.changePassword}
+                  label="Change Password"
+                  onPress={() => navigate(ROUTES.MODAL.CHANGE_PASSWORD)}
+                />
+              )}
               <MenuItem
                 icon={ICONS.MENU.logout}
                 label="Logout"

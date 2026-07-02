@@ -66,13 +66,14 @@ Main Files:
 Status: In Progress
 
 Description:
-Expo Router groups are set up for auth, protected app screens, nested sale routes, and modals. `AuthGuard` blocks unauthenticated app access and employee access to owner-only dashboard/report routes, including grouped and ungrouped app route segment shapes. It also blocks direct employee access to owner-only employee-management party routes. Session bootstrap initializes SQLite and biometric state only; it does not automatically authenticate from a previous saved SQLite session, so protected app screens remain locked until password sign-in or successful fingerprint unlock. The app stack registers the nested sale route group as `sale`, avoiding Expo Router child-name warnings for `sale/index`.
+Expo Router groups are set up for auth, protected app screens, nested sale routes, and modals. `AuthGuard` blocks unauthenticated app access and employee access to owner-only dashboard/report routes, including grouped and ungrouped app route segment shapes. It also blocks direct employee access to owner-only employee-management party routes and owner-only modals such as export, notification, invoice customization, and change password. Session bootstrap initializes SQLite and biometric state only; it does not automatically authenticate from a previous saved SQLite session, so protected app screens remain locked until password sign-in or successful fingerprint unlock. The app stack registers the nested sale route group as `sale`, avoiding Expo Router child-name warnings for `sale/index`.
 
 Completed Updates:
 - Fixed bottom navigation RBAC so it reads the real auth role instead of a hardcoded owner role, hiding Dashboard and Reports for employees.
 - Hid and gated the Parties `Employees` tab for employee users while keeping Customers and Suppliers available.
-- Extended route guards to redirect employees away from Dashboard, Reports, direct employee-management party routes, report export, and backup/restore.
-- Hid owner-only report export and backup/restore drawer actions for employees.
+- Extended route guards to redirect employees away from Dashboard, Reports, direct employee-management party routes, report export, notifications, invoice customization, and change password.
+- Hid owner-only report export, notifications, invoice customization, and change-password drawer/header actions for employees.
+- Reopened Backup and Restore for employees as a request-only flow while keeping owner-only backup, restore, and approval review operations protected.
 
 Main Files:
 - `app/_layout.tsx`
@@ -236,7 +237,7 @@ Main Files:
 Status: Completed
 
 Description:
-Profile and business profile modals are integrated with the local auth profile. Screens, drawer profile card, and app top bar render the current SQLite-backed user from the Zustand session cache instead of hardcoded values. Profile and business profile edits initialize from the saved local user, write updates to SQLite through `usersRepository.updateProfile`, enqueue a `sync_queue` update row, refresh the auth store immediately, and attempt a best-effort Supabase profile update while the full sync engine is still pending. Business profile stores a dedicated `businessLogo`/`business_logo` image separate from the personal profile image so invoices can later use the business logo without overwriting the user avatar. Picked business logos are copied into persistent app document storage before SQLite is updated, preventing temporary ImagePicker cache URIs from disappearing after restart/session expiry. Profile fetch/sign-in queries include `business_logo`, and profile sync preserves newer pending local profile changes so cloud-null values do not wipe locally saved logos. Best-effort profile cloud writes upload local profile/business logo image URIs to Supabase Storage before updating the remote profile row.
+Profile and business profile modals are integrated with the local auth profile. Screens, drawer profile card, and app top bar render the current SQLite-backed user from the Zustand session cache instead of hardcoded values. Profile and business profile edits initialize from the saved local user, write updates to SQLite through `usersRepository.updateProfile`, enqueue a `sync_queue` update row, refresh the auth store immediately, and attempt a best-effort Supabase profile update while the full sync engine is still pending. Business profile editing is owner-only; employees can view the shared business profile details but cannot edit business data. Business profile stores a dedicated `businessLogo`/`business_logo` image separate from the personal profile image so invoices can later use the business logo without overwriting the user avatar. Picked business logos are copied into persistent app document storage before SQLite is updated, preventing temporary ImagePicker cache URIs from disappearing after restart/session expiry. Profile fetch/sign-in queries include `business_logo`, and profile sync preserves newer pending local profile changes so cloud-null values do not wipe locally saved logos. Best-effort profile cloud writes upload local profile/business logo image URIs to Supabase Storage before updating the remote profile row.
 
 Main Files:
 - `app/(modal)/profile`
@@ -254,7 +255,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Backup/restore screens are wired to a backend service. Owners can package the implemented SQLite tables into a typed JSON snapshot, upload a versioned backup plus `latest.json` to private Supabase Storage, save local backup metadata, and upsert a Supabase `backup_manifests` row. Restore downloads the latest cloud backup for the active business, validates the snapshot schema/business id, confirms overwrite with the user, and replaces the implemented local SQLite tables in dependency order. The screen now shows local last-backup date and size from SQLite metadata instead of hardcoded values. The second tab is now used for real employee approval requests from `staging_review_queue`. Backup/restore request approvals are still not implemented as a separate request type, and advanced backup conflict handling is not complete.
+Backup/restore screens are wired to a backend service. Owners can package the implemented SQLite tables into a typed JSON snapshot, upload a versioned backup plus `latest.json` to private Supabase Storage, save local backup metadata, and upsert a Supabase `backup_manifests` row. Restore downloads the latest cloud backup for the active business, validates the snapshot schema/business id, confirms overwrite with the user, and replaces the implemented local SQLite tables in dependency order. The screen now shows local last-backup date and size from SQLite metadata instead of hardcoded values. The second tab is used for real owner-facing approval requests from `staging_review_queue`. Employees cannot directly read/restore backups or review requests; they can only submit backup/restore approval requests for the owner. Advanced backup conflict handling is not complete.
 
 Completed Updates:
 - Added `src/services/backupRestoreService.ts` for SQLite snapshot creation, Supabase Storage upload/download, manifest writes, snapshot validation, and full local restore.
@@ -270,6 +271,8 @@ Completed Updates:
 - Added restore fallback handling for React Native Blob objects through `FileReader.readAsText()` and private Supabase signed-URL fetch when direct Storage download bodies are unreadable.
 - Fixed restore foreign-key ordering by clearing local `backup_metadata` before replacing `users`, then rewriting restored backup metadata after the snapshot restore completes.
 - Replaced the mock backup/restore request list with the real owner-facing `Approval Requests` tab backed by Supabase `staging_review_queue`.
+- Added employee backup/restore request submission through `backup_restore_requests` staging rows, with owner approval running the requested backup or restore action.
+- Added `employee_submit_backup_restore_request` to `supabase/bachatbuddy_setup.sql`, including employee credential validation and duplicate pending-request reuse.
 
 Main Files:
 - `app/(modal)/backup_restore`
@@ -285,7 +288,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Employee mutations for products, customers, suppliers, employees, invoices, invoice items, and related stock/customer invoice effects still write to SQLite first with `sync_status = pending_approval`, enqueue `sync_queue` rows, and upload approval requests to Supabase `staging_review_queue` in the background. New approval queue payloads now preserve the original intended operation as `approvalOperation` so owner review can distinguish inserts, updates, and deletes. Owners can open `Backup & Restore > Approval Requests`, load pending cloud staging rows for their business, approve requests to replay the staged payload into the correct Supabase business table, or reject requests to mark the staging row rejected. The service also updates matching local SQLite rows from `pending_approval` to `synced` or `rejected` when those rows exist on the reviewing device. Employee business-data download is separately gated by a `business_data_downloads` approval request: employee sign-in submits or reuses the request, pending/rejected requests do not pull owner business data, and approved requests pull owner business tables into SQLite in dependency order. Employee devices now poll for approved business-data pulls while signed in, automatically refresh local list screens after imported SQLite data changes, and import owner/user dependency rows before customers, suppliers, products, invoices, and invoice items to avoid local foreign-key failures.
+Employee mutations for products, customers, suppliers, employees, invoices, invoice items, and related stock/customer invoice effects still write to SQLite first with `sync_status = pending_approval`, enqueue `sync_queue` rows, and upload approval requests to Supabase `staging_review_queue` in the background. New approval queue payloads now preserve the original intended operation as `approvalOperation` so owner review can distinguish inserts, updates, and deletes. Owners can open `Backup & Restore > Approval Requests`, load pending cloud staging rows for their business, approve requests to replay the staged payload into the correct Supabase business table, run approved backup/restore requests, or reject requests to mark the staging row rejected. The service also updates matching local SQLite rows from `pending_approval` to `synced` or `rejected` when those rows exist on the reviewing device. Employee business-data download is separately gated by a `business_data_downloads` approval request: employee sign-in submits or reuses the request, pending/rejected requests do not pull owner business data, and approved requests pull owner business tables into SQLite in dependency order. Employee backup/restore is gated by `backup_restore_requests`: employees submit credential-verified requests, but cannot read or review approval requests. Employee devices now poll for approved business-data pulls while signed in, automatically refresh local list screens after imported SQLite data changes, and import owner/user dependency rows before customers, suppliers, products, invoices, and invoice items to avoid local foreign-key failures.
 
 Completed Updates:
 - Added `src/services/approvalWorkflowService.ts` for listing pending staging requests, resolving submitter profile names/images, approving requests, rejecting requests, replaying approved payloads to Supabase business tables, and local pending-row reconciliation.
@@ -302,6 +305,7 @@ Completed Updates:
 - Updated owner approval for `business_data_downloads` so it attempts to flush the owner's local `sync_queue` first; approval fails with the sync error instead of approving an empty or stale cloud snapshot.
 - Fixed employee pull foreign-key failures by importing the owner profile from the Supabase RPC payload and creating safe local placeholder owner/user rows when older RPC responses do not include every referenced user id.
 - Updated `employee_pull_approved_business_data` so `p_request_id` is optional and the latest approved request can be pulled during background reconciliation.
+- Added owner-review support for `backup_restore_requests`, including request card titles/subtitles, employee submission RPC calls, and owner approval execution through `backupRestoreService`.
 
 Main Files:
 - `app/(modal)/backup_restore/index.tsx`
@@ -332,7 +336,7 @@ Main Files:
 Status: In Progress
 
 Description:
-Screens exist for export, invite friend, notifications, notification options, logout, and change password. Logout is wired through the drawer confirmation modal. Other backend integrations are incomplete or partial.
+Screens exist for export, invite friend, notifications, notification options, logout, and change password. Logout is wired through the drawer confirmation modal. Notifications and change password remain owner-only in navigation/RBAC; employee access is blocked at the drawer/header and route-guard layers. Other backend integrations are incomplete or partial.
 
 Main Files:
 - `app/(modal)/export`
@@ -373,7 +377,7 @@ Main Files:
 - Local database: Expo SQLite database named `bachatbuddy.db`.
 - ORM: Drizzle ORM with schema in `src/db/schema.ts`.
 - Cloud database: Supabase PostgreSQL, intended for auth, backup, sync, remote storage, notifications, and approvals.
-- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.employees`, business sync tables, `public.staging_review_queue`, `public.backup_manifests`, username lookup RPCs, employee data-download request/pull RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, RLS policies, and the `bachatbuddy-media`/`bachatbuddy-backups` Storage bucket policies.
+- Supabase setup SQL: `supabase/bachatbuddy_setup.sql` creates/updates `public.users`, `public.employees`, business sync tables, `public.staging_review_queue`, `public.backup_manifests`, username lookup RPCs, employee data-download request/pull RPCs, employee backup/restore request RPCs, owner/business helper functions, millisecond timestamp triggers, indexes, RLS policies, and the `bachatbuddy-media`/`bachatbuddy-backups` Storage bucket policies.
 - Supabase Storage: `bachatbuddy-media` stores synced application images. SQLite keeps local image URIs for immediate offline display; sync uploads those images and sends public Storage URLs in remote payloads.
 - Supabase backup storage: `bachatbuddy-backups` stores private JSON database snapshots under `{business_id}/{backup_id}.json` and `{business_id}/latest.json`; `public.backup_manifests` stores owner-scoped backup metadata.
 - Existing local tables: `users`, `auth_sessions`, `customers`, `suppliers`, `products`, `invoices`, `invoice_items`, `sync_queue`, `backup_metadata`.
@@ -410,7 +414,7 @@ Main Files:
 - Modals: `app/(modal)` contains backup/restore, business profile, change password, customize invoice, export, invite friend, logout, notification, profile, and smart login flows.
 - Drawer: `src/components/layout/DrawerMenu.tsx`.
 - Bottom tabs: `src/components/layout/BottomNav.tsx`.
-- RBAC: `AuthGuard` blocks employee access to dashboard and reports at navigation level; initial Supabase RLS exists for profile and approval tables, but full business-table RLS is not complete.
+- RBAC: `AuthGuard` blocks employee access to dashboard, reports, employee management routes, report export, notifications, invoice customization, and change password; employees can access backup/restore only as a request-submission flow. Initial Supabase RLS exists for profile and approval tables, but full business-table RLS is not complete.
 
 # UI Components
 
@@ -510,7 +514,7 @@ Main Files:
 - Profile service: `src/services/profileService.ts` fetches remote profile data, maps it to local shape, and performs local-first profile updates.
 - Media storage service: `src/services/mediaStorageService.ts` uploads local image URIs from sync payloads to the `bachatbuddy-media` Supabase Storage bucket and returns public URLs for remote rows.
 - Local media service: `src/services/localMediaService.ts` copies selected local media into persistent app document storage before SQLite stores the URI.
-- Backup/restore service: `src/services/backupRestoreService.ts` creates typed local SQLite snapshots, uploads/restores the latest private Supabase backup, records local metadata, and updates cloud backup manifests.
+- Backup/restore service: `src/services/backupRestoreService.ts` creates typed local SQLite snapshots, uploads/restores the latest private Supabase backup, records local metadata, and updates cloud backup manifests. Owner approval can invoke this service for employee backup/restore requests.
 - Media backfill service: `src/services/mediaBackfillService.ts` finds existing SQLite records with local image URIs and enqueues update rows so older saved images can be uploaded through the normal sync queue.
 - User profile mapper: `src/services/userProfileMapper.ts` maps Supabase snake_case profile rows to local camelCase `User` records and back.
 - Database services/repositories:
@@ -580,6 +584,8 @@ Main Files:
 
 - Done: Employee approved-download background reconciliation and local list refresh
 - Done: Employee pull foreign-key dependency import fix
+- Done: Employee backup/restore request submission and owner approval execution
+- Done: Employee RBAC tightened for notifications, invoice customization, business profile editing, change password, and approval review access
 
 Startup UX Update:
 - Native Expo splash now uses `assets/images/logo.png`.
@@ -596,7 +602,6 @@ Startup UX Update:
 - Add dedicated filtered destination screens for dashboard quick reports, such as low-stock items, unpaid invoices, pending dues, and top products.
 - Extend invoice transactions with ledger/payment entries after ledger and payment schema tables exist.
 - Persist saved-invoice product edits with stock difference reconciliation and sync queue rows.
-- Complete backup/restore request approval workflow as a separate request type.
 - Add backup conflict/staleness handling before overwriting local data with older snapshots.
 - Add pagination and indexes where large lists are queried.
 - Add tests for repositories, sync queue processing, auth/session restoration, and financial/inventory transactions.
@@ -612,11 +617,11 @@ Startup UX Update:
 - Supabase profile writes now succeed when `supabase/bachatbuddy_setup.sql` has been run, but auth/profile services still use best-effort direct writes alongside queued retry behavior.
 - Supabase media upload sync depends on the `bachatbuddy-media` bucket and policies from `supabase/bachatbuddy_setup.sql`; remote image upload will fail and retry if that SQL has not been applied, including the current MIME list for JPEG/PNG/WebP/GIF/HEIC/HEIF.
 - Supabase backup/restore depends on the `bachatbuddy-backups` bucket, `backup_manifests` table, and policies from `supabase/bachatbuddy_setup.sql`; backup or restore will fail if that SQL has not been applied.
-- Backup restore currently overwrites the implemented local SQLite tables from the latest cloud snapshot after confirmation; conflict checks for newer local changes and backup request approvals are still pending.
+- Backup restore currently overwrites the implemented local SQLite tables from the latest cloud snapshot after confirmation; conflict checks for newer local changes are still pending.
 - Manual SQLite migrations are not versioned; schema evolution strategy is incomplete.
 - Supabase setup is committed as a SQL setup file, but it is not yet organized as versioned Supabase CLI migrations.
 - Some sample/default data and legacy types still use snake_case names that differ from Drizzle camelCase fields.
-- Employee RBAC exists in navigation helpers; Supabase RLS has initial owner/business helper policies for profile and approval tables, but local mutation authorization and full table-level RLS are still incomplete.
+- Employee RBAC exists in navigation helpers and now blocks employee notification reading, invoice customization, business profile editing, password changes, and approval review access while allowing backup/restore request submission. Supabase RLS has initial owner/business helper policies for profile and approval tables, but local mutation authorization and full table-level RLS are still incomplete.
 - Biometric enable/sign-in is integrated and enforces a fresh app-launch unlock. Stale or expired biometric credentials are cleared automatically, but the user-facing settings flow for manually disabling biometrics still needs completion/verification.
 
 # Recent Architectural Decisions
@@ -631,6 +636,7 @@ Startup UX Update:
 - IDs should be UUID strings generated with `crypto.randomUUID()`.
 - Employee login must not automatically download owner business data; employee devices submit or reuse a `business_data_downloads` staging request and can only pull business-table data after that request is approved.
 - Approved employee business-data pulls must hydrate SQLite locally, including owner/user dependency rows, before importing foreign-keyed business records. Screens still read SQLite only and refresh through local data-change notifications.
+- Employee backup/restore is approval-only: employees submit `backup_restore_requests`, owners review them in the approval queue, and only owner approval runs backup or restore operations.
 - User profile rows now use explicit mapping between Supabase `snake_case` and local Drizzle camelCase fields.
 - Profile creation/update now writes to SQLite first, queues the mutation, and also attempts remote writes against the configured Supabase `public.users` table.
 - Owner profiles use the owner's Supabase Auth user id as `business_id`; employee profiles should share that owner id later. No separate business table is required yet.

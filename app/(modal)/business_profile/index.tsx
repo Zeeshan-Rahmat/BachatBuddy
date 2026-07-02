@@ -13,6 +13,7 @@ import EditBusinessProfile from './edit-business-profile';
 const BusinessProfileScreen = () => {
     const [isOpen, setIsOpen] = useState(false);
     const user = useAuthStore((state) => state.user);
+    const isOwner = useAuthStore((state) => state.role) === 'owner';
     const businessName = user?.businessName ?? 'Business Profile';
     const businessEmail = user?.businessEmail ?? 'Not Added';
 
@@ -40,13 +41,15 @@ const BusinessProfileScreen = () => {
                         <Text className='text-dark-50'>{businessEmail}</Text>
                     </View>
 
-                    <Button
-                        leftIcon={<IconWrapper name={ICONS.COMMON.editWhite} />}
-                        label='Edit Profile'
-                        width='w-fit'
-                        onPress={() => setIsOpen(true)}
-                        isDisabled={!user}
-                    />
+                    {isOwner && (
+                        <Button
+                            leftIcon={<IconWrapper name={ICONS.COMMON.editWhite} />}
+                            label='Edit Profile'
+                            width='w-fit'
+                            onPress={() => setIsOpen(true)}
+                            isDisabled={!user}
+                        />
+                    )}
                 </View>
 
                 <View className='flex-1 mt-8 gap-5'>
@@ -63,7 +66,7 @@ const BusinessProfileScreen = () => {
                 </View>
             </PaddingWrapper>
 
-            {user && <EditBusinessProfile visible={isOpen} user={user} onClose={() => setIsOpen(false)} />}
+            {isOwner && user && <EditBusinessProfile visible={isOpen} user={user} onClose={() => setIsOpen(false)} />}
         </ScreenWrapper>
     );
 };
